@@ -2356,15 +2356,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   bind('profBar', () => showScreen('scrProf'));
 
-  // === Deco: random scatter pieces ===
+  // === Deco: random scatter pieces (stable positions) ===
   (function initDecoScatter() {
     const deco = document.getElementById('decoBg');
     if(!deco) return;
     const spans = deco.querySelectorAll('span');
     if(!spans.length) return;
 
-    const placed = [];
-    const pieceSize = 70;
+    const saved = JSON.parse(localStorage.getItem('chesher_deco_pos') || 'null');
+    const placed = saved || [];
 
     spans.forEach((el, i) => {
       const sz = 30 + Math.random() * 50;
@@ -2372,17 +2372,23 @@ document.addEventListener('DOMContentLoaded', () => {
       el.style.animationDelay = (Math.random() * 6).toFixed(1) + 's';
       el.style.animationDuration = (4 + Math.random() * 4).toFixed(1) + 's';
 
-      let x, y, tries = 0;
-      do {
-        x = Math.random() * 90;
-        y = Math.random() * 90;
-        tries++;
-      } while(tries < 50 && placed.some(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 10));
-
-      placed.push({ x, y });
-      el.style.left = x + '%';
-      el.style.top = y + '%';
+      if(saved && saved[i]) {
+        el.style.left = saved[i].x + '%';
+        el.style.top = saved[i].y + '%';
+      } else {
+        let x, y, tries = 0;
+        do {
+          x = Math.random() * 90;
+          y = Math.random() * 90;
+          tries++;
+        } while(tries < 50 && placed.some(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 10));
+        placed[i] = { x, y };
+        el.style.left = x + '%';
+        el.style.top = y + '%';
+      }
     });
+
+    if(!saved) localStorage.setItem('chesher_deco_pos', JSON.stringify(placed));
   })();
 
   // === Deco gun random event ===
