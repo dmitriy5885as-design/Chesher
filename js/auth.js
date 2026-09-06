@@ -88,11 +88,15 @@ const ChesAuth = {
   async loginAnon() {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.signInAnonymously();
-    const allUsers = await firebaseDB.collection('users').limit(1).get();
-    const isFirst = allUsers.empty;
-    await this._createProfile(cred.user.uid, 'Аноним #' + Math.floor(Math.random() * 9999));
-    if(isFirst) {
-      await firebaseDB.collection('users').doc(cred.user.uid).update({ admin: true });
+    try {
+      const allUsers = await firebaseDB.collection('users').limit(1).get();
+      const isFirst = allUsers.empty;
+      await this._createProfile(cred.user.uid, 'Аноним #' + Math.floor(Math.random() * 9999));
+      if(isFirst) {
+        await firebaseDB.collection('users').doc(cred.user.uid).update({ admin: true });
+      }
+    } catch(e) {
+      console.warn('Firestore profile create skipped:', e.message);
     }
     return cred.user;
   },
