@@ -36,6 +36,8 @@ function showScreen(id) {
   if(giftBtn) giftBtn.style.display = id === 'scrMenu' ? '' : 'none';
   const devblogBtnEl = document.getElementById('devblogBtn');
   if(devblogBtnEl) devblogBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const phoneBtnEl = document.getElementById('phoneBtn');
+  if(phoneBtnEl) phoneBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const friendsBtn = document.getElementById('friendsFloatBtn');
   if(friendsBtn) friendsBtn.style.display = id === 'scrMenu' ? '' : 'none';
   if(id !== 'scrMenu') {

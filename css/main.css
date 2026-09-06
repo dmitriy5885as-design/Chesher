@@ -580,6 +580,13 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .giftBtn.disabled{opacity:.35;cursor:default;pointer-events:none}
 .giftBtn.claimed{border-color:var(--green);color:var(--green)}
 
+.phoneBtn{
+  position:fixed;top:60px;right:16px;z-index:1100;
+  width:36px;height:36px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel2);color:var(--mut);font-size:16px;
+  cursor:default;opacity:.35;display:flex;align-items:center;justify-content:center;
+}
+
 .decoGunSpin{animation:decoGunSpinAnim 1s ease-out forwards}
 @keyframes decoGunSpinAnim{
   0%{transform:translate(-50%,-50%) rotate(0deg) scale(0.3);opacity:0}
