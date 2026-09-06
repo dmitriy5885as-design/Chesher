@@ -535,6 +535,15 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   opacity:0;transition:.28s;pointer-events:none;max-width:92vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* === HELP BUTTON === */
+.helpBtn{
+  position:fixed;top:16px;right:16px;z-index:1100;
+  width:36px;height:36px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel2);color:var(--mut);font-size:16px;font-weight:700;
+  cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;
+}
+.helpBtn:hover{border-color:var(--gold);background:rgba(247,197,49,.15);color:var(--gold);transform:scale(1.1)}
+
 /* === DEV BLOG BUTTON === */
 .cornerFloat{
   position:fixed;bottom:20px;right:20px;z-index:1100;

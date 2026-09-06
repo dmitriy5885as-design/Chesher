@@ -30,6 +30,8 @@ function showScreen(id) {
   // Devblog button only on main menu
   const cornerFloat = document.getElementById('cornerFloat');
   if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
+  const helpBtn = document.getElementById('helpBtn');
+  if(helpBtn) helpBtn.style.display = id === 'scrMenu' ? '' : 'none';
   const chBtn = document.getElementById('cheatBtn');
   const chPanel = document.getElementById('cheatPanel');
   if(chBtn && id !== 'scrMenu') chBtn.style.display = 'none';
@@ -1982,6 +1984,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('mShop', () => showScreen('scrShop'));
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
+  bind('helpBtn', () => { toast('Раздел помощи скоро будет доступен!'); });
   bind('mFriends', async () => {
     await ensureAuth();
     showScreen('scrFriends');
