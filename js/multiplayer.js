@@ -13,6 +13,9 @@ const ChesMP = {
   _moveCallback: null,
   _endCallback: null,
   _startCallback: null,
+  _lobbyUpdateCallback: null,
+  _isHost: false,
+  _started: false,
 
   /* --- Установить статус онлайн --- */
   setOnline() {
@@ -56,9 +59,11 @@ const ChesMP = {
       host: uid,
       hostName: name,
       hostAva: ava,
+      hostReady: false,
       guest: null,
       guestName: null,
       guestAva: null,
+      guestReady: false,
       status: 'waiting',
       mode: mode,
       timeSec: timeSec,
@@ -71,6 +76,7 @@ const ChesMP = {
 
     this.lobbyId = lobbyId;
     this.myColor = isWhite ? 'b' : 'w';
+    this._isHost = true;
     return lobbyId;
   },
 
@@ -91,13 +97,14 @@ const ChesMP = {
       guest: uid,
       guestName: name,
       guestAva: isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽'),
-      status: 'playing'
+      guestReady: false
     });
 
     this.lobbyId = lobbyId;
     this.myColor = lobby.color;
     this.opponent = { uid: lobby.host, name: lobby.hostName, ava: lobby.hostAva };
     this.lobbySettings = { mode: lobby.mode || 'classic', timeSec: lobby.timeSec != null ? lobby.timeSec : 300 };
+    this._isHost = false;
     this._listenGame();
     return true;
   },
@@ -145,8 +152,11 @@ const ChesMP = {
       const data = snap.val();
       if(!data) return;
 
-      if(data.status === 'playing' && data.guest && !this.opponent) {
-        this.opponent = { uid: data.guest, name: data.guestName, ava: data.guestAva };
+      if(data.status === 'playing' && !this._started) {
+        this._started = true;
+        if(!this.opponent && data.guest) {
+          this.opponent = { uid: data.guest, name: data.guestName, ava: data.guestAva };
+        }
         if(this._startCallback) this._startCallback(this.opponent);
       }
 
@@ -154,6 +164,8 @@ const ChesMP = {
         if(this._endCallback) this._endCallback(data.winner, data.reason);
         this.cleanup();
       }
+
+      if(this._lobbyUpdateCallback) this._lobbyUpdateCallback(data);
     });
 
     ref.child('moves').on('child_added', snap => {
@@ -204,10 +216,40 @@ const ChesMP = {
     this.myColor = null;
     this.opponent = null;
     this._gameRef = null;
+    this._isHost = false;
+    this._started = false;
+  },
+
+  /* --- Готовность --- */
+  async toggleReady() {
+    if(!firebaseRtdb || !this.lobbyId) return;
+    const uid = ChesAuth.getUid();
+    const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
+    const snap = await ref.once('value');
+    const data = snap.val();
+    if(!data) return;
+    const isHost = data.host === uid;
+    const key = isHost ? 'hostReady' : 'guestReady';
+    await ref.update({ [key]: !data[key] });
+  },
+
+  /* --- Начать игру (только хост) --- */
+  async startGame() {
+    if(!firebaseRtdb || !this.lobbyId || !this._isHost) return;
+    const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
+    const snap = await ref.once('value');
+    const data = snap.val();
+    if(!data || data.host !== ChesAuth.getUid()) return;
+    if(!data.guest || !data.hostReady || !data.guestReady) {
+      toast('Оба игрока должны быть готовы');
+      return;
+    }
+    await ref.update({ status: 'playing' });
   },
 
   /* --- Колбэки --- */
   onMove(fn) { this._moveCallback = fn; },
   onEnd(fn) { this._endCallback = fn; },
-  onStart(fn) { this._startCallback = fn; }
+  onStart(fn) { this._startCallback = fn; },
+  onLobbyUpdate(fn) { this._lobbyUpdateCallback = fn; }
 };

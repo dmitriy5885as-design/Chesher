@@ -313,7 +313,7 @@ const NetUI = {
     const ok = await ChesMP.joinLobby(code);
     if(!ok) { toast('Лобби не найдено или уже занято'); return; }
 
-    this._showLobby(code, 'Игра началась!');
+    this._showLobby(code, 'Подключено! Готовьтесь...');
 
     ChesMP.onStart(opponent => {
       this._startMultiplayerGame();
@@ -336,14 +336,6 @@ const NetUI = {
     const actionsEl = document.getElementById('lobbyActions');
     const playersEl = document.getElementById('lobbyPlayers');
 
-    const modeNames = {classic:'♟ Классика',fischer:'🎲 Фишер 960',meme:'🔫 Мемасия'};
-    const timeNames = {60:'1 мин',120:'2 мин',300:'5 мин',600:'10 мин',900:'15 мин',1200:'20 мин',1500:'25 мин',1800:'30 мин'};
-    const _ls = this._lobbySettings;
-    const modeLabel = _ls && _ls.mode ? (modeNames[_ls.mode] || _ls.mode) : '';
-    const timeLabel = _ls && _ls.timeSec != null ? (timeNames[_ls.timeSec] || _ls.timeSec + ' сек') : '';
-    const settingsInfo = (modeLabel || timeLabel) ?
-      '<div style="color:var(--mut);font-size:12px;margin-top:4px">' + modeLabel + (modeLabel && timeLabel ? ' · ' : '') + timeLabel + '</div>' : '';
-
     if(statusEl) statusEl.textContent = status;
     if(codeEl) codeEl.style.display = '';
     if(idText) {
@@ -352,20 +344,86 @@ const NetUI = {
         navigator.clipboard.writeText(lobbyId).then(() => toast('Код скопирован!'));
       };
     }
+
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
+    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣');
+    const myPid = isGuest ?
+      (ChesAuth.guestPlayerId ? '#' + ChesAuth.guestPlayerId : '') :
+      ((ChesAuth.profile && ChesAuth.profile.playerId) ? '#' + ChesAuth.profile.playerId : '');
+
     if(playersEl) {
-      const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
-      const myPid = isGuest ?
-        (ChesAuth.guestPlayerId ? '  #' + ChesAuth.guestPlayerId : '') :
-        ((ChesAuth.profile && ChesAuth.profile.playerId) ? '  #' + ChesAuth.profile.playerId : '');
       playersEl.innerHTML =
-        '<div style="text-align:center"><div style="font-size:32px">' + (isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣')) + '</div><div style="font-size:12px;color:var(--mut)">' + (isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы')) + myPid + '</div></div>' +
-        settingsInfo +
+        '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + myPid + '</div>' : '') + '</div>' +
         '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
         '<div style="text-align:center;color:var(--mut)"><div style="font-size:32px">❓</div><div style="font-size:12px">Ожидание...</div></div>';
     }
     if(actionsEl) {
       actionsEl.innerHTML =
+        '<div style="color:var(--mut);font-size:13px;text-align:center;margin-bottom:8px">Поделитесь кодом с другом</div>' +
         '<button class="mBtn" onclick="NetUI._showJoinInput()" style="width:100%">Ввести код лобби</button>';
+    }
+
+    // Listen for lobby updates (guest joining, ready status)
+    const self = this;
+    ChesMP.onLobbyUpdate(data => { self._onLobbyUpdate(data); });
+  },
+
+  _onLobbyUpdate(data) {
+    const statusEl = document.getElementById('lobbyStatus');
+    const playersEl = document.getElementById('lobbyPlayers');
+    const actionsEl = document.getElementById('lobbyActions');
+    if(!playersEl || !actionsEl) return;
+
+    if(!playersEl || !actionsEl) return;
+
+    const uid = ChesAuth.getUid();
+    const isHost = data.host === uid;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+
+    if(data.status === 'playing') {
+      if(statusEl) statusEl.textContent = 'Игра началась!';
+      actionsEl.innerHTML = '<div style="color:var(--green);text-align:center;font-size:14px">⚔ Загрузка...</div>';
+      return;
+    }
+
+    const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
+    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣');
+    const myPid = isGuest ?
+      (ChesAuth.guestPlayerId ? '#' + ChesAuth.guestPlayerId : '') :
+      ((ChesAuth.profile && ChesAuth.profile.playerId) ? '#' + ChesAuth.profile.playerId : '');
+    const myReady = isHost ? data.hostReady : data.guestReady;
+
+    // If guest joined — show both players
+    if(data.guest) {
+      const oppName = data.guestName || 'Игрок';
+      const oppAva = data.guestAva || '👽';
+      const oppReady = data.guestReady;
+      const hostReady = data.hostReady;
+
+      if(statusEl) statusEl.textContent = data.status === 'playing' ? 'Игра началась!' : 'Игроки найдены';
+
+      playersEl.innerHTML =
+        '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + myPid + '</div>' : '') + '<div style="font-size:11px;margin-top:4px;color:' + (myReady ? 'var(--green)' : 'var(--mut)') + '">' + (myReady ? '✓ Готов' : '○ Не готов') + '</div></div>' +
+        '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
+        '<div style="text-align:center"><div style="font-size:32px">' + (isHost ? oppAva : data.hostAva || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + (isHost ? oppName : (data.hostName || 'Хост')) + '</div>' + '<div style="font-size:11px;margin-top:4px;color:' + ((isHost ? oppReady : hostReady) ? 'var(--green)' : 'var(--mut)') + '">' + ((isHost ? oppReady : hostReady) ? '✓ Готов' : '○ Не готов') + '</div></div>';
+
+      // Action buttons
+      let btns = '';
+      btns += '<button class="mBtn' + (myReady ? ' primary' : '') + '" id="lobbyReadyBtn" style="width:100%">' + (myReady ? '✓ Готов' : 'Готов') + '</button>';
+      if(isHost) {
+        const bothReady = hostReady && oppReady;
+        btns += '<button class="mBtn primary" id="lobbyStartBtn" style="width:100%;margin-top:6px;opacity:' + (bothReady ? '1' : '.4') + ';pointer-events:' + (bothReady ? 'auto' : 'none') + '">🚀 Начать партию</button>';
+      }
+      actionsEl.innerHTML = btns;
+
+      const readyBtn = document.getElementById('lobbyReadyBtn');
+      if(readyBtn) readyBtn.onclick = () => { ChesMP.toggleReady(); };
+
+      if(isHost) {
+        const startBtn = document.getElementById('lobbyStartBtn');
+        if(startBtn) startBtn.onclick = () => { ChesMP.startGame(); };
+      }
     }
   },
 
