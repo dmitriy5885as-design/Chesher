@@ -1532,7 +1532,8 @@ function renderLobbySetup() {
   renderSeg('lobbyModeSeg', modes, 'mode');
   renderSeg('lobbyColorSeg', colors, 'color');
 
-  // Time slider  const timeMarks = [
+  // Time slider
+  const timeMarks = [
     {v:60, label:'1'},
     {v:180, label:'3'},
     {v:300, label:'5'},
