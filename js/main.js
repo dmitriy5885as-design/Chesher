@@ -60,6 +60,7 @@ function showScreen(id) {
     renderModeList();
   }
 }
+window.showScreen = showScreen;
 
 /* --- Список режимов --- */
 let selectedModeId = null;

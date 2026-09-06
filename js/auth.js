@@ -56,6 +56,7 @@ const ChesAuth = {
   async register(email, password, name) {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.createUserWithEmailAndPassword(email, password);
+    this.user = cred.user;
     await cred.user.updateProfile({ displayName: name });
     await this._createProfile(cred.user.uid, name);
     return cred.user;
@@ -65,6 +66,7 @@ const ChesAuth = {
   async login(email, password) {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.signInWithEmailAndPassword(email, password);
+    this.user = cred.user;
     return cred.user;
   },
 
@@ -73,6 +75,7 @@ const ChesAuth = {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const provider = new firebase.auth.GoogleAuthProvider();
     const cred = await firebaseAuth.signInWithPopup(provider);
+    this.user = cred.user;
     if(cred.additionalUserInfo && cred.additionalUserInfo.isNewUser) {
       const allUsers = await firebaseDB.collection('users').limit(1).get();
       const isFirst = allUsers.empty;
@@ -88,6 +91,7 @@ const ChesAuth = {
   async loginAnon() {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.signInAnonymously();
+    this.user = cred.user;
     try {
       const allUsers = await firebaseDB.collection('users').limit(1).get();
       const isFirst = allUsers.empty;
