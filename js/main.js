@@ -1534,13 +1534,16 @@ function renderLobbySetup() {
 
   // Time slider
   const timeMarks = [
-    {v:60, label:'1'},
-    {v:180, label:'3'},
-    {v:300, label:'5'},
-    {v:600, label:'10'},
-    {v:900, label:'15'},
-    {v:1200, label:'20'},
-    {v:1800, label:'30'},
+    {v:60, label:'1 мин'},
+    {v:180, label:'3 мин'},
+    {v:300, label:'5 мин'},
+    {v:600, label:'10 мин'},
+    {v:900, label:'15 мин'},
+    {v:1200, label:'20 мин'},
+    {v:1800, label:'30 мин'},
+    {v:3600, label:'1 ч'},
+    {v:5400, label:'1.5 ч'},
+    {v:7200, label:'2 ч'},
     {v:0, label:'∞'}
   ];
   const timeBox = document.getElementById('lobbyTimeSeg');
@@ -1587,6 +1590,10 @@ function renderLobbySetup() {
 
 function _formatTime(sec) {
   if(sec === 0) return '∞ Без ограничений';
+  if(sec >= 3600) {
+    const h = sec / 3600;
+    return (h % 1 === 0 ? h : h.toFixed(1)) + ' ч';
+  }
   const m = Math.floor(sec / 60);
   return m + ' мин';
 }
