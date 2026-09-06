@@ -2356,6 +2356,35 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   bind('profBar', () => showScreen('scrProf'));
 
+  // === Deco gun random event ===
+  (function initDecoGuns() {
+    const deco = document.getElementById('decoBg');
+    if(!deco) return;
+    const spans = deco.querySelectorAll('span');
+    if(!spans.length) return;
+
+    function spawnGun() {
+      const piece = spans[Math.floor(Math.random() * spans.length)];
+      if(piece.querySelector('.gunOverlay')) return;
+
+      const gun = document.createElement('span');
+      gun.className = 'gunOverlay';
+      gun.textContent = '🔫';
+      const dirLeft = Math.random() < 0.5;
+      gun.classList.add(dirLeft ? 'flipLeft' : 'flipRight');
+      gun.style.setProperty('--gun-dir', dirLeft ? '-60px' : '60px');
+      piece.style.position = 'relative';
+      piece.appendChild(gun);
+
+      requestAnimationFrame(() => gun.classList.add('show'));
+      setTimeout(() => { gun.remove(); }, 1100);
+    }
+
+    setInterval(() => {
+      if(Math.random() < 0.15) spawnGun();
+    }, 2000);
+  })();
+
   // Multiplayer menu
   bind('mpCreateBtn', async () => {
     await ensureAuth();
@@ -2569,5 +2598,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('scrAuth');
   }
 
-  console.log('CHESHER v0.18.0 alpha — инициализация завершена');
+  console.log('CHESHER v0.19.0 alpha — инициализация завершена');
 });
