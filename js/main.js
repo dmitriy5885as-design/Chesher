@@ -2162,5 +2162,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Show auth screen on first visit
+  const hasVisited = localStorage.getItem('chesher_visited');
+  if(!hasVisited && ChesAuth && !ChesAuth.user) {
+    localStorage.setItem('chesher_visited', '1');
+    showScreen('scrAuth');
+  }
+
   console.log('CHESHER v0.18.0 alpha — инициализация завершена');
 });
