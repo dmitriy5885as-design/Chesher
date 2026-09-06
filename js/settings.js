@@ -803,7 +803,12 @@ function resetAllData() {
     localStorage.removeItem('chesher_profiles');
     localStorage.removeItem('chesher_cfg');
     localStorage.removeItem('chesher_save');
-    location.reload();
+    localStorage.removeItem('chesher_guest_id');
+    if(ChesAuth && typeof ChesAuth.logout === 'function') {
+      ChesAuth.logout().then(() => location.reload());
+    } else {
+      location.reload();
+    }
   }
 }
 
