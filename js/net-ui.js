@@ -327,7 +327,7 @@ const NetUI = {
     const playersEl = document.getElementById('lobbyPlayers');
 
     const modeNames = {classic:'♟ Классика',fischer:'🎲 Фишер 960',meme:'🔫 Мемасия'};
-    const timeNames = {120:'⚡ 2 мин',300:'🔥 5 мин',600:'🎯 10 мин',1800:'♔ 30 мин',0:'∞ Без лимита'};
+    const timeNames = {60:'1 мин',120:'2 мин',300:'5 мин',600:'10 мин',900:'15 мин',1200:'20 мин',1500:'25 мин',1800:'30 мин'};
     const _ls = this._lobbySettings;
     const modeLabel = _ls && _ls.mode ? (modeNames[_ls.mode] || _ls.mode) : '';
     const timeLabel = _ls && _ls.timeSec != null ? (timeNames[_ls.timeSec] || _ls.timeSec + ' сек') : '';

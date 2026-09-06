@@ -1503,21 +1503,24 @@ let _lobbyCfg = { mode: 'classic', timeSec: 300, color: 'random' };
 
 function renderLobbySetup() {
   const modes = [
-    {v:'classic', label:'♟ Классика', sub:'Стандарт'},
-    {v:'meme', label:'🔫 Мемасия', sub:'Нюансы'},
-    {v:'fischer', label:'🎲 Фишер 960', sub:'Рандом'}
+    {v:'classic', label:'♟ Классика'},
+    {v:'meme', label:'🔫 Мемасия'},
+    {v:'fischer', label:'🎲 Фишер 960'}
   ];
   const times = [
-    {v:120, label:'⚡ Пуля', sub:'2 мин'},
-    {v:300, label:'🔥 Блиц', sub:'5 мин'},
-    {v:600, label:'🎯 Рапид', sub:'10 мин'},
-    {v:1800, label:'♔ Классика', sub:'30 мин'},
-    {v:0, label:'∞ Без лимита', sub:'—'}
+    {v:60, label:'1 мин'},
+    {v:120, label:'2 мин'},
+    {v:300, label:'5 мин'},
+    {v:600, label:'10 мин'},
+    {v:900, label:'15 мин'},
+    {v:1200, label:'20 мин'},
+    {v:1500, label:'25 мин'},
+    {v:1800, label:'30 мин'}
   ];
   const colors = [
-    {v:'w', label:'⚪ Белые', sub:'ход первым'},
-    {v:'b', label:'⚫ Чёрные', sub:'ответный ход'},
-    {v:'random', label:'🎲 Случайно', sub:'автоматически'}
+    {v:'w', label:'⚪ Белые'},
+    {v:'b', label:'⚫ Чёрные'},
+    {v:'random', label:'🎲 Случайно'}
   ];
 
   function renderSeg(boxId, items, key) {
@@ -1527,7 +1530,7 @@ function renderLobbySetup() {
     items.forEach(it => {
       const btn = document.createElement('button');
       btn.className = 'segBtn' + (_lobbyCfg[key] === it.v ? ' sel' : '');
-      btn.innerHTML = '<span class="nm">' + it.label + '</span>' + (it.sub ? '<span class="ds">' + it.sub + '</span>' : '');
+      btn.innerHTML = '<span class="nm">' + it.label + '</span>';
       btn.onclick = () => { _lobbyCfg[key] = it.v; renderSeg(boxId, items, key); };
       box.appendChild(btn);
     });
