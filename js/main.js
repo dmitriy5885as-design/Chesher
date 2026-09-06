@@ -2381,7 +2381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setInterval(() => {
-      if(Math.random() < 0.10) spawnGun();
+      if(Math.random() < 0.75) spawnGun();
     }, 5000);
   })();
 
