@@ -230,6 +230,20 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   font-weight:700;font-size:13px;cursor:pointer;transition:.13s;text-align:center}
 .segBtn small{display:block;font-weight:600;font-size:10.5px;margin-top:2px;color:#77716a}
 .segBtn.sel{border-color:var(--green);color:var(--txt);background:rgba(129,182,76,.1)}
+
+/* Time slider */
+.timeSliderWrap{width:100%;padding:8px 0}
+.timeSlider{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);outline:none;cursor:pointer}
+.timeSlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--green);border:2px solid var(--txt);cursor:pointer;transition:.15s}
+.timeSlider::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 0 8px rgba(129,182,76,.5)}
+.timeSlider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--green);border:2px solid var(--txt);cursor:pointer}
+.timeSliderLabels{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:4px}
+.timeSliderMarks{position:relative;height:20px;margin-top:2px}
+.timeMark{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);top:50%;transform:translate(-50%,-50%);cursor:pointer;transition:.15s}
+.timeMark:hover{border-color:var(--green);background:rgba(129,182,76,.2)}
+.timeMark.sel{background:var(--green);border-color:var(--green)}
+.timeSliderValue{text-align:center;font-size:15px;font-weight:700;color:var(--accent);margin-top:6px}
+
 .toggleRow{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
 .toggleLabel{font-size:14px;font-weight:600}
 .toggle{position:relative;width:48px;height:26px;cursor:pointer}

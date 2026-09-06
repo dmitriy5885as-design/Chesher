@@ -1502,23 +1502,13 @@ function handleIncomingMove(move) {
 }
 
 /* --- Настройка лобби --- */
-let _lobbyCfg = { mode: 'classic', timeSec: 300, color: 'random' };
+let _lobbyCfg = { mode: 'classic', timeSec: 600, color: 'random' };
 
 function renderLobbySetup() {
   const modes = [
     {v:'classic', label:'♟ Классика'},
     {v:'meme', label:'🔫 Мемасия'},
     {v:'fischer', label:'🎲 Фишер 960'}
-  ];
-  const times = [
-    {v:60, label:'1 мин'},
-    {v:120, label:'2 мин'},
-    {v:300, label:'5 мин'},
-    {v:600, label:'10 мин'},
-    {v:900, label:'15 мин'},
-    {v:1200, label:'20 мин'},
-    {v:1500, label:'25 мин'},
-    {v:1800, label:'30 мин'}
   ];
   const colors = [
     {v:'w', label:'⚪ Белые'},
@@ -1540,8 +1530,64 @@ function renderLobbySetup() {
   }
 
   renderSeg('lobbyModeSeg', modes, 'mode');
-  renderSeg('lobbyTimeSeg', times, 'timeSec');
   renderSeg('lobbyColorSeg', colors, 'color');
+
+  // Time slider  const timeMarks = [
+    {v:60, label:'1'},
+    {v:180, label:'3'},
+    {v:300, label:'5'},
+    {v:600, label:'10'},
+    {v:900, label:'15'},
+    {v:1200, label:'20'},
+    {v:1800, label:'30'},
+    {v:0, label:'∞'}
+  ];
+  const timeBox = document.getElementById('lobbyTimeSeg');
+  if(timeBox) {
+    const curIdx = timeMarks.findIndex(m => m.v === _lobbyCfg.timeSec);
+    const sliderVal = curIdx >= 0 ? curIdx : 3;
+    timeBox.innerHTML =
+      '<div class="timeSliderWrap">' +
+        '<input type="range" id="lobbyTimeSlider" min="0" max="' + (timeMarks.length - 1) + '" value="' + sliderVal + '" class="timeSlider">' +
+        '<div class="timeSliderLabels">' +
+          '<span>1 мин</span><span>∞</span>' +
+        '</div>' +
+        '<div class="timeSliderMarks" id="timeSliderMarks"></div>' +
+        '<div class="timeSliderValue" id="timeSliderValue">' + _formatTime(_lobbyCfg.timeSec) + '</div>' +
+      '</div>';
+    const slider = document.getElementById('lobbyTimeSlider');
+    const marksEl = document.getElementById('timeSliderMarks');
+    const valEl = document.getElementById('timeSliderValue');
+    if(marksEl) {
+      timeMarks.forEach((m, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'timeMark' + (i === sliderVal ? ' sel' : '');
+        dot.style.left = (i / (timeMarks.length - 1) * 100) + '%';
+        dot.title = m.v === 0 ? 'Бесконечно' : m.label + ' мин';
+        dot.onclick = () => {
+          slider.value = i;
+          _lobbyCfg.timeSec = timeMarks[i].v;
+          valEl.textContent = _formatTime(timeMarks[i].v);
+          marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === i));
+        };
+        marksEl.appendChild(dot);
+      });
+    }
+    if(slider) {
+      slider.oninput = () => {
+        const idx = parseInt(slider.value);
+        _lobbyCfg.timeSec = timeMarks[idx].v;
+        valEl.textContent = _formatTime(timeMarks[idx].v);
+        marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === idx));
+      };
+    }
+  }
+}
+
+function _formatTime(sec) {
+  if(sec === 0) return '∞ Без ограничений';
+  const m = Math.floor(sec / 60);
+  return m + ' мин';
 }
 
 function startLobbyFromSetup() {
