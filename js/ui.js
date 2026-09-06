@@ -164,16 +164,18 @@ function refreshBars() {
     if(elNmTop) elNmTop.textContent = 'Соперник';
   }
 
-  if(elNameBot) elNameBot.textContent = (cu.ava || '') + ' ' + (cu.name || 'Игрок') + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (cu.playerId ? '  #' + cu.playerId : '');
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
+  if(elNameBot) elNameBot.textContent = (cu.ava || '') + ' ' + (cu.name || 'Игрок') + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
 
   // Update avatar in player card
   const elAvaBot = document.getElementById('avaBot');
   const elNmBot = document.getElementById('nmBot');
   if(elAvaBot) {
-    if(cu.customAva) {
+    if(!isGuest && cu.customAva) {
       elAvaBot.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      elAvaBot.textContent = cu.ava || '🐣';
+      elAvaBot.textContent = isGuest ? '🐣' : (cu.ava || '🐣');
     }
   }
   if(elNmBot) elNmBot.textContent = cu.name || 'Игрок';
@@ -277,7 +279,12 @@ function renderProfBar() {
       pbAva.textContent = isGuest ? '🐣' : (cu.ava || '🐣');
     }
   }
-  if(pbName) pbName.innerHTML = isGuest ? 'Гость' : ((cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '') + (cu.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span>' : ''));
+  if(isGuest) {
+    if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
+    if(pbName) pbName.innerHTML = 'Гость <span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span>';
+  } else {
+    if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '') + (cu.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span>' : '');
+  }
   
   if(isGuest) {
     if(pbSub) pbSub.innerHTML = '<span style="color:var(--mut)">Войдите для сохранения</span>';
@@ -324,11 +331,13 @@ function renderProfScr() {
   // Show playerId in profile header
   const profHeader = document.getElementById('profHeader');
   if(profHeader) {
-    if(cu && cu.playerId) {
+    const isGuestProf = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    const displayId = isGuestProf ? ChesAuth.guestPlayerId : (cu && cu.playerId);
+    if(displayId) {
       profHeader.innerHTML = '<div style="text-align:center;padding:8px;margin-bottom:8px;background:var(--panel2);border-radius:10px;border:1px solid var(--line)">' +
-        '<div style="color:var(--mut);font-size:11px;margin-bottom:2px">Ваш ID</div>' +
-        '<div style="font-size:18px;font-weight:700;color:var(--accent);letter-spacing:1px">#' + cu.playerId + '</div>' +
-        '<div style="color:var(--mut);font-size:10px;margin-top:2px">Используйте для добавления в друзья</div>' +
+        '<div style="color:var(--mut);font-size:11px;margin-bottom:2px">' + (isGuestProf ? 'Гостевой ID' : 'Ваш ID') + '</div>' +
+        '<div style="font-size:18px;font-weight:700;color:var(--accent);letter-spacing:1px">#' + displayId + '</div>' +
+        '<div style="color:var(--mut);font-size:10px;margin-top:2px">' + (isGuestProf ? 'Сменяется при обновлении' : 'Используйте для добавления в друзья') + '</div>' +
         '</div>';
     } else {
       profHeader.innerHTML = '';

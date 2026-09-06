@@ -352,9 +352,12 @@ const NetUI = {
       };
     }
     if(playersEl) {
-      const myPid = (ChesAuth.profile && ChesAuth.profile.playerId) ? '  #' + ChesAuth.profile.playerId : '';
+      const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+      const myPid = isGuest ?
+        (ChesAuth.guestPlayerId ? '  #' + ChesAuth.guestPlayerId : '') :
+        ((ChesAuth.profile && ChesAuth.profile.playerId) ? '  #' + ChesAuth.profile.playerId : '');
       playersEl.innerHTML =
-        '<div style="text-align:center"><div style="font-size:32px">' + (ChesAuth.profile ? ChesAuth.profile.ava : '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + (ChesAuth.profile ? ChesAuth.profile.name : 'Вы') + myPid + '</div></div>' +
+        '<div style="text-align:center"><div style="font-size:32px">' + (isGuest ? '🐣' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣')) + '</div><div style="font-size:12px;color:var(--mut)">' + (isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы')) + myPid + '</div></div>' +
         settingsInfo +
         '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
         '<div style="text-align:center;color:var(--mut)"><div style="font-size:32px">❓</div><div style="font-size:12px">Ожидание...</div></div>';
@@ -374,10 +377,13 @@ const NetUI = {
     // Start a local game with the MP state
     const opponent = ChesMP.opponent;
     if(opponent) {
+      const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+      const myAva = isGuest ? '🐣' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣');
+      const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
       const playersEl = document.getElementById('lobbyPlayers');
       if(playersEl) {
         playersEl.innerHTML =
-          '<div style="text-align:center"><div style="font-size:32px">' + (ChesAuth.profile ? ChesAuth.profile.ava : '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + (ChesAuth.profile ? ChesAuth.profile.name : 'Вы') + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
+          '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
           '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
           '<div style="text-align:center"><div style="font-size:32px">' + (opponent.ava || '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + opponent.name + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
       }

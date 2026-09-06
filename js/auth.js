@@ -8,11 +8,20 @@ const ChesAuth = {
   user: null,
   profile: null,
   listeners: [],
+  guestPlayerId: null,
 
   /* --- Генерация уникального ID игрока --- */
   _genPlayerId() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let id = 'CHS-';
+    for(let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+    return id;
+  },
+
+  /* --- Генерация гостевого ID --- */
+  _genGuestPlayerId() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let id = 'CHSg';
     for(let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
     return id;
   },
