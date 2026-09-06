@@ -1,0 +1,86 @@
+/* ============================
+   ЧЕШЕР — Анимации
+    Версия: v0.16.5
+   ============================ */
+
+/* --- Анимации эмодзи --- */
+@keyframes popE{
+  0%{transform:scale(.3)}
+  50%{transform:scale(1.2)}
+  100%{transform:scale(1)}
+}
+
+/* --- Анимация полета эмодзи --- */
+@keyframes flyE{
+  0%{transform:translate(-50%,-50%) scale(.3);opacity:1}
+  100%{transform:translate(-50%,-180%) scale(1.5);opacity:0}
+}
+
+/* --- Анимация чата --- */
+@keyframes chatIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* --- Анимация捕获 фигуры --- */
+@keyframes capPop{
+  to{transform:scale(1.55);opacity:0}
+}
+
+/* --- Анимация превращения пешки --- */
+@keyframes promoF{
+  0%{transform:scale(.25) rotate(-30deg)}
+  65%{transform:scale(1.3)}
+  100%{transform:scale(1)}
+}
+
+/* --- Анимация捕获 фигуры (переворот) --- */
+@keyframes capPopF{
+  to{transform:rotate(180deg) scale(1.55);opacity:0}
+}
+
+/* --- CSS классы для анимаций --- */
+.capAnim{
+  position:absolute;pointer-events:none;z-index:30;
+  animation:capPop .32s ease-out forwards;
+}
+.promoAnim{
+  position:absolute;pointer-events:none;z-index:30;
+  animation:promoF .42s ease-out forwards;
+}
+
+/* Meme gun */
+.memeGun{
+  position:fixed;pointer-events:none;z-index:2000;
+}
+.memeGun img{
+  width:100%;height:100%;object-fit:contain;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.7));
+}
+.memeGun--spin{
+  animation:gunSpin .8s cubic-bezier(.22,1,.36,1) forwards;
+}
+.memeGun--fade{
+  transition:opacity .35s ease-out;
+  opacity:0!important;
+}
+@keyframes gunSpin{
+  0%{transform:rotate(var(--ta))}
+  100%{transform:rotate(calc(var(--ta) + 360deg))}
+}
+
+/* Meme check video */
+.memeCheckVideo{
+  position:fixed;overflow:hidden;z-index:2000;
+  border-radius:4px;pointer-events:none;
+}
+.memeCheckVideo video{
+  width:100%;height:100%;object-fit:cover;
+}
+.memeCheckVideo--fade{
+  animation:memeCheckFade .4s ease-out forwards;
+}
+@keyframes memeCheckFade{
+  0%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.2)}
+}
