@@ -142,14 +142,14 @@ const NetUI = {
         if(cu.customAva) {
           pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
         } else {
-          pbAva.textContent = cu.ava || '🐣';
+          pbAva.textContent = cu.ava || '👽';
         }
       }
       if(pbSub) pbSub.textContent = 'Онлайн';
       if(mAuthBtn) mAuthBtn.style.display = 'none';
     } else {
       if(pbName) pbName.textContent = 'Гость';
-      if(pbAva) pbAva.textContent = '🐣';
+      if(pbAva) pbAva.textContent = '👽';
       if(pbSub) pbSub.textContent = 'Войдите для сохранения';
       if(mAuthBtn) mAuthBtn.style.display = '';
     }
@@ -347,7 +347,7 @@ const NetUI = {
 
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
     const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
-    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣');
+    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
     const myPid = isGuest ?
       (ChesAuth.guestPlayerId ? '#' + ChesAuth.guestPlayerId : '') :
       ((ChesAuth.profile && ChesAuth.profile.playerId) ? '#' + ChesAuth.profile.playerId : '');
@@ -388,7 +388,7 @@ const NetUI = {
     }
 
     const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
-    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣');
+    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
     const myPid = isGuest ?
       (ChesAuth.guestPlayerId ? '#' + ChesAuth.guestPlayerId : '') :
       ((ChesAuth.profile && ChesAuth.profile.playerId) ? '#' + ChesAuth.profile.playerId : '');
@@ -437,14 +437,14 @@ const NetUI = {
     const opponent = ChesMP.opponent;
     if(opponent) {
       const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
-      const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '🐣');
+      const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
       const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
       const playersEl = document.getElementById('lobbyPlayers');
       if(playersEl) {
         playersEl.innerHTML =
           '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
           '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
-          '<div style="text-align:center"><div style="font-size:32px">' + (opponent.ava || '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + opponent.name + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
+          '<div style="text-align:center"><div style="font-size:32px">' + (opponent.ava || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + opponent.name + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
       }
 
       const actionsEl = document.getElementById('lobbyActions');

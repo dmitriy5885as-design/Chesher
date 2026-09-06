@@ -140,7 +140,7 @@ const ChesAuth = {
       const playerId = isAnon ? null : await this._createUniquePlayerId();
       const data = {
         name: name,
-        ava: '🐣',
+        ava: '👽',
         coins: 50,
         gems: 0,
         elo: 0,

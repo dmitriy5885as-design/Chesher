@@ -24,7 +24,7 @@ const ChesFriends = {
     nameSnap.forEach(doc => {
       const d = doc.data();
       seen.add(doc.id);
-      results.push({ uid: doc.id, name: d.name, ava: d.ava || '🐣', elo: d.elo || 0, playerId: d.playerId || null });
+      results.push({ uid: doc.id, name: d.name, ava: d.ava || '👽', elo: d.elo || 0, playerId: d.playerId || null });
     });
 
     // Also search by UID (if query looks like a UID — at least 8 chars)
@@ -33,7 +33,7 @@ const ChesFriends = {
         const uidDoc = await firebaseDB.collection('users').doc(query).get();
         if(uidDoc.exists) {
           const d = uidDoc.data();
-          results.unshift({ uid: uidDoc.id, name: d.name, ava: d.ava || '🐣', elo: d.elo || 0 });
+          results.unshift({ uid: uidDoc.id, name: d.name, ava: d.ava || '👽', elo: d.elo || 0 });
         }
       } catch(e) {}
     }
@@ -116,7 +116,7 @@ const ChesFriends = {
       const snap = await firebaseDB.collection('users').doc(uid).get();
       if(snap.exists) {
         const d = snap.data();
-        friends.push({ uid, name: d.name, ava: d.ava || '🐣', elo: d.elo || 0, online: false });
+        friends.push({ uid, name: d.name, ava: d.ava || '👽', elo: d.elo || 0, online: false });
       }
     }
 
@@ -147,7 +147,7 @@ const ChesFriends = {
       const snap = await firebaseDB.collection('users').doc(uid).get();
       if(snap.exists) {
         const d = snap.data();
-        requests.push({ uid, name: d.name, ava: d.ava || '🐣', elo: d.elo || 0 });
+        requests.push({ uid, name: d.name, ava: d.ava || '👽', elo: d.elo || 0 });
       }
     }
     return requests;

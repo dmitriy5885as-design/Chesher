@@ -1856,7 +1856,7 @@ function renderLeaderboard(mode) {
       return {
         id: p.id,
         name: p.name,
-        ava: p.ava || '🐣',
+        ava: p.ava || '👽',
         rating: rating,
         games: (p.st && p.st.games) || 0,
         wins: (p.st && p.st.wins) || 0,

@@ -185,7 +185,7 @@ function refreshBars() {
     if(!isGuest && cu.customAva) {
       elAvaBot.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      elAvaBot.textContent = isGuest ? '👽' : (cu.ava || '🐣');
+      elAvaBot.textContent = isGuest ? '👽' : (cu.ava || '👽');
     }
   }
   if(elNmBot) elNmBot.textContent = cu.name || 'Игрок';
@@ -290,7 +290,7 @@ function renderProfBar() {
     if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      pbAva.textContent = isGuest ? '👽' : (cu.ava || '🐣');
+      pbAva.textContent = isGuest ? '👽' : (cu.ava || '👽');
     }
   }
   if(isGuest) {
@@ -403,13 +403,13 @@ function renderProfScr() {
       avaPreview.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover">';
       avaClear.style.display = '';
     } else {
-      avaPreview.innerHTML = cu.ava || '🐣';
+      avaPreview.innerHTML = cu.ava || '👽';
       avaClear.style.display = 'none';
     }
     avaSave.style.display = 'none';
 
     // Suggested avatars
-    const suggested = ['🐣','🦊','🐸','🐼','🦁','🐺','🦉','🐙','🦄','🐲','👽','🤖','💀','🎃','♔','♞','🐶','🐱','🐵','🦅','🐬','🦋','🌸','🔥','💎','🎯','🚀','⚡','🌈','🍕','🎸','👑','🏆','♟'];
+    const suggested = ['👽','👽','🦊','🐸','🐼','🦁','🐺','🦉','🐙','🦄','🐲','🤖','💀','🎃','♔','♞','🐶','🐱','🐵','🦅','🐬','🦋','🌸','🔥','💎','🎯','🚀','⚡','🌈','🍕','🎸','👑','🏆','♟'];
     if(avaSuggested) {
       avaSuggested.innerHTML = '';
       suggested.forEach(em => {
@@ -489,13 +489,13 @@ function renderProfScr() {
     if(avaClear) {
       avaClear.onclick = () => {
         cu.customAva = null;
-        cu.ava = '🐣';
+        cu.ava = '👽';
         pendingAva = null;
         saveProfiles();
         if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
-          ChesAuth.updateProfile({ customAva: null, ava: '🐣' });
+          ChesAuth.updateProfile({ customAva: null, ava: '👽' });
         }
-        avaPreview.innerHTML = '🐣';
+        avaPreview.innerHTML = '👽';
         avaClear.style.display = 'none';
         avaSave.style.display = 'none';
         renderProfScr();

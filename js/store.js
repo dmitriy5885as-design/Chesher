@@ -264,7 +264,7 @@ const STICKERS = {
 
 /* --- Аватарки --- */
 const AVATARS = {
-  default: {name: 'Стандарт', price: 0, emoji: '🐣'},
+  default: {name: 'Стандарт', price: 0, emoji: '👽'},
   cat: {name: 'Кот', price: 80, emoji: '🐱'},
   dog: {name: 'Собака', price: 80, emoji: '🐶'},
   lion: {name: 'Лев', price: 120, emoji: '🦁'},

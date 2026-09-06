@@ -17,8 +17,8 @@
 
 /* --- Константы --- */
 const DEFAULT_AVATARS = [
-  '🐣','🦊','🐸','🐼','🦁','🐺','🦉','🐙',
-  '🦄','🐲','👽','🤖','💀','🎃','♔','♞'
+  '👽','🐣','🦊','🐸','🐼','🦁','🐺','🦉','🐙',
+  '🦄','🐲','🤖','💀','🎃','♔','♞'
 ];
 
 const DEFAULT_START_STATS = {
@@ -258,7 +258,7 @@ const ProfilesManager = {
     const firstId = 'p' + Date.now().toString(36);
     const firstProfile = new Profile(firstId, {
       name: 'Гость',
-      ava: '🐣',
+      ava: '👽',
       coins: 50
     });
     this.profiles = [firstProfile];

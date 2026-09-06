@@ -118,7 +118,7 @@ const ChesMP = {
     await invRef.set({
       from: uid,
       fromName: name,
-      fromAva: ChesAuth.profile ? ChesAuth.profile.ava : '🐣',
+      fromAva: ChesAuth.profile ? ChesAuth.profile.ava : '👽',
       createdAt: Date.now()
     });
     return true;
