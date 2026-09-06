@@ -2640,5 +2640,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('scrAuth');
   }
 
-  console.log('CHESHER v0.19.0 alpha — инициализация завершена');
+  console.log('CHESHER v0.20.0 alpha — инициализация завершена');
 });
