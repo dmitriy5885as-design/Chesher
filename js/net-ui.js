@@ -149,7 +149,7 @@ const NetUI = {
       if(mAuthBtn) mAuthBtn.style.display = 'none';
     } else {
       if(pbName) pbName.textContent = 'Гость';
-      if(pbAva) pbAva.textContent = '👤';
+      if(pbAva) pbAva.textContent = '🐣';
       if(pbSub) pbSub.textContent = 'Войдите для сохранения';
       if(mAuthBtn) mAuthBtn.style.display = '';
     }

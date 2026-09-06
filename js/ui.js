@@ -274,7 +274,7 @@ function renderProfBar() {
     if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      pbAva.textContent = isGuest ? '👤' : (cu.ava || '🐣');
+      pbAva.textContent = isGuest ? '🐣' : (cu.ava || '🐣');
     }
   }
   if(pbName) pbName.innerHTML = isGuest ? 'Гость' : ((cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '') + (cu.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span>' : ''));
