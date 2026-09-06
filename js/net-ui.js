@@ -113,9 +113,17 @@ const NetUI = {
     if(ChesAuth.profile.playerId) {
       cu.playerId = ChesAuth.profile.playerId;
     } else if(!cu.playerId && ChesAuth.user && !ChesAuth.user.isAnonymous) {
-      // Generate playerId for existing users who don't have one
       cu.playerId = ChesAuth._genPlayerId();
       ChesAuth.updateProfile({ playerId: cu.playerId });
+    }
+    if(ChesAuth.profile.admin) {
+      cu.admin = true;
+    }
+    if(ChesAuth.profile.wins) {
+      cu.st.wins = ChesAuth.profile.wins;
+    }
+    if(ChesAuth.profile.games) {
+      cu.st.games = ChesAuth.profile.games;
     }
     saveProfiles();
     renderProfBar();
