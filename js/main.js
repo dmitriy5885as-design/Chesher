@@ -2021,6 +2021,9 @@ document.addEventListener('DOMContentLoaded', () => {
   syncThemeUI();
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.init();
 
+  // Generate guest ID immediately
+  if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
+
   // Check for saved game
   const savedGame = ChessEngine.loadFromStorage();
   const resumeBtn = document.getElementById('mResume');

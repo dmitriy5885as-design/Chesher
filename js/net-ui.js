@@ -150,7 +150,7 @@ const NetUI = {
     } else {
       if(pbName) pbName.textContent = 'Гость';
       if(pbAva) pbAva.textContent = '👽';
-      if(pbSub) pbSub.textContent = 'Войдите для сохранения';
+      if(pbSub) pbSub.textContent = '';
       if(mAuthBtn) mAuthBtn.style.display = '';
     }
   },

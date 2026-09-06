@@ -296,7 +296,7 @@ function renderProfBar() {
   if(isGuest) {
     if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
     if(pbName) pbName.textContent = 'Гость';
-    if(pbSub) pbSub.innerHTML = '<span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span> · <span style="color:var(--mut)">Войдите для сохранения</span>';
+    if(pbSub) pbSub.innerHTML = '<span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span>';
   } else {
     if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
     if(pbSub) pbSub.innerHTML = (cu.playerId ? '<span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span> · ' : '') + (cu.winrate || 0) + '% winrate · ' + (cu.st.games || 0) + ' партий';
