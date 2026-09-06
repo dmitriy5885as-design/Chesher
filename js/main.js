@@ -1540,9 +1540,19 @@ function renderLobbySetup() {
 
 function startLobbyFromSetup() {
   ensureAuth().then(() => {
+    if(!ChesAuth.user) {
+      toast('Не удалось войти. Попробуйте снова.');
+      return;
+    }
     NetUI._lobbySettings = _lobbyCfg;
     NetUI._showLobby('Создание...', 'Создаём лобби...');
+    showScreen('scrLobby');
     ChesMP.createLobby(_lobbyCfg).then(id => {
+      if(!id) {
+        toast('Ошибка создания лобби. Проверьте подключение.');
+        showScreen('scrMulti');
+        return;
+      }
       NetUI._lobbyId = id;
       NetUI._showLobby(id, 'Ожидание соперника...');
       ChesMP.onStart(opponent => { NetUI._startMultiplayerGame(); });
@@ -1551,7 +1561,10 @@ function startLobbyFromSetup() {
         const result = winner === ChesMP.myColor ? 'win' : 'loss';
         NetUI._onMultiplayerEnd(result, reason);
       });
-      showScreen('scrLobby');
+    }).catch(e => {
+      console.error('createLobby error:', e);
+      toast('Ошибка: ' + e.message);
+      showScreen('scrMulti');
     });
   });
 }
@@ -1950,9 +1963,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Multiplayer menu
   async function ensureAuth() {
     if(!ChesAuth.user) {
-      try { await ChesAuth.loginAnon(); } catch(e) {}
+      try {
+        await ChesAuth.loginAnon();
+      } catch(e) {
+        console.error('ensureAuth loginAnon error:', e);
+        toast('Ошибка авторизации: ' + e.message);
+      }
     }
-    ChesMP.setOnline();
+    if(ChesAuth.user) {
+      ChesMP.setOnline();
+    }
   }
   bind('mpCreateBtn', () => {
     showScreen('scrLobbySetup');

@@ -31,7 +31,14 @@ const ChesMP = {
 
   /* --- Создать лобби (хост) --- */
   async createLobby(settings) {
-    if(!firebaseRtdb || !ChesAuth.user) return null;
+    if(!firebaseRtdb) {
+      console.error('createLobby: firebaseRtdb not initialized');
+      return null;
+    }
+    if(!ChesAuth.user) {
+      console.error('createLobby: user not authenticated');
+      return null;
+    }
     const uid = ChesAuth.getUid();
     const name = ChesAuth.profile ? ChesAuth.profile.name : 'Игрок';
     const lobbyRef = firebaseRtdb.ref('lobbies').push();
