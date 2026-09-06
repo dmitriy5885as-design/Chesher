@@ -2356,6 +2356,35 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   bind('profBar', () => showScreen('scrProf'));
 
+  // === Deco: random scatter pieces ===
+  (function initDecoScatter() {
+    const deco = document.getElementById('decoBg');
+    if(!deco) return;
+    const spans = deco.querySelectorAll('span');
+    if(!spans.length) return;
+
+    const placed = [];
+    const pieceSize = 70;
+
+    spans.forEach((el, i) => {
+      const sz = 30 + Math.random() * 50;
+      el.style.fontSize = sz + 'px';
+      el.style.animationDelay = (Math.random() * 6).toFixed(1) + 's';
+      el.style.animationDuration = (4 + Math.random() * 4).toFixed(1) + 's';
+
+      let x, y, tries = 0;
+      do {
+        x = Math.random() * 90;
+        y = Math.random() * 90;
+        tries++;
+      } while(tries < 50 && placed.some(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 10));
+
+      placed.push({ x, y });
+      el.style.left = x + '%';
+      el.style.top = y + '%';
+    });
+  })();
+
   // === Deco gun random event ===
   (function initDecoGuns() {
     const deco = document.getElementById('decoBg');
