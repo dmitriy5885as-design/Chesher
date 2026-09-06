@@ -1627,6 +1627,7 @@ function startLobbyFromSetup() {
         const result = winner === ChesMP.myColor ? 'win' : 'loss';
         NetUI._onMultiplayerEnd(result, reason);
       });
+      ChesMP._listenGame();
     }).catch(e => {
       console.error('createLobby error:', e);
       toast('❌ Ошибка: ' + (e.message || e));

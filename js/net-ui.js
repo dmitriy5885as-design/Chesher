@@ -297,6 +297,7 @@ const NetUI = {
       const result = winner === ChesMP.myColor ? 'win' : 'loss';
       this._onMultiplayerEnd(result, reason);
     });
+    ChesMP._listenGame();
 
     // Send invite
     await ChesFriends.inviteFriend(friendUid);

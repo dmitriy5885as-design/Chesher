@@ -40,7 +40,9 @@ const ChesMP = {
       return null;
     }
     const uid = ChesAuth.getUid();
-    const name = ChesAuth.profile ? ChesAuth.profile.name : 'Игрок';
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    const name = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
+    const ava = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
     const lobbyRef = firebaseRtdb.ref('lobbies').push();
     const lobbyId = lobbyRef.key;
 
@@ -53,7 +55,7 @@ const ChesMP = {
     await lobbyRef.set({
       host: uid,
       hostName: name,
-      hostAva: ChesAuth.profile ? ChesAuth.profile.ava : '🐣',
+      hostAva: ava,
       guest: null,
       guestName: null,
       guestAva: null,
@@ -76,7 +78,8 @@ const ChesMP = {
   async joinLobby(lobbyId) {
     if(!firebaseRtdb || !ChesAuth.user) return false;
     const uid = ChesAuth.getUid();
-    const name = ChesAuth.profile ? ChesAuth.profile.name : 'Игрок';
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    const name = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
     const lobbyRef = firebaseRtdb.ref('lobbies/' + lobbyId);
     const snap = await lobbyRef.once('value');
     const lobby = snap.val();
@@ -87,7 +90,7 @@ const ChesMP = {
     await lobbyRef.update({
       guest: uid,
       guestName: name,
-      guestAva: ChesAuth.profile ? ChesAuth.profile.ava : '👽',
+      guestAva: isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽'),
       status: 'playing'
     });
 
