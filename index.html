@@ -523,13 +523,50 @@
   <button class="helpBtn" id="helpBtn" title="Помощь новым игрокам">?</button>
   <button class="giftBtn" id="giftBtn" title="Ежедневный подарок">🎁</button>
 
-  <!-- Кнопка дев-блога + валюта -->
+  <!-- Девблог — левый верх -->
+  <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">📝</button>
+
+  <!-- Валюта — правый ниж -->
   <div class="cornerFloat" id="cornerFloat">
     <span class="coinChip" id="pbCoins" style="margin:0">🪙 0</span>
     <span class="coinChip gemChip" id="pbGems" style="margin:0">💎 0</span>
-    <button class="devblogBtn" id="devblogBtn" title="Dev Blog">📝</button>
   </div>
+
+  <!-- Друзья — левый низ -->
+  <button class="friendsFloatBtn" id="friendsFloatBtn" title="Друзья">👥</button>
   <button class="devblogBtn cheatBtn" id="cheatBtn" title="Dev Tools" style="display:none">🔧</button>
+  
+  <!-- Панель друзей -->
+  <div class="friendsPanel" id="friendsPanel">
+    <div class="fpHeader">
+      <span class="fpTitle">👥 Друзья</span>
+      <button class="fpClose" id="fpClose">✕</button>
+    </div>
+    <div class="fpSearch">
+      <input type="text" id="fpSearchInput" placeholder="Найти друга..." maxlength="30">
+      <button class="fpSearchBtn" id="fpSearchBtn">🔍</button>
+    </div>
+    <div class="fpSearchResults" id="fpSearchResults"></div>
+    <div class="fpRequests" id="fpRequests"></div>
+    <div class="fpList" id="fpList">
+      <div class="fpEmpty">Добавьте друзей, чтобы начать общение</div>
+    </div>
+  </div>
+
+  <!-- Чат с другом -->
+  <div class="friendChatPanel" id="friendChatPanel">
+    <div class="fcHeader">
+      <button class="fcBack" id="fcBack">←</button>
+      <span class="fcName" id="fcName">Друг</span>
+      <div class="fcStatus" id="fcStatus"></div>
+      <button class="fpClose" id="fcClose">✕</button>
+    </div>
+    <div class="fcMessages" id="fcMessages"></div>
+    <div class="fcInput">
+      <input type="text" id="fcInput" placeholder="Сообщение..." maxlength="200">
+      <button class="fcSend" id="fcSend">➤</button>
+    </div>
+  </div>
   
   <!-- Cheat panel -->
   <div class="cheatPanel" id="cheatPanel">

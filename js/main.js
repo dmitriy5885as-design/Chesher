@@ -34,6 +34,16 @@ function showScreen(id) {
   if(helpBtn) helpBtn.style.display = id === 'scrMenu' ? '' : 'none';
   const giftBtn = document.getElementById('giftBtn');
   if(giftBtn) giftBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  const devblogBtnEl = document.getElementById('devblogBtn');
+  if(devblogBtnEl) devblogBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const friendsBtn = document.getElementById('friendsFloatBtn');
+  if(friendsBtn) friendsBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  if(id !== 'scrMenu') {
+    const fp = document.getElementById('friendsPanel');
+    const fc = document.getElementById('friendChatPanel');
+    if(fp) fp.classList.remove('open');
+    if(fc) fc.classList.remove('open');
+  }
   const chBtn = document.getElementById('cheatBtn');
   const chPanel = document.getElementById('cheatPanel');
   if(chBtn && id !== 'scrMenu') chBtn.style.display = 'none';
@@ -2103,6 +2113,242 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGiftBtn();
     toast('🎁 Ежедневный подарок: +' + coins + ' 🪙' + (gems ? ' +1 💎' : ''));
   });
+
+  // === Friends panel ===
+  let _fpOpen = false;
+  let _fcOpen = false;
+  let _fcChatUid = null;
+  let _fcChatUnsub = null;
+
+  function toggleFriendsPanel() {
+    const panel = document.getElementById('friendsPanel');
+    const chatPanel = document.getElementById('friendChatPanel');
+    if(!panel) return;
+    _fpOpen = !_fpOpen;
+    if(_fpOpen) {
+      if(chatPanel) chatPanel.classList.remove('open');
+      _fcOpen = false;
+      panel.classList.add('open');
+      loadFriendsList();
+      loadFriendRequests();
+    } else {
+      panel.classList.remove('open');
+    }
+  }
+
+  async function loadFriendsList() {
+    const list = document.getElementById('fpList');
+    if(!list) return;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) { list.innerHTML = '<div class="fpEmpty">Войдите, чтобы видеть друзей</div>'; return; }
+
+    list.innerHTML = '<div class="fpEmpty">Загрузка...</div>';
+    try {
+      const friends = await ChesFriends.getFriends();
+      if(!friends.length) { list.innerHTML = '<div class="fpEmpty">Добавьте друзей, чтобы начать общение</div>'; return; }
+      list.innerHTML = friends.map(f => {
+        const chatId = [ChesAuth.getUid(), f.uid].sort().join('_');
+        return '<div class="fpItem" data-uid="' + f.uid + '">' +
+          '<div class="fpAva">' + f.ava + '</div>' +
+          '<div class="fpInfo"><div class="fpNm">' + f.name + '</div>' +
+          '<div class="fpSub">' + f.elo + ' эло</div></div>' +
+          '<div class="fpOnline ' + (f.online ? 'on' : 'off') + '"></div>' +
+          '<div class="fpActions">' +
+            '<button class="fpChatBtn" data-uid="' + f.uid + '" data-name="' + f.name + '" title="Написать">💬</button>' +
+            '<button class="fpRemoveBtn" data-uid="' + f.uid + '" data-name="' + f.name + '" title="Удалить">✕</button>' +
+          '</div></div>';
+      }).join('');
+
+      list.querySelectorAll('.fpChatBtn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          openFriendChat(btn.dataset.uid, btn.dataset.name);
+        });
+      });
+      list.querySelectorAll('.fpRemoveBtn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+          e.stopPropagation();
+          if(confirm('Удалить ' + btn.dataset.name + ' из друзей?')) {
+            await ChesFriends.removeFriend(btn.dataset.uid);
+            loadFriendsList();
+            toast(btn.dataset.name + ' удалён из друзей');
+          }
+        });
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="fpEmpty">Ошибка загрузки</div>';
+    }
+  }
+
+  async function loadFriendRequests() {
+    const el = document.getElementById('fpRequests');
+    if(!el) return;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) { el.innerHTML = ''; return; }
+
+    try {
+      const requests = await ChesFriends.getRequests();
+      if(!requests.length) { el.innerHTML = ''; return; }
+      el.innerHTML = requests.map(r =>
+        '<div class="fpReqItem">' +
+          '<div class="fpAva" style="font-size:20px">' + r.ava + '</div>' +
+          '<div class="fpInfo"><div class="fpNm">' + r.name + '</div></div>' +
+          '<div class="fpReqBtns">' +
+            '<button class="fpAccept" data-uid="' + r.uid + '">✓</button>' +
+            '<button class="fpReject" data-uid="' + r.uid + '">✕</button>' +
+          '</div></div>'
+      ).join('');
+
+      el.querySelectorAll('.fpAccept').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await ChesFriends.acceptRequest(btn.dataset.uid);
+          loadFriendsList();
+          loadFriendRequests();
+          toast('Заявка принята!');
+        });
+      });
+      el.querySelectorAll('.fpReject').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await ChesFriends.rejectRequest(btn.dataset.uid);
+          loadFriendRequests();
+        });
+      });
+    } catch(e) { el.innerHTML = ''; }
+  }
+
+  function openFriendChat(uid, name) {
+    const panel = document.getElementById('friendChatPanel');
+    const fpPanel = document.getElementById('friendsPanel');
+    const nameEl = document.getElementById('fcName');
+    const statusEl = document.getElementById('fcStatus');
+    const msgsEl = document.getElementById('fcMessages');
+    if(!panel) return;
+
+    _fcOpen = true;
+    _fcChatUid = uid;
+    if(fpPanel) fpPanel.classList.remove('open');
+    _fpOpen = false;
+    panel.classList.add('open');
+    if(nameEl) nameEl.textContent = name;
+    if(msgsEl) msgsEl.innerHTML = '<div class="fcEmpty">Загрузка...</div>';
+
+    const chatId = [ChesAuth.getUid(), uid].sort().join('_');
+    const chatRef = firebaseRtdb ? firebaseRtdb.ref('friendChats/' + chatId) : null;
+
+    if(chatRef) {
+      chatRef.limitToLast(50).on('value', snap => {
+        const data = snap.val() || {};
+        const msgs = Object.values(data).sort((a, b) => a.ts - b.ts);
+        if(!msgsEl) return;
+        if(!msgs.length) { msgsEl.innerHTML = '<div class="fcEmpty">Начните переписку!</div>'; return; }
+        const myUid = ChesAuth.getUid();
+        msgsEl.innerHTML = msgs.map(m => {
+          const isMe = m.by === myUid;
+          const t = new Date(m.ts);
+          const time = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+          return '<div class="fcMsg ' + (isMe ? 'me' : 'them') + '">' +
+            m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+            '<div class="fcMsgTime">' + time + '</div></div>';
+        }).join('');
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      });
+      _fcChatUnsub = () => chatRef.off();
+    }
+
+    // Check online status
+    if(firebaseRtdb) {
+      firebaseRtdb.ref('status/' + uid).once('value').then(snap => {
+        const st = snap.val();
+        const online = st && (Date.now() - st.lastSeen < 60000);
+        if(statusEl) {
+          statusEl.textContent = online ? 'В сети' : 'Не в сети';
+          statusEl.className = 'fcStatus ' + (online ? 'on' : '');
+        }
+      });
+    }
+  }
+
+  function closeFriendChat() {
+    const panel = document.getElementById('friendChatPanel');
+    if(panel) panel.classList.remove('open');
+    _fcOpen = false;
+    if(_fcChatUnsub) { _fcChatUnsub(); _fcChatUnsub = null; }
+    _fcChatUid = null;
+  }
+
+  async function sendFriendMessage() {
+    const inp = document.getElementById('fcInput');
+    if(!inp || !inp.value.trim() || !_fcChatUid) return;
+    const txt = inp.value.trim();
+    inp.value = '';
+
+    const chatId = [ChesAuth.getUid(), _fcChatUid].sort().join('_');
+    if(!firebaseRtdb) return;
+    await firebaseRtdb.ref('friendChats/' + chatId).push({
+      by: ChesAuth.getUid(),
+      text: txt,
+      ts: Date.now()
+    });
+  }
+
+  // Bind friends panel
+  bind('friendsFloatBtn', async () => {
+    await ensureAuth();
+    toggleFriendsPanel();
+  });
+  bind('fpClose', () => {
+    const panel = document.getElementById('friendsPanel');
+    if(panel) panel.classList.remove('open');
+    _fpOpen = false;
+  });
+  bind('fpSearchBtn', async () => {
+    const inp = document.getElementById('fpSearchInput');
+    const box = document.getElementById('fpSearchResults');
+    if(!inp || !box) return;
+    const q = inp.value.trim();
+    if(q.length < 2) { box.innerHTML = ''; box.classList.remove('hasItems'); return; }
+
+    const results = await ChesFriends.search(q);
+    const myUid = ChesAuth.getUid();
+    const filtered = results.filter(r => r.uid !== myUid);
+    if(!filtered.length) { box.innerHTML = '<div class="fpEmpty">Ничего не найдено</div>'; box.classList.add('hasItems'); return; }
+
+    box.innerHTML = filtered.map(r =>
+      '<div class="fpItem" data-uid="' + r.uid + '">' +
+        '<div class="fpAva">' + r.ava + '</div>' +
+        '<div class="fpInfo"><div class="fpNm">' + r.name + '</div>' +
+        '<div class="fpSub">' + r.elo + ' эло</div></div>' +
+        '<div class="fpActions"><button class="fpAddBtn" data-uid="' + r.uid + '" data-name="' + r.name + '">+ Друг</button></div>' +
+      '</div>'
+    ).join('');
+    box.classList.add('hasItems');
+
+    box.querySelectorAll('.fpAddBtn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await ChesFriends.sendRequest(btn.dataset.uid);
+        toast('Заявка отправлена ' + btn.dataset.name);
+        btn.textContent = '✓ Отправлено';
+        btn.disabled = true;
+      });
+    });
+  });
+  bind('fcBack', closeFriendChat);
+  bind('fcClose', closeFriendChat);
+  bind('fcSend', sendFriendMessage);
+  const fcInp = document.getElementById('fcInput');
+  if(fcInp) fcInp.addEventListener('keydown', e => { if(e.key === 'Enter') sendFriendMessage(); });
+
+  // Hide friends panel on non-menu screens
+  const _origShowScreen = showScreen;
+  const _friendsPanelHide = () => {
+    const fp = document.getElementById('friendsPanel');
+    const fc = document.getElementById('friendChatPanel');
+    if(fp) fp.classList.remove('open');
+    if(fc) fc.classList.remove('open');
+    _fpOpen = false;
+    _fcOpen = false;
+  };
+
   bind('mFriends', async () => {
     await ensureAuth();
     showScreen('scrFriends');
