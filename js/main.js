@@ -2381,8 +2381,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setInterval(() => {
-      if(Math.random() < 0.15) spawnGun();
-    }, 2000);
+      if(Math.random() < 0.10) spawnGun();
+    }, 5000);
   })();
 
   // Multiplayer menu
