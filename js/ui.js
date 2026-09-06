@@ -234,7 +234,7 @@ function refreshModeLabel() {
 /* --- Монеты --- */
 function renderCoins() {
   const cu = ProfilesManager.getCurrent();
-  const isGuest = !ChesAuth.user;
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   const c = isGuest ? 0 : (cu ? (cu.coins || 0) : 0);
   const g = isGuest ? 0 : (cu ? (cu.gems || 0) : 0);
   const a = document.getElementById('pbCoins');
@@ -269,7 +269,7 @@ function renderProfBar() {
   const pbAva = document.getElementById('pbAva');
   const pbName = document.getElementById('pbName');
   const pbSub = document.getElementById('pbSub');
-  const isGuest = !ChesAuth.user;
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   if(pbAva) {
     if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
