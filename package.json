@@ -1,0 +1,14 @@
+{
+  "name": "chesher",
+  "version": "0.17.2",
+  "private": true,
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "changelog": "node scripts/changelog.js",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
+}
