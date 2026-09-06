@@ -148,6 +148,9 @@ const NetUI = {
       if(pbSub) pbSub.textContent = 'Онлайн';
       if(mAuthBtn) mAuthBtn.style.display = 'none';
     } else {
+      if(pbName) pbName.textContent = 'Гость';
+      if(pbAva) pbAva.textContent = '👤';
+      if(pbSub) pbSub.textContent = 'Войдите для сохранения';
       if(mAuthBtn) mAuthBtn.style.display = '';
     }
   },
@@ -265,7 +268,10 @@ const NetUI = {
   },
 
   async _inviteAndCreate(friendUid) {
-    if(!ChesAuth.user) { showScreen('scrAuth'); return; }
+    if(!ChesAuth.user) {
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('inviteAndCreate auth error:', e); }
+    }
+    if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
     const lobbyId = await ChesMP.createLobby();
     if(!lobbyId) { toast('Ошибка создания лобби'); return; }
 
@@ -299,7 +305,10 @@ const NetUI = {
   },
 
   async _joinByCode(code) {
-    if(!ChesAuth.user) { showScreen('scrAuth'); return; }
+    if(!ChesAuth.user) {
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('joinByCode auth error:', e); }
+    }
+    if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
     const ok = await ChesMP.joinLobby(code);
     if(!ok) { toast('Лобби не найдено или уже занято'); return; }
 

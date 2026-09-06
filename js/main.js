@@ -1584,13 +1584,32 @@ function showMultiplayerMenu() {
   showScreen('scrMulti');
   const mpStatus = document.getElementById('mpStatus');
   if(mpStatus) {
-    mpStatus.textContent = ChesAuth.user && !ChesAuth.user.isAnonymous ?
-      'Вы вошли как: ' + (ChesAuth.profile ? ChesAuth.profile.name : ChesAuth.user.email) :
-      'Играйте как гость — авторизация не обязательна';
+    if(!ChesAuth.user) {
+      mpStatus.textContent = 'Вы играете как гость — лобби доступны без регистрации';
+    } else if(ChesAuth.user.isAnonymous) {
+      mpStatus.textContent = 'Анонимный вход · Лобби доступны';
+    } else {
+      mpStatus.textContent = 'Вы вошли как: ' + (ChesAuth.profile ? ChesAuth.profile.name : ChesAuth.user.email);
+    }
   }
 
-  // Listen for incoming invites
-  if(ChesAuth.user) {
+  // Auto-login as anonymous for lobby access
+  if(!ChesAuth.user) {
+    ChesAuth.loginAnon().then(() => {
+      ChesMP.setOnline();
+      if(mpStatus) mpStatus.textContent = 'Анонимный вход · Лобби доступны';
+      if(ChesAuth.user) {
+        ChesMP.listenInvites(inv => {
+          if(confirm(inv.fromName + ' приглашает в игру! Принять?')) {
+            NetUI.acceptInvite(inv);
+          }
+        });
+      }
+    }).catch(e => {
+      console.warn('Auto anon login failed:', e.message);
+    });
+  } else {
+    ChesMP.setOnline();
     ChesMP.listenInvites(inv => {
       if(confirm(inv.fromName + ' приглашает в игру! Принять?')) {
         NetUI.acceptInvite(inv);
@@ -1963,8 +1982,8 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('mShop', () => showScreen('scrShop'));
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
-  bind('mFriends', () => {
-    if(!ChesAuth.user) { showScreen('scrAuth'); return; }
+  bind('mFriends', async () => {
+    await ensureAuth();
     showScreen('scrFriends');
     NetUI._loadFriends();
   });
@@ -1977,14 +1996,15 @@ document.addEventListener('DOMContentLoaded', () => {
         await ChesAuth.loginAnon();
       } catch(e) {
         console.error('ensureAuth loginAnon error:', e);
-        toast('Ошибка авторизации: ' + e.message);
       }
     }
     if(ChesAuth.user) {
       ChesMP.setOnline();
     }
+    return !!ChesAuth.user;
   }
-  bind('mpCreateBtn', () => {
+  bind('mpCreateBtn', async () => {
+    await ensureAuth();
     showScreen('scrLobbySetup');
     renderLobbySetup();
   });
@@ -1995,12 +2015,8 @@ document.addEventListener('DOMContentLoaded', () => {
     await ensureAuth();
     NetUI._joinByCode(code.trim());
   });
-  bind('mpFriendsBtn', () => {
-    if(!ChesAuth.user || ChesAuth.user.isAnonymous) {
-      toast('Войдите в аккаунт чтобы пригласить друзей');
-      showScreen('scrAuth');
-      return;
-    }
+  bind('mpFriendsBtn', async () => {
+    await ensureAuth();
     showScreen('scrFriends');
     NetUI._loadFriends();
   });

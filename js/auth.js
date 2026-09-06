@@ -109,6 +109,8 @@ const ChesAuth = {
   async logout() {
     if(!firebaseAuth) return;
     await firebaseAuth.signOut();
+    this.user = null;
+    this.profile = null;
   },
 
   /* --- Получить UID --- */

@@ -269,15 +269,22 @@ function renderProfBar() {
   const pbName = document.getElementById('pbName');
   const pbSub = document.getElementById('pbSub');
   const pbCoins = document.getElementById('pbCoins');
+  const isGuest = !ChesAuth.user;
   if(pbAva) {
-    if(cu.customAva) {
+    if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      pbAva.textContent = cu.ava || '🐣';
+      pbAva.textContent = isGuest ? '👤' : (cu.ava || '🐣');
     }
   }
-  if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '') + (cu.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span>' : '');
+  if(pbName) pbName.innerHTML = isGuest ? 'Гость' : ((cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '') + (cu.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span>' : ''));
   
+  if(isGuest) {
+    if(pbSub) pbSub.innerHTML = '<span style="color:var(--mut)">Войдите для сохранения</span>';
+    if(pbCoins) pbCoins.textContent = '🪙 ' + (cu.coins || 0);
+    return;
+  }
+
   // Show current mode rating
   const ratings = cu.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000};
   const modeId = (typeof cfg !== 'undefined' && cfg.modeId) ? cfg.modeId : 'classic';
@@ -629,6 +636,7 @@ function renderProfSettings(cu) {
         await ChesAuth.logout();
         renderProfBar();
         renderProfScr();
+        showScreen('scrMenu');
         toast('Вы вышли из аккаунта');
       }
     };
