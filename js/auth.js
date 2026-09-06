@@ -21,7 +21,7 @@ const ChesAuth = {
   /* --- Генерация гостевого ID --- */
   _genGuestPlayerId() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let id = 'CHSg';
+    let id = 'CHSg-';
     for(let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
     return id;
   },
