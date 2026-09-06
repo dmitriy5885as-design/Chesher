@@ -13,8 +13,21 @@
 
 /* --- Константы --- */
 const CHAT_REPLIES = [
-  'Хороший ход!', 'Не уверен...', '😎', 'Хм...', 
-  'Давай еще', 'Ок', '😎', 'Гг'
+  'Хороший ход!', 'Хм, интересно...', '😎', 'Давай!',
+  'Не так просто!', 'Ок', 'Принимаю!', 'Гг',
+  'Сильный ход', 'Ну надо же', 'Подумаю...', '😎',
+  'А ты не weak', 'Хах, ок', 'И有趣... ой, интересно',
+  'Попробуй ещё', 'Давай, атакуй', 'Защита — моё всё'
+];
+
+const CHAT_KEYWORD_REPLIES = [
+  { keys: ['привет', 'здравствуй', 'хай', 'hello', 'hi'], replies: ['Привет! Да начнётся игра!', 'Хо-хо! Привет!', 'Здарова!'] },
+  { keys: ['пока', 'bye', 'до встречи'], replies: ['Пока! Удачи!', 'Бай! Играем дальше!'] },
+  { keys: ['хаха', 'ахах', 'лол', 'хех', 'удачн'], replies: ['😎', 'Хех', 'Ну да'] },
+  { keys: ['гг', 'gg', 'красав'], replies: ['Гг!', '😎', 'Ты тоже!'] },
+  { keys: ['сдаюсь', 'gg wp'], replies: ['Не сдавайся!', 'Ещё не всё!'] },
+  { keys: ['ходи', 'давай', 'твой ход'], replies: ['Уже думаю!', 'Спешить не надо!'] },
+  { keys: ['как дела', 'как ты'], replies: ['Норм, играю!', 'Отлично, давай шахматы!'] },
 ];
 
 const EMOTIONS = ['😀','😎','😱','😂','😤','🤔','👏','👍','👎','🤷','😴','🎉'];
@@ -135,7 +148,19 @@ function sendChat() {
 
 /* --- Ответ бота --- */
 function botReply(msg) {
-  if(!msg || msg.length < 3 || opponentMuted) return;
+  if(!msg || opponentMuted) return;
+  const lower = msg.toLowerCase();
+  
+  // Try keyword matching first
+  for(const kw of CHAT_KEYWORD_REPLIES) {
+    if(kw.keys.some(k => lower.includes(k))) {
+      const r = kw.replies[Math.floor(Math.random() * kw.replies.length)];
+      appendChat('opp', r);
+      return;
+    }
+  }
+  
+  // Default random reply
   const r = CHAT_REPLIES[Math.floor(Math.random() * CHAT_REPLIES.length)];
   appendChat('opp', r);
 }

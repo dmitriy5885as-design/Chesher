@@ -164,6 +164,16 @@ function refreshBars() {
     if(elNmTop) elNmTop.textContent = 'Соперник';
   }
 
+  // subTop: opponent captured pieces
+  const subTop = document.getElementById('subTop');
+  const subBot = document.getElementById('subBot');
+  const tW = (takenByW || []).map(t => getSkinGlyph('w', t)).join('');
+  const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
+  if(subTop) {
+    subTop.textContent = topCol === 'w' ? tW : tB;
+    if(!subTop.textContent.trim()) subTop.textContent = '';
+  }
+
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
   if(elNameBot) elNameBot.textContent = (cu.ava || '') + ' ' + (cu.name || 'Игрок') + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
@@ -180,13 +190,17 @@ function refreshBars() {
   }
   if(elNmBot) elNmBot.textContent = cu.name || 'Игрок';
 
-  // Taken pieces
-  const tW = (takenByW || []).map(t => getSkinGlyph('w', t)).join('');
-  const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
+  // subBot: my captured pieces
+  if(subBot) {
+    subBot.textContent = humanCol === 'w' ? tW : tB;
+    if(!subBot.textContent.trim()) subBot.textContent = '';
+  }
+
+  // Taken pieces in pbar (opponent bar shows what opponent captured, my bar shows what I captured)
   const elTakTop = document.getElementById('takTop');
   const elTakBot = document.getElementById('takBot');
-  if(elTakTop) elTakTop.textContent = humanCol === 'w' ? tW : tB;
-  if(elTakBot) elTakBot.textContent = topCol === 'w' ? tW : tB;
+  if(elTakTop) elTakTop.textContent = topCol === 'w' ? tW : tB;
+  if(elTakBot) elTakBot.textContent = humanCol === 'w' ? tW : tB;
 
   // Material advantage
   const mat = (takenByW || []).reduce((s, t) => s + (VAL[t]||0), 0) -
