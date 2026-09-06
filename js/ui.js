@@ -328,6 +328,13 @@ function renderProfScr() {
   const isAuth = ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous;
   if(profNewGroup) profNewGroup.style.display = isAuth ? 'none' : '';
 
+  // Hide nick/avatar settings for guests
+  const nickGroup = document.getElementById('nickGroup');
+  const isGuestProf = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  if(nickGroup) nickGroup.style.display = isGuestProf ? 'none' : '';
+  const avaGroup = document.getElementById('customAvaGroup');
+  if(avaGroup) avaGroup.style.display = isGuestProf ? 'none' : '';
+
   // Show playerId in profile header
   const profHeader = document.getElementById('profHeader');
   if(profHeader) {
@@ -608,24 +615,44 @@ function renderMatchHistory(cu) {
 function renderProfSettings(cu) {
   if(!cu) return;
   const infoBox = document.getElementById('profSettingsInfo');
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   if(infoBox) {
-    const st = cu.st || {};
-    const league = Elo.getLeague(cu.elo || 0);
-    infoBox.innerHTML =
-      '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + (cu.name || 'Игрок') + '</b></div>' +
-        (cu.playerId ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + cu.playerId + '</b></div>' : '') +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">' + (cu.elo || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">' + league.name + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">' + (st.games || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">' + (st.wins || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">' + (st.losses || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">' + (cu.winrate || 0) + '%</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">' + (st.streak || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 ' + (cu.coins || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 ' + (cu.gems || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">' + (cu.owned ? cu.owned.length : 0) + '</b></div>' +
-      '</div>';
+    if(isGuest) {
+      const gId = ChesAuth.guestPlayerId || '—';
+      infoBox.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">Гость</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + gId + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">—</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">0%</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">0</b></div>' +
+        '</div>';
+    } else {
+      const st = cu.st || {};
+      const league = Elo.getLeague(cu.elo || 0);
+      infoBox.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + (cu.name || 'Игрок') + '</b></div>' +
+          (cu.playerId ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + cu.playerId + '</b></div>' : '') +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">' + (cu.elo || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">' + league.name + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">' + (st.games || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">' + (st.wins || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">' + (st.losses || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">' + (cu.winrate || 0) + '%</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">' + (st.streak || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 ' + (cu.coins || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 ' + (cu.gems || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">' + (cu.owned ? cu.owned.length : 0) + '</b></div>' +
+        '</div>';
+    }
   }
 
   const logoutBtn2 = document.getElementById('profLogoutBtn2');
