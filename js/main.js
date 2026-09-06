@@ -1982,6 +1982,21 @@ function cheatTestLose() {
 }
 
 /* === ИНИЦИАЛИЗАЦИЯ === */
+
+function ensureAuth() {
+  if(ChesAuth.user) {
+    ChesMP.setOnline();
+    return Promise.resolve(true);
+  }
+  return ChesAuth.loginAnon().then(() => {
+    ChesMP.setOnline();
+    return true;
+  }).catch(e => {
+    console.error('ensureAuth loginAnon error:', e);
+    return false;
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadCfg();
   if(typeof normalizeSkin === 'function') normalizeSkin();
@@ -2048,19 +2063,6 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('profBar', () => showScreen('scrProf'));
 
   // Multiplayer menu
-  async function ensureAuth() {
-    if(!ChesAuth.user) {
-      try {
-        await ChesAuth.loginAnon();
-      } catch(e) {
-        console.error('ensureAuth loginAnon error:', e);
-      }
-    }
-    if(ChesAuth.user) {
-      ChesMP.setOnline();
-    }
-    return !!ChesAuth.user;
-  }
   bind('mpCreateBtn', async () => {
     await ensureAuth();
     showScreen('scrLobbySetup');
