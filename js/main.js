@@ -32,6 +32,8 @@ function showScreen(id) {
   if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
   const helpBtn = document.getElementById('helpBtn');
   if(helpBtn) helpBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  const giftBtn = document.getElementById('giftBtn');
+  if(giftBtn) giftBtn.style.display = id === 'scrMenu' ? '' : 'none';
   const chBtn = document.getElementById('cheatBtn');
   const chPanel = document.getElementById('cheatPanel');
   if(chBtn && id !== 'scrMenu') chBtn.style.display = 'none';
@@ -2055,6 +2057,52 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
   bind('helpBtn', () => { toast('Раздел помощи скоро будет доступен!'); });
+
+  // Daily gift
+  function updateGiftBtn() {
+    const btn = document.getElementById('giftBtn');
+    if(!btn) return;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) {
+      btn.classList.add('disabled');
+      btn.title = 'Войдите, чтобы получать ежедневные подарки';
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const lastClaim = localStorage.getItem('chesher_daily_gift');
+    if(lastClaim === today) {
+      btn.classList.add('claimed');
+      btn.classList.remove('disabled');
+      btn.title = 'Уже получено сегодня!';
+    } else {
+      btn.classList.remove('claimed', 'disabled');
+      btn.title = 'Забрать ежедневный подарок!';
+    }
+  }
+  window.updateGiftBtn = updateGiftBtn;
+  updateGiftBtn();
+
+  bind('giftBtn', () => {
+    const btn = document.getElementById('giftBtn');
+    if(!btn || btn.classList.contains('disabled') || btn.classList.contains('claimed')) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastClaim = localStorage.getItem('chesher_daily_gift');
+    if(lastClaim === today) { toast('Уже получено сегодня!'); return; }
+
+    const coins = 25 + Math.floor(Math.random() * 26);
+    const gems = Math.random() < 0.3 ? 1 : 0;
+
+    localStorage.setItem('chesher_daily_gift', today);
+    const cu = ProfilesManager.getCurrent();
+    if(cu) {
+      cu.coins = (cu.coins || 0) + coins;
+      cu.gems = (cu.gems || 0) + gems;
+      saveProfiles();
+    }
+    renderCoins();
+    updateGiftBtn();
+    toast('🎁 Ежедневный подарок: +' + coins + ' 🪙' + (gems ? ' +1 💎' : ''));
+  });
   bind('mFriends', async () => {
     await ensureAuth();
     showScreen('scrFriends');
@@ -2264,6 +2312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(initFirebase()) {
       ChesAuth.init();
       NetUI.init();
+      ChesAuth.onAuthChange(() => { if(typeof updateGiftBtn === 'function') updateGiftBtn(); });
     }
   }
 

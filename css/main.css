@@ -558,6 +558,16 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 }
 .helpBtn:hover{border-color:var(--gold);background:rgba(247,197,49,.15);color:var(--gold);transform:scale(1.1)}
 
+.giftBtn{
+  position:fixed;top:16px;right:60px;z-index:1100;
+  width:36px;height:36px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel2);color:var(--mut);font-size:16px;
+  cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;
+}
+.giftBtn:hover:not(.disabled){border-color:var(--gold);background:rgba(247,197,49,.15);transform:scale(1.1)}
+.giftBtn.disabled{opacity:.35;cursor:default;pointer-events:none}
+.giftBtn.claimed{border-color:var(--green);color:var(--green)}
+
 /* === DEV BLOG BUTTON === */
 .cornerFloat{
   position:fixed;bottom:20px;right:20px;z-index:1100;
