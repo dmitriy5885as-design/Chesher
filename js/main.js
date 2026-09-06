@@ -764,11 +764,13 @@ const TIPS = [
   '💡 Используйте ↩️ Назад, чтобы отменить последний ход.',
 ];
 
+let _tipIdx = Math.floor(Math.random() * TIPS.length);
 function showRandomTip() {
   const el = document.getElementById('tipBox');
   if(!el) return;
-  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
-  el.innerHTML = tip;
+  el.innerHTML = TIPS[_tipIdx];
+  el.style.cursor = 'pointer';
+  el.onclick = () => { _tipIdx = (_tipIdx + 1) % TIPS.length; el.innerHTML = TIPS[_tipIdx]; };
 }
 
 /* --- Новая игра --- */
@@ -2349,11 +2351,6 @@ document.addEventListener('DOMContentLoaded', () => {
     _fcOpen = false;
   };
 
-  bind('mFriends', async () => {
-    await ensureAuth();
-    showScreen('scrFriends');
-    NetUI._loadFriends();
-  });
   bind('profBar', () => showScreen('scrProf'));
 
   // === Deco: random scatter pieces (stable positions) ===
