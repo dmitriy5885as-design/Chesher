@@ -2396,17 +2396,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const piece = spans[Math.floor(Math.random() * spans.length)];
       if(piece.querySelector('.gunOverlay')) return;
 
-      const gun = document.createElement('span');
-      gun.className = 'gunOverlay';
-      gun.textContent = '🔫';
       const dirLeft = Math.random() < 0.5;
-      gun.classList.add(dirLeft ? 'flipLeft' : 'flipRight');
-      gun.style.setProperty('--gun-dir', dirLeft ? '-60px' : '60px');
-      piece.style.position = 'relative';
-      piece.appendChild(gun);
+      const el = document.createElement('div');
+      el.className = 'gunOverlay';
+      el.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:1;opacity:0;';
 
-      requestAnimationFrame(() => gun.classList.add('show'));
-      setTimeout(() => { gun.remove(); }, 1100);
+      const img = document.createElement('img');
+      img.src = dirLeft ? 'assets/Guns/guns_left.png' : 'assets/Guns/guns_right.png';
+      img.style.cssText = 'width:60px;height:auto;display:block;';
+      el.appendChild(img);
+
+      piece.style.position = 'relative';
+      piece.appendChild(el);
+
+      requestAnimationFrame(() => {
+        el.style.transition = 'none';
+        el.style.opacity = '1';
+        el.classList.add('decoGunSpin');
+      });
+      setTimeout(() => { el.remove(); }, 1100);
     }
 
     setInterval(() => {
