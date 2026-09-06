@@ -234,8 +234,9 @@ function refreshModeLabel() {
 /* --- Монеты --- */
 function renderCoins() {
   const cu = ProfilesManager.getCurrent();
-  const c = cu ? (cu.coins || 0) : 0;
-  const g = cu ? (cu.gems || 0) : 0;
+  const isGuest = !ChesAuth.user;
+  const c = isGuest ? 0 : (cu ? (cu.coins || 0) : 0);
+  const g = isGuest ? 0 : (cu ? (cu.gems || 0) : 0);
   const a = document.getElementById('pbCoins');
   const b = document.getElementById('shopCoins');
   const ag = document.getElementById('pbGems');
