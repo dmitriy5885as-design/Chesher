@@ -1541,7 +1541,13 @@ function renderLobbySetup() {
 function startLobbyFromSetup() {
   ensureAuth().then(() => {
     if(!ChesAuth.user) {
-      toast('Не удалось войти. Попробуйте снова.');
+      toast('❌ Не удалось войти. Проверьте подключение к интернету.');
+      showScreen('scrMulti');
+      return;
+    }
+    if(!firebaseRtdb) {
+      toast('❌ Firebase не инициализирован. Обновите страницу.');
+      showScreen('scrMulti');
       return;
     }
     NetUI._lobbySettings = _lobbyCfg;
@@ -1549,7 +1555,7 @@ function startLobbyFromSetup() {
     showScreen('scrLobby');
     ChesMP.createLobby(_lobbyCfg).then(id => {
       if(!id) {
-        toast('Ошибка создания лобби. Проверьте подключение.');
+        toast('❌ Не удалось создать лобби. Проверьте Firebase правила.');
         showScreen('scrMulti');
         return;
       }
@@ -1563,7 +1569,7 @@ function startLobbyFromSetup() {
       });
     }).catch(e => {
       console.error('createLobby error:', e);
-      toast('Ошибка: ' + e.message);
+      toast('❌ Ошибка: ' + (e.message || e));
       showScreen('scrMulti');
     });
   });
