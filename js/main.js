@@ -2065,7 +2065,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('scrLobbySetup');
     renderLobbySetup();
   });
-  bind('lobbyConfirmBtn', () => { startLobbyFromSetup(); });
   bind('mpJoinBtn', async () => {
     const code = prompt('Введите код лобби:');
     if(!code) return;
