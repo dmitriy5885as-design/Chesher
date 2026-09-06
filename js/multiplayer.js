@@ -87,7 +87,7 @@ const ChesMP = {
     await lobbyRef.update({
       guest: uid,
       guestName: name,
-      guestAva: ChesAuth.profile ? ChesAuth.profile.ava : '🐣',
+      guestAva: ChesAuth.profile ? ChesAuth.profile.ava : '👽',
       status: 'playing'
     });
 

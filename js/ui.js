@@ -175,7 +175,7 @@ function refreshBars() {
     if(!isGuest && cu.customAva) {
       elAvaBot.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      elAvaBot.textContent = isGuest ? '🐣' : (cu.ava || '🐣');
+      elAvaBot.textContent = isGuest ? '👽' : (cu.ava || '🐣');
     }
   }
   if(elNmBot) elNmBot.textContent = cu.name || 'Игрок';
@@ -276,7 +276,7 @@ function renderProfBar() {
     if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      pbAva.textContent = isGuest ? '🐣' : (cu.ava || '🐣');
+      pbAva.textContent = isGuest ? '👽' : (cu.ava || '🐣');
     }
   }
   if(isGuest) {
