@@ -28,8 +28,8 @@ function showScreen(id) {
   if(el) el.classList.add('show');
 
   // Devblog button only on main menu
-  const dbBtn = document.getElementById('devblogBtn');
-  if(dbBtn) dbBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  const cornerFloat = document.getElementById('cornerFloat');
+  if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
   const chBtn = document.getElementById('cheatBtn');
   const chPanel = document.getElementById('cheatPanel');
   if(chBtn && id !== 'scrMenu') chBtn.style.display = 'none';

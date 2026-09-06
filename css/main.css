@@ -535,8 +535,11 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* === DEV BLOG BUTTON === */
-.devblogBtn{
+.cornerFloat{
   position:fixed;bottom:20px;right:20px;z-index:1100;
+  display:flex;align-items:center;gap:8px;
+}
+.devblogBtn{
   width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
   background:var(--panel2);color:var(--txt);font-size:20px;
   cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;

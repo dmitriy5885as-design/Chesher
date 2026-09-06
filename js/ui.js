@@ -268,7 +268,6 @@ function renderProfBar() {
   const pbAva = document.getElementById('pbAva');
   const pbName = document.getElementById('pbName');
   const pbSub = document.getElementById('pbSub');
-  const pbCoins = document.getElementById('pbCoins');
   const isGuest = !ChesAuth.user;
   if(pbAva) {
     if(!isGuest && cu.customAva) {
@@ -281,22 +280,12 @@ function renderProfBar() {
   
   if(isGuest) {
     if(pbSub) pbSub.innerHTML = '<span style="color:var(--mut)">Войдите для сохранения</span>';
-    if(pbCoins) pbCoins.textContent = '🪙 ' + (cu.coins || 0);
     return;
   }
 
-  // Show current mode rating
-  const ratings = cu.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000};
-  const modeId = (typeof cfg !== 'undefined' && cfg.modeId) ? cfg.modeId : 'classic';
-  const currentRating = ratings[modeId] || ratings.classic || 0;
-  const league = Elo.getLeague(currentRating);
-  
   if(pbSub) {
-    pbSub.innerHTML = '<span class="league-tag" style="color:' + league.color + '">' + 
-      league.emoji + ' ' + currentRating + '</span> ' +
-      league.name + ' · ' + (cu.winrate || 0) + '% · ' + (cu.st.games || 0) + ' партий';
+    pbSub.innerHTML = (cu.winrate || 0) + '% winrate · ' + (cu.st.games || 0) + ' партий';
   }
-  if(pbCoins) pbCoins.textContent = '🪙 ' + (cu.coins || 0);
 }
 
 /* --- Экран профилей --- */

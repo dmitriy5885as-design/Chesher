@@ -31,8 +31,6 @@
         <div class="pbName" id="pbName">Гость</div>
         <div class="pbSub" id="pbSub">0% winrate · 0 партий</div>
       </div>
-      <span class="coinChip" id="pbCoins">🪙 0</span>
-      <span class="coinChip gemChip" id="pbGems" style="margin-left:4px">💎 0</span>
       <button class="mBtn" id="mAuth" style="padding:6px 14px;font-size:12px;margin-left:4px;display:none;background:var(--accent);color:#000;font-weight:700" onclick="showScreen('scrAuth')">Войти</button>
       <div class="pbArrow">›</div>
     </div>
@@ -521,8 +519,12 @@
     <div class="dbWrap" id="dbWrap"></div>
   </div>
   
-  <!-- Кнопка дев-блога -->
-  <button class="devblogBtn" id="devblogBtn" title="Dev Blog">📝</button>
+  <!-- Кнопка дев-блога + валюта -->
+  <div class="cornerFloat" id="cornerFloat">
+    <span class="coinChip" id="pbCoins" style="margin:0">🪙 0</span>
+    <span class="coinChip gemChip" id="pbGems" style="margin:0">💎 0</span>
+    <button class="devblogBtn" id="devblogBtn" title="Dev Blog">📝</button>
+  </div>
   <button class="devblogBtn cheatBtn" id="cheatBtn" title="Dev Tools" style="display:none">🔧</button>
   
   <!-- Cheat panel -->
