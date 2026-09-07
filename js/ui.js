@@ -155,8 +155,12 @@ function refreshBars() {
     if(elNameTop) elNameTop.textContent = bot.emoji + ' ' + bot.name;
     if(elAvaTop) elAvaTop.textContent = bot.emoji;
     if(elNmTop) elNmTop.textContent = bot.name;
+  } else if(cfg.gameMode === 'multiplayer' && typeof ChesMP !== 'undefined' && ChesMP.opponent) {
+    const opp = ChesMP.opponent;
+    if(elNameTop) elNameTop.textContent = (opp.ava || '❓') + ' ' + (opp.name || 'Соперник');
+    if(elAvaTop) elAvaTop.textContent = opp.ava || '❓';
+    if(elNmTop) elNmTop.textContent = opp.name || 'Соперник';
   } else {
-    // Multiplayer: show opponent name + playerId
     const oppName = (topCol === 'w' ? 'Белые' : 'Чёрные') + ' · Соперник';
     const oppId = (typeof S !== 'undefined' && S && S.opponentPlayerId) ? '  #' + S.opponentPlayerId : '';
     if(elNameTop) elNameTop.textContent = oppName + oppId;
@@ -175,8 +179,10 @@ function refreshBars() {
   }
 
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const myName = isGuest ? 'Гость' : (cu.name || 'Игрок');
+  const myAva = isGuest ? '👽' : (cu.ava || '👽');
   const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
-  if(elNameBot) elNameBot.textContent = (cu.ava || '') + ' ' + (cu.name || 'Игрок') + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
+  if(elNameBot) elNameBot.textContent = myAva + ' ' + myName + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
 
   // Update avatar in player card
   const elAvaBot = document.getElementById('avaBot');
@@ -185,10 +191,10 @@ function refreshBars() {
     if(!isGuest && cu.customAva) {
       elAvaBot.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      elAvaBot.textContent = isGuest ? '👽' : (cu.ava || '👽');
+      elAvaBot.textContent = myAva;
     }
   }
-  if(elNmBot) elNmBot.textContent = cu.name || 'Игрок';
+  if(elNmBot) elNmBot.textContent = myName;
 
   // subBot: my captured pieces
   if(subBot) {

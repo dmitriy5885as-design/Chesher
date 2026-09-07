@@ -1035,6 +1035,7 @@ function endGame(reason, winnerColor, drawReason) {
 /* --- Клик по клетке --- */
 function onSquareClick(e) {
   if(!S || S.gameOver || isBotThinking) return;
+  if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
   if(cfg.bot !== 'off' && S.turn !== S.humanColor) return;
 
   const sq = e.currentTarget;
@@ -1317,6 +1318,9 @@ function executeMove(move) {
   const sl = document.getElementById('statusLine');
   if(sl) {
     if(S.inCheck(S.turn)) { sl.textContent = '⚠ Шах!'; snd.check(); }
+    else if(cfg.gameMode === 'multiplayer') {
+      sl.textContent = S.turn === S.humanColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+    }
     else sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
   }
 
@@ -1505,16 +1509,22 @@ function handleIncomingMove(move) {
   if(!S || S.gameOver) return;
   if(S.turn === S.humanColor) return;
 
-  const fromR = 8 - parseInt(move.from[1]);
-  const fromC = move.from.charCodeAt(0) - 97;
-  const toR = 8 - parseInt(move.to[1]);
-  const toC = move.to.charCodeAt(0) - 97;
+  const fromSq = move.from;
+  const toSq = move.to;
+  if(!fromSq || !toSq) return;
+
+  const fromR = 8 - parseInt(fromSq[1]);
+  const fromC = fromSq.charCodeAt(0) - 97;
+  const toR = 8 - parseInt(toSq[1]);
+  const toC = toSq.charCodeAt(0) - 97;
+
+  if(isNaN(fromR) || isNaN(fromC) || isNaN(toR) || isNaN(toC)) return;
 
   const legal = S.getLegalMoves(fromR, fromC);
-  const isLegal = legal.some(m => m[0] === toR && m[1] === toC);
-  if(!isLegal) return;
+  const moveObj = legal.find(m => m.tr === toR && m.tc === toC);
+  if(!moveObj) return;
 
-  executeMove(fromR, fromC, toR, toC);
+  executeMove(moveObj);
 }
 
 /* --- Настройка лобби --- */
@@ -1738,7 +1748,7 @@ function startMultiplayerGame(mpColor, opponentName) {
   updateCounters();
 
   const sl = document.getElementById('statusLine');
-  if(sl) sl.textContent = mpColor === 'w' ? 'Ход белых' : 'Ход чёрных';
+  if(sl) sl.textContent = mpColor === 'w' ? '⚔ Ваш ход (белые)' : '⏳ Ход соперника... (чёрные)';
 
   if(cfg.timeSec > 0) {
     S.clockOn = true;
@@ -2384,6 +2394,8 @@ document.addEventListener('DOMContentLoaded', () => {
   (function initDecoScatter() {
     const deco = document.getElementById('decoBg');
     if(!deco) return;
+    const isMobile = window.innerWidth < 768 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    if(isMobile) { deco.style.display = 'none'; return; }
     const spans = deco.querySelectorAll('span');
     if(!spans.length) return;
 
