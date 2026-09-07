@@ -335,8 +335,10 @@ function renderProfScr() {
       const t = tab.dataset.tab;
       profTabs.querySelectorAll('.shopTab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
       document.getElementById('profTabMain').style.display = t === 'main' ? '' : 'none';
+      document.getElementById('profTabStyle').style.display = t === 'style' ? '' : 'none';
       document.getElementById('profTabHistory').style.display = t === 'history' ? '' : 'none';
       document.getElementById('profTabSettings').style.display = t === 'settings' ? '' : 'none';
+      if(t === 'style') renderProfStyleTab();
       if(t === 'history') renderMatchHistory(cu);
       if(t === 'settings') renderProfSettings(cu);
     };
@@ -345,6 +347,7 @@ function renderProfScr() {
   // Reset to main tab
   if(profTabs) profTabs.querySelectorAll('.shopTab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'main'));
   const pm = document.getElementById('profTabMain'); if(pm) pm.style.display = '';
+  const pStyle = document.getElementById('profTabStyle'); if(pStyle) pStyle.style.display = 'none';
   const ph = document.getElementById('profTabHistory'); if(ph) ph.style.display = 'none';
   const ps = document.getElementById('profTabSettings'); if(ps) ps.style.display = 'none';
 
@@ -656,6 +659,76 @@ window.initDOMrefs = initDOMrefs;
 window.refreshBars = refreshBars;
 window.refreshModeLabel = refreshModeLabel;
 window.renderCoins = renderCoins;
+
+/* --- Вкладка: Стилизация --- */
+function applyBoardTheme(id) {
+  if(!BOARDS[id]) return;
+  const b = BOARDS[id];
+  document.documentElement.style.setProperty('--sq-l', b.light);
+  document.documentElement.style.setProperty('--sq-d', b.dark);
+}
+function renderProfStyleTab() {
+  const cu = ProfilesManager.getCurrent();
+  const owned = cu ? cu.owned || [] : [];
+
+  // Board themes
+  const themeRow = document.getElementById('themeRow');
+  if(themeRow) {
+    themeRow.innerHTML = '';
+    Object.keys(BOARDS).forEach(id => {
+      const b = BOARDS[id];
+      const isOwned = owned.includes('board_' + id) || b.price === 0;
+      const isActive = cfg.board === id || (!cfg.board && id === 'classic');
+      const w = document.createElement('button');
+      w.className = 'swatch' + (isActive ? ' sel' : '');
+      w.type = 'button';
+      w.style.setProperty('--swL', b.light);
+      w.style.setProperty('--swD', b.dark);
+      w.style.opacity = isOwned ? '1' : '0.4';
+      w.innerHTML = '<i></i><i></i><i></i><i></i><span class="swName">' + b.name + '</span>';
+      if(!isOwned) w.innerHTML += '<span style="font-size:10px;color:var(--gold)">🪙 ' + b.price + '</span>';
+      w.addEventListener('click', () => {
+        if(!isOwned) { toast('Купите доску в магазине'); return; }
+        cfg.board = id;
+        saveCfg();
+        applyBoardTheme(id);
+        snd.ui();
+        renderProfStyleTab();
+      });
+      themeRow.appendChild(w);
+    });
+  }
+
+  // Piece skins
+  const segSkinProf = document.getElementById('segSkinProf');
+  if(segSkinProf && typeof SKINS !== 'undefined') {
+    segSkinProf.innerHTML = '';
+    const skinRow = document.createElement('div');
+    skinRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px';
+    Object.keys(SKINS).forEach(id => {
+      const s = SKINS[id];
+      const isOwned = owned.includes('skin_' + id) || s.price === 0;
+      const isActive = cfg.skin === id || (!cfg.skin && id === 'classic');
+      const btn = document.createElement('button');
+      btn.className = 'mBtn' + (isActive ? ' primary' : '');
+      btn.style.cssText = 'flex:0 0 auto;padding:10px 14px;font-size:18px;opacity:' + (isOwned ? '1' : '0.4');
+      const preview = s.glyph ? (s.glyph.w.k + ' ' + s.glyph.b.k) : '♟';
+      btn.innerHTML = preview + '<div style="font-size:11px;margin-top:4px">' + s.name + '</div>';
+      if(!isOwned) btn.innerHTML += '<div style="font-size:10px;color:var(--gold)">🪙 ' + s.price + '</div>';
+      btn.addEventListener('click', () => {
+        if(!isOwned) { toast('Купите скин в магазине'); return; }
+        cfg.skin = id;
+        saveCfg();
+        snd.ui();
+        renderProfStyleTab();
+        fullRender();
+      });
+      skinRow.appendChild(btn);
+    });
+    segSkinProf.appendChild(skinRow);
+  }
+}
+
 /* --- Вкладка: История матчей --- */
 function renderMatchHistory(cu) {
   const histBox = document.getElementById('matchHistory');

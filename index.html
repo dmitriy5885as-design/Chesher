@@ -62,7 +62,8 @@
 
     <!-- Вкладки профиля -->
     <div class="shopTabs" id="profTabs">
-      <button class="shopTab active" data-tab="main">🏠 Главная</button>
+      <button class="shopTab active" data-tab="main">ℹ️ Информация</button>
+      <button class="shopTab" data-tab="style">🎨 Стилизация</button>
       <button class="shopTab" data-tab="history">📜 История</button>
       <button class="shopTab" data-tab="settings">⚙ Настройки</button>
     </div>
@@ -95,6 +96,16 @@
         </div>
         <div style="color:var(--mut);font-size:12px;margin-bottom:6px">Или выбери из предложенных:</div>
         <div class="avaGrid" id="avaSuggested" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+    </div>
+
+    <!-- Вкладка: Стилизация -->
+    <div id="profTabStyle" style="display:none;width:100%;max-width:520px;margin:0 auto">
+      <div class="setGroup"><h3>🎨 Тема доски</h3>
+        <div id="themeRow"></div>
+      </div>
+      <div class="setGroup"><h3>♟ Скин фигур</h3>
+        <div id="segSkinProf"></div>
       </div>
     </div>
 
