@@ -66,6 +66,7 @@ const ChesMP = {
       guestReady: false,
       status: 'waiting',
       mode: mode,
+      ranked: !!settings.ranked,
       timeSec: timeSec,
       color: isWhite ? 'b' : 'w',
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',

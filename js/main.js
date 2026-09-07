@@ -99,11 +99,13 @@ function renderModeList() {
       selectedModeId = m.id;
       cfg.modeId = m.id;
       cfg.gameMode = m.id === 'bot' ? 'bot' : m.id === 'fischer' ? 'fischer' : m.id;
-      if(m.id === 'bot' || m.id === 'fischer' || m.id === 'ranked') {
+      if(m.id === 'bot' || m.id === 'fischer') {
         modesBox.style.display = 'none';
         showBotSelection();
-      } else if(m.id === 'multiplayer') {
+      } else if(m.id === 'multiplayer' || m.id === 'ranked') {
         modesBox.style.display = 'none';
+        if(m.id === 'ranked') _lobbyCfg.ranked = true;
+        else _lobbyCfg.ranked = false;
         showMultiplayerMenu();
       } else {
         modesBox.style.display = 'none';
@@ -282,9 +284,15 @@ function buildModesCfg(modeId) {
     return;
   }
   
-  // For bot/fischer/ranked — redirect to bot selection
-  if(modeId === 'bot' || modeId === 'fischer' || modeId === 'ranked') {
+  // For bot/fischer — redirect to bot selection
+  if(modeId === 'bot' || modeId === 'fischer') {
     showBotSelection();
+    return;
+  }
+  
+  // Ranked goes to multiplayer lobby
+  if(modeId === 'ranked') {
+    showMultiplayerMenu();
     return;
   }
   
@@ -807,6 +815,7 @@ function newGame() {
     MemeConfig.set('enabled', true);
   } else if(cfg.modeId === 'ranked') {
     cfg.gameMode = 'ranked';
+    cfg.bot = 'off';
     MemeConfig.set('enabled', false);
   } else if(cfg.modeId === 'bot' || (cfg.bot !== 'off' && cfg.modeId !== 'local')) {
     cfg.gameMode = 'bot';
@@ -856,7 +865,7 @@ function newGame() {
   S.humanColor = humanColor;
 
   // Bot greeting
-  if(cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') {
+  if(cfg.gameMode === 'bot') {
     const cu = ProfilesManager.getCurrent();
     const botId = cu ? (cu.botId || 1) : 1;
     const bot = BOT_LIST.find(b => b.id === botId);
@@ -921,7 +930,7 @@ function newGame() {
   updateClockUI();
 
   // If human plays black, bot moves first
-  if(humanColor === 'b' && (cfg.gameMode === 'bot' || cfg.gameMode === 'ranked')) {
+  if(humanColor === 'b' && cfg.gameMode === 'bot') {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 600);
@@ -1034,14 +1043,14 @@ function endGame(reason, winnerColor, drawReason) {
   // Record match history
   if(!cu.matchHistory) cu.matchHistory = [];
   let opponentName = 'Локальная игра';
-  if(cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') {
+  if(cfg.gameMode === 'bot') {
     const botId = cu.botId || 1;
     const bot = BOT_LIST.find(b => b.id === botId);
     opponentName = bot ? '🤖 ' + bot.name : '🤖 Бот';
   } else if(cfg.gameMode === 'local') {
     opponentName = winnerColor === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
-  } else if(cfg.gameMode === 'multiplayer' && ChesMP && ChesMP.opponent) {
-    opponentName = ChesMP.opponent.name;
+  } else if(cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') {
+    opponentName = (ChesMP && ChesMP.opponent) ? ChesMP.opponent.name : 'Соперник';
   } else if(cfg.gameMode === 'meme') {
     opponentName = 'Мемасия';
   } else if(cfg.variant === 'fischer960' || cfg.gameMode === 'fischer') {
@@ -1073,7 +1082,8 @@ function endGame(reason, winnerColor, drawReason) {
 function onSquareClick(e) {
   if(!S || S.gameOver || isBotThinking) return;
   if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
-  if((cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'bot' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
 
   const sq = e.currentTarget;
   const r = parseInt(sq.dataset.r);
@@ -1408,7 +1418,7 @@ function showPassScreen() {
 }
 
   // Bot's turn
-  if((cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') && S.turn !== S.humanColor && !S.gameOver) {
+  if(cfg.gameMode === 'bot' && S.turn !== S.humanColor && !S.gameOver) {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 1200);
@@ -1779,7 +1789,8 @@ function startMultiplayerGame(mpColor, opponentName) {
 
   const ls = NetUI._lobbySettings || ChesMP.lobbySettings || {};
   const mpMode = ls.mode || 'classic';
-  cfg.modeId = mpMode;
+  cfg.modeId = ls.ranked ? 'ranked' : mpMode;
+  cfg.gameMode = ls.ranked ? 'ranked' : 'multiplayer';
   cfg.memes = mpMode === 'meme';
   MemeConfig.set('enabled', mpMode === 'meme');
   cfg.timeSec = ls.timeSec != null ? ls.timeSec : 300;
