@@ -44,8 +44,10 @@ const ChesMP = {
     }
     const uid = ChesAuth.getUid();
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
-    const name = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
-    const ava = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
+    const guestProfile = ProfilesManager.getCurrent();
+    const guestDisplayName = (guestProfile && guestProfile.name && guestProfile.name !== 'Гость') ? guestProfile.name : 'Гость';
+    const name = isGuest ? guestDisplayName : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
+    const ava = isGuest ? (guestProfile && guestProfile.ava ? guestProfile.ava : '👽') : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
     const lobbyRef = firebaseRtdb.ref('lobbies').push();
     const lobbyId = lobbyRef.key;
 
@@ -86,7 +88,9 @@ const ChesMP = {
     if(!firebaseRtdb || !ChesAuth.user) return false;
     const uid = ChesAuth.getUid();
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
-    const name = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
+    const guestProfile = ProfilesManager.getCurrent();
+    const guestDisplayName = (guestProfile && guestProfile.name && guestProfile.name !== 'Гость') ? guestProfile.name : 'Гость';
+    const name = isGuest ? guestDisplayName : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
     const lobbyRef = firebaseRtdb.ref('lobbies/' + lobbyId);
     const snap = await lobbyRef.once('value');
     const lobby = snap.val();

@@ -148,8 +148,10 @@ const NetUI = {
       if(pbSub) pbSub.textContent = 'Онлайн';
       if(mAuthBtn) mAuthBtn.style.display = 'none';
     } else {
-      if(pbName) pbName.textContent = 'Гость';
-      if(pbAva) pbAva.textContent = '👽';
+      const cu = ProfilesManager.getCurrent();
+      const gName = (cu && cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
+      if(pbName) pbName.textContent = gName;
+      if(pbAva) pbAva.textContent = (cu && cu.ava) ? cu.ava : '👽';
       if(pbSub) pbSub.textContent = '';
       if(mAuthBtn) mAuthBtn.style.display = '';
     }

@@ -190,7 +190,7 @@ function refreshBars() {
     myName = humanCol === 'w' ? 'Игрок 1' : 'Игрок 2';
     myAva = humanCol === 'w' ? '⚪' : '⚫';
   } else {
-    myName = isGuest ? 'Гость' : (cu.name || 'Игрок');
+    myName = isGuest ? ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') : (cu.name || 'Игрок');
     myAva = isGuest ? '👽' : (cu.ava || '👽');
   }
   const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
@@ -313,7 +313,7 @@ function renderProfBar() {
   }
   if(isGuest) {
     if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
-    if(pbName) pbName.textContent = 'Гость';
+    if(pbName) pbName.textContent = (cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
     if(pbSub) pbSub.innerHTML = '<span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span>';
   } else {
     if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
@@ -764,7 +764,7 @@ function renderProfSettings(cu) {
       const gId = ChesAuth.guestPlayerId || '—';
       infoBox.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">Гость</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') + '</b></div>' +
           '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + gId + '</b></div>' +
           '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">0</b></div>' +
           '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">—</b></div>' +
