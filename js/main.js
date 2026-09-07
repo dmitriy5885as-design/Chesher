@@ -102,10 +102,13 @@ function renderModeList() {
       if(m.id === 'bot' || m.id === 'fischer') {
         modesBox.style.display = 'none';
         showBotSelection();
-      } else if(m.id === 'multiplayer' || m.id === 'ranked') {
+      } else if(m.id === 'ranked') {
         modesBox.style.display = 'none';
-        if(m.id === 'ranked') _lobbyCfg.ranked = true;
-        else _lobbyCfg.ranked = false;
+        _lobbyCfg.ranked = true;
+        showRankedScreen();
+      } else if(m.id === 'multiplayer') {
+        modesBox.style.display = 'none';
+        _lobbyCfg.ranked = false;
         showMultiplayerMenu();
       } else {
         modesBox.style.display = 'none';
@@ -290,9 +293,10 @@ function buildModesCfg(modeId) {
     return;
   }
   
-  // Ranked goes to multiplayer lobby
+  // Ranked goes to ranked screen
   if(modeId === 'ranked') {
-    showMultiplayerMenu();
+    _lobbyCfg.ranked = true;
+    showRankedScreen();
     return;
   }
   
@@ -1013,10 +1017,17 @@ function endGame(reason, winnerColor, drawReason) {
     if(bot) opponentRating = bot.rating;
   }
 
+  // Capture ELO before recordResult
+  const eloBefore = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
+
   cu.recordResult(result, cfg.bot !== 'off', cfg.modeId);
   Store.checkAchievements();
   renderCoins();
   renderProfBar();
+
+  // Calculate ELO change
+  const eloAfter = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
+  const eloChange = eloAfter - eloBefore;
 
   // Show game over overlay
   const goT = document.getElementById('goT');
@@ -1056,12 +1067,17 @@ function endGame(reason, winnerColor, drawReason) {
   } else if(cfg.variant === 'fischer960' || cfg.gameMode === 'fischer') {
     opponentName = 'Фишер 960';
   }
+  const today = new Date();
+  const dateStr = today.getDate() + '.' + (today.getMonth() + 1);
+
   cu.matchHistory.push({
     result: result,
     opponent: opponentName,
     mode: cfg.gameMode || cfg.modeId || 'classic',
     reason: reasons[drawReason] || reasons[reason] || '',
-    time: Date.now()
+    time: Date.now(),
+    eloChange: eloChange,
+    date: dateStr
   });
   if(cu.matchHistory.length > 50) cu.matchHistory = cu.matchHistory.slice(-50);
   saveProfiles();
@@ -1740,6 +1756,71 @@ function startLobbyFromSetup() {
 }
 
 /* --- Меню сетевой игры --- */
+/* --- Экран рейтинговой --- */
+function showRankedScreen() {
+  const cu = ProfilesManager.getCurrent();
+  const elo = cu ? (cu.ratings.ranked || 1000) : 1000;
+  const league = Elo.getLeague(elo);
+
+  // Rating card
+  const leagueIcon = document.getElementById('rankedLeagueIcon');
+  const leagueName = document.getElementById('rankedLeagueName');
+  const eloEl = document.getElementById('rankedElo');
+  if(leagueIcon) leagueIcon.textContent = league.icon;
+  if(leagueName) { leagueName.textContent = league.name; leagueName.style.color = league.color; }
+  if(eloEl) eloEl.textContent = elo;
+
+  // Stats
+  const rankedGames = cu ? (cu.st.games || 0) : 0;
+  const rankedWins = cu ? (cu.st.wins || 0) : 0;
+  const rankedLosses = cu ? (cu.st.losses || 0) : 0;
+  const wr = rankedGames > 0 ? Math.round(rankedWins / rankedGames * 100) : 0;
+  const winsEl = document.getElementById('rankedWins');
+  const lossesEl = document.getElementById('rankedLosses');
+  const wrEl = document.getElementById('rankedWinrate');
+  if(winsEl) winsEl.textContent = rankedWins;
+  if(lossesEl) lossesEl.textContent = rankedLosses;
+  if(wrEl) wrEl.textContent = wr + '%';
+
+  // Recent match history
+  const histBox = document.getElementById('rankedHistory');
+  if(histBox) {
+    histBox.innerHTML = '';
+    const hist = cu && cu.matchHistory ? cu.matchHistory.slice(-10).reverse() : [];
+    if(!hist.length) {
+      histBox.innerHTML = '<div style="color:var(--mut);text-align:center;padding:16px;font-size:13px">Пока нет партий. Сыграйте первую!</div>';
+    } else {
+      hist.forEach(h => {
+        const icon = h.result === 'win' ? '🏆' : h.result === 'loss' ? '😔' : '🤝';
+        const color = h.result === 'win' ? 'var(--green)' : h.result === 'loss' ? 'var(--red)' : 'var(--gold)';
+        const eloChange = h.eloChange != null ? (h.eloChange >= 0 ? '+' + h.eloChange : '' + h.eloChange) : '';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:4px;background:var(--panel2)';
+        row.innerHTML = '<span style="font-size:18px">' + icon + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (h.opponent || 'Соперник') + '</div>' +
+            '<div style="font-size:11px;color:var(--mut)">' + (h.mode || 'Классика') + '</div>' +
+          '</div>' +
+          (eloChange ? '<span style="font-size:13px;font-weight:700;color:' + color + '">' + eloChange + '</span>' : '') +
+          '<span style="font-size:11px;color:var(--mut)">' + (h.date || '') + '</span>';
+        histBox.appendChild(row);
+      });
+    }
+  }
+
+  // Play button
+  const playBtn = document.getElementById('rankedPlayBtn');
+  if(playBtn) {
+    playBtn.onclick = () => {
+      _lobbyCfg.ranked = true;
+      _lobbyCfg.mode = 'classic';
+      showMultiplayerMenu();
+    };
+  }
+
+  showScreen('scrRanked');
+}
+
 function showMultiplayerMenu() {
   showScreen('scrMulti');
   const mpStatus = document.getElementById('mpStatus');

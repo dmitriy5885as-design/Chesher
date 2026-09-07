@@ -237,6 +237,50 @@
     </div>
   </div>
 
+  <!-- ================= ЭКРАН: РЕЙТИНГОВАЯ ================= -->
+  <div class="screen" id="scrRanked">
+    <div class="scrHead">
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Рейтинговая</span>
+    </div>
+    <div style="max-width:420px;margin:0 auto;padding:20px;text-align:center">
+      <!-- Rating card -->
+      <div id="rankedRatingCard" style="background:var(--panel);border:2px solid var(--gold);border-radius:16px;padding:24px 20px;margin-bottom:16px">
+        <div id="rankedLeagueIcon" style="font-size:48px;margin-bottom:8px">🏆</div>
+        <div id="rankedLeagueName" style="color:var(--gold);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Лига</div>
+        <div id="rankedElo" style="font-size:clamp(40px,10vw,64px);font-weight:900;color:var(--txt);line-height:1">1000</div>
+        <div style="color:var(--mut);font-size:12px;margin-top:4px">ELO рейтинг</div>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
+          <div id="rankedWins" style="font-size:22px;font-weight:800;color:var(--green)">0</div>
+          <div style="color:var(--mut);font-size:11px">Побед</div>
+        </div>
+        <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
+          <div id="rankedLosses" style="font-size:22px;font-weight:800;color:var(--red)">0</div>
+          <div style="color:var(--mut);font-size:11px">Поражений</div>
+        </div>
+        <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
+          <div id="rankedWinrate" style="font-size:22px;font-weight:800;color:var(--gold)">0%</div>
+          <div style="color:var(--mut);font-size:11px">Винрейт</div>
+        </div>
+      </div>
+
+      <!-- Recent matches -->
+      <div style="text-align:left;margin-bottom:16px">
+        <div style="color:var(--mut);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">Последние партии</div>
+        <div id="rankedHistory" style="max-height:180px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Play button -->
+      <button class="mBtn primary" id="rankedPlayBtn" style="width:100%;padding:18px;font-size:18px">
+        ⚔ Найти соперника
+      </button>
+    </div>
+  </div>
+
   <!-- ================= ЭКРАН: БЫСТРЫЙ СТАРТ ================= -->
   <div class="screen" id="scrPlay">
     <div class="scrHead">
