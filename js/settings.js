@@ -754,8 +754,6 @@ function repaintAllSegs() {
 function buildSettings() {
   buildBotInfo();
   buildSndSliders();
-  buildThemeSeg();
-  repaintSkin = buildSkinSeg();
   repaintMeme = buildMemeSeg();
   
   // Кнопка выбора бота
