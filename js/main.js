@@ -2828,12 +2828,6 @@ document.addEventListener('DOMContentLoaded', () => {
     hideAllScreens();
   });
 
-  // Profile
-
-
-    });
-  }
-
   // Chat
   bind('chatSend', () => { if(window.Chat) Chat.sendChat(); });
   const chatInp = document.getElementById('chatInput');
