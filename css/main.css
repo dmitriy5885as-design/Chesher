@@ -58,7 +58,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 /* --- Декоративные фигуры на главном меню --- */
 .deco{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden;z-index:0}
-.deco span{position:absolute;opacity:.12;color:#fff;animation:decoFloat 6s ease-in-out infinite}
+.deco span{position:absolute;opacity:.10;color:#fff;animation:decoFloat 8s ease-in-out infinite}
 
 .deco .gunPiece{position:relative}
 .deco .gunOverlay{
@@ -78,8 +78,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 }
 
 @keyframes decoFloat{
-  0%,100%{transform:translateY(0) rotate(0deg)}
-  50%{transform:translateY(-12px) rotate(5deg)}
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
 }
 
 /* --- Логотип --- */

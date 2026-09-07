@@ -1712,7 +1712,8 @@ function startMultiplayerGame(mpColor, opponentName) {
   selected = null;
   legalCache = [];
   hintMove = null;
-  hintCount = 0;
+  hintsLeft = 2;
+  undosLeft = 3;
 
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.clearAll();
   if(cfg.board && BOARDS[cfg.board]) {
@@ -1722,14 +1723,35 @@ function startMultiplayerGame(mpColor, opponentName) {
   }
 
   hideAllScreens();
-  gameBox.style.display = '';
 
   const boardBox = document.getElementById('boardBox');
-  if(boardBox) boardBox.classList.toggle('flipped', mpColor === 'b');
+  if(boardBox) {
+    boardBox.classList.toggle('flipped', mpColor === 'b');
+    boardBox.classList.remove('skin-rajasthani');
+    const skin = SKINS[cfg.skin];
+    if(skin && skin.css) boardBox.classList.add(skin.css);
+  }
 
-  renderPieces();
-  renderStatus();
-  updateClock();
+  buildGrid();
+  fullRender();
+  refreshBars();
+  updateCounters();
+
+  const sl = document.getElementById('statusLine');
+  if(sl) sl.textContent = mpColor === 'w' ? 'Ход белых' : 'Ход чёрных';
+
+  if(cfg.timeSec > 0) {
+    S.clockOn = true;
+    S.time = {w: cfg.timeSec, b: cfg.timeSec};
+    startClock();
+  } else {
+    S.clockOn = false;
+    S.time = null;
+  }
+  updateClockUI();
+
+  const movesEl = document.getElementById('moves');
+  if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
 
   ChesMP.onMove(move => { handleIncomingMove(move); });
   ChesMP.onEnd((winner) => {
@@ -2371,8 +2393,8 @@ document.addEventListener('DOMContentLoaded', () => {
     spans.forEach((el, i) => {
       const sz = 30 + Math.random() * 50;
       el.style.fontSize = sz + 'px';
-      el.style.animationDelay = (Math.random() * 6).toFixed(1) + 's';
-      el.style.animationDuration = (4 + Math.random() * 4).toFixed(1) + 's';
+      el.style.animationDelay = (Math.random() * 8).toFixed(1) + 's';
+      el.style.animationDuration = (6 + Math.random() * 6).toFixed(1) + 's';
 
       if(saved && saved[i]) {
         el.style.left = saved[i].x + '%';
