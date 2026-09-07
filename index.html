@@ -530,6 +530,18 @@
       <button class="btn" data-close="ovOver">Посмотреть доску</button>
     </div>
   </div></div>
+
+  <!-- Оверлей: Пожелания -->
+  <div class="overlay" id="ovFeedback"><div class="modal" style="max-width:460px">
+    <h2 style="margin:0 0 6px">💬 Пожелания и идеи</h2>
+    <p style="color:var(--mut);font-size:13px;margin:0 0 14px">Расскажите, что бы вы хотели увидеть в игре: новые режимы, видеомемы, функции...</p>
+    <textarea id="feedbackText" class="inputTxt" rows="4" maxlength="500" placeholder="Ваша идея..." style="width:100%;resize:vertical;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" data-close="ovFeedback" style="flex:1">Отмена</button>
+      <button class="btn primary" id="feedbackSend" style="flex:1">Отправить</button>
+    </div>
+    <div id="feedbackStatus" style="color:var(--green);font-size:12px;margin-top:8px;text-align:center"></div>
+  </div></div>
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
@@ -570,6 +582,7 @@
 
   <!-- Девблог — левый верх -->
   <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">📝</button>
+  <button class="devblogBtn feedbackBtn" id="feedbackBtn" title="Пожелания и идеи">💬</button>
 
   <!-- Валюта — правый ниж -->
   <div class="cornerFloat" id="cornerFloat">

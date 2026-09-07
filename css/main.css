@@ -49,6 +49,13 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   display:none;flex-direction:column;align-items:center;
   overflow-y:auto;padding:max(20px,env(safe-area-inset-top)) 16px 40px}
 .screen.show{display:flex}
+.screen::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:
+    radial-gradient(circle at 20% 30%,rgba(129,182,76,.06) 0%,transparent 50%),
+    radial-gradient(circle at 80% 70%,rgba(230,168,23,.05) 0%,transparent 50%),
+    radial-gradient(circle at 50% 50%,rgba(16,185,129,.04) 0%,transparent 60%);
+  animation:bgShift 20s ease-in-out infinite alternate}
+@keyframes bgShift{0%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}100%{opacity:.6;transform:scale(1)}}
 .scrHead{width:min(560px,94vw);position:relative;margin-bottom:8px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .backBtn{position:absolute;left:0;top:50%;transform:translateY(-50%);
   background:none;border:1px solid var(--line);color:var(--mut);
@@ -616,6 +623,10 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   position:fixed;top:16px;left:16px;z-index:1100;
 }
 .devblogTop:hover{transform:scale(1.1)}
+.feedbackBtn{
+  position:fixed;top:16px;left:72px;z-index:1100;
+}
+.feedbackBtn:hover{border-color:var(--gold);background:rgba(247,197,49,.15);transform:scale(1.1)}
 
 /* === FRIENDS FLOAT BUTTON === */
 .friendsFloatBtn{

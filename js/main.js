@@ -36,6 +36,8 @@ function showScreen(id) {
   if(giftBtn) giftBtn.style.display = id === 'scrMenu' ? '' : 'none';
   const devblogBtnEl = document.getElementById('devblogBtn');
   if(devblogBtnEl) devblogBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const feedbackBtnEl = document.getElementById('feedbackBtn');
+  if(feedbackBtnEl) feedbackBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const phoneBtnEl = document.getElementById('phoneBtn');
   if(phoneBtnEl) phoneBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const friendsBtn = document.getElementById('friendsFloatBtn');
@@ -2896,6 +2898,51 @@ document.addEventListener('DOMContentLoaded', () => {
       snd.ui();
       renderDevblog();
       showScreen('scrDevblog');
+    });
+  }
+
+  // Feedback button
+  const feedbackBtn = document.getElementById('feedbackBtn');
+  if(feedbackBtn) {
+    feedbackBtn.addEventListener('click', () => {
+      snd.ui();
+      openOv('ovFeedback');
+      const fbStatus = document.getElementById('feedbackStatus');
+      if(fbStatus) fbStatus.textContent = '';
+      const fbText = document.getElementById('feedbackText');
+      if(fbText) fbText.value = '';
+    });
+  }
+  const feedbackSend = document.getElementById('feedbackSend');
+  if(feedbackSend) {
+    feedbackSend.addEventListener('click', () => {
+      const fbText = document.getElementById('feedbackText');
+      const fbStatus = document.getElementById('feedbackStatus');
+      const text = fbText ? fbText.value.trim() : '';
+      if(!text) { toast('Напишите вашу идею'); return; }
+      if(text.length < 5) { toast('Минимум 5 символов'); return; }
+      const user = ChesAuth && ChesAuth.user ? ChesAuth.user : null;
+      const name = user && !user.isAnonymous ? (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок') : 'Гость';
+      const playerId = user && !user.isAnonymous ? (ChesAuth.profile ? ChesAuth.profile.playerId : '') : (ChesAuth.guestPlayerId || '');
+      if(typeof firebaseRtdb !== 'undefined' && firebaseRtdb) {
+        firebaseRtdb.ref('feedback').push({
+          name: name,
+          playerId: playerId,
+          text: text,
+          ts: Date.now()
+        }).then(() => {
+          if(fbStatus) fbStatus.textContent = 'Спасибо за идею! 🎉';
+          if(fbText) fbText.value = '';
+          setTimeout(() => { closeOv('ovFeedback'); }, 1500);
+        }).catch(e => {
+          console.error('Feedback error:', e);
+          toast('Ошибка отправки');
+        });
+      } else {
+        if(fbStatus) fbStatus.textContent = 'Спасибо за идею! 🎉';
+        if(fbText) fbText.value = '';
+        setTimeout(() => { closeOv('ovFeedback'); }, 1500);
+      }
     });
   }
 
