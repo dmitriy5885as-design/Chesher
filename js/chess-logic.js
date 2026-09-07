@@ -635,8 +635,16 @@ class ChessEngine {
           human: this.humanColor,
           bot: cfg.bot,
           skin: cfg.skin,
-          modeId: cfg.modeId
-        }
+          modeId: cfg.modeId,
+          gameMode: cfg.gameMode || 'classic',
+          timeSec: cfg.timeSec || 0
+        },
+        mp: cfg.gameMode === 'multiplayer' ? {
+          lobbyId: ChesMP.lobbyId,
+          myColor: ChesMP.myColor,
+          opponent: ChesMP.opponent,
+          isHost: ChesMP._isHost
+        } : null
       };
       localStorage.setItem('chesher_save', JSON.stringify(data));
     } catch(e) {}

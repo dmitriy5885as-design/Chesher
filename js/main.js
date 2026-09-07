@@ -1311,8 +1311,8 @@ function executeMove(move) {
 
   fullRender();
   
-  // Save game state (skip for multiplayer — can't resume without server)
-  if(S && !S.gameOver && cfg.gameMode !== 'multiplayer') S.saveToStorage();
+  // Save game state
+  if(S && !S.gameOver) S.saveToStorage();
 
   // Update status line
   const sl = document.getElementById('statusLine');
@@ -1707,7 +1707,6 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.human = mpColor;
   cfg.bot = 'off';
 
-  ChessEngine.clearStorage();
   const resumeBtn = document.getElementById('mResume');
   if(resumeBtn) resumeBtn.style.display = 'none';
 
@@ -1800,6 +1799,12 @@ function resumeGame() {
     toast('Нет сохранённой игры');
     return;
   }
+
+  // Multiplayer: try to reconnect to lobby
+  if(savedGame.mp && savedGame.mp.lobbyId) {
+    resumeMultiplayer(savedGame);
+    return;
+  }
   
   // Restore config
   if(savedGame.cfg) {
@@ -1808,6 +1813,8 @@ function resumeGame() {
     if(savedGame.cfg.bot) cfg.bot = savedGame.cfg.bot;
     if(savedGame.cfg.skin) cfg.skin = savedGame.cfg.skin;
     if(savedGame.cfg.modeId) cfg.modeId = savedGame.cfg.modeId;
+    if(savedGame.cfg.gameMode) cfg.gameMode = savedGame.cfg.gameMode;
+    if(savedGame.cfg.timeSec != null) cfg.timeSec = savedGame.cfg.timeSec;
   }
   
   // Create engine and restore state
@@ -1855,6 +1862,116 @@ function resumeGame() {
 
   hideAllScreens();
   toast('Игра восстановлена');
+}
+
+/* --- Восстановление мультиплеерной игры --- */
+async function resumeMultiplayer(savedGame) {
+  const mp = savedGame.mp;
+  if(!mp || !mp.lobbyId) { toast('Нет данных лобби'); return; }
+
+  await ensureAuth();
+  if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
+  if(!firebaseRtdb) { toast('Firebase не подключён'); return; }
+
+  toast('Переподключение к лобби...');
+
+  const ref = firebaseRtdb.ref('lobbies/' + mp.lobbyId);
+  const snap = await ref.once('value');
+  const data = snap.val();
+
+  if(!data || data.status === 'finished' || data.status === 'cancelled') {
+    toast('Игра завершена или лобби удалено');
+    ChessEngine.clearStorage();
+    const resumeBtn = document.getElementById('mResume');
+    if(resumeBtn) resumeBtn.style.display = 'none';
+    return;
+  }
+
+  // Restore MP state
+  ChesMP.lobbyId = mp.lobbyId;
+  ChesMP.myColor = mp.myColor;
+  ChesMP.opponent = mp.opponent;
+  ChesMP._isHost = mp.isHost;
+  ChesMP._started = data.status === 'playing';
+
+  // Restore cfg
+  if(savedGame.cfg) {
+    if(savedGame.cfg.skin) cfg.skin = savedGame.cfg.skin;
+    if(savedGame.cfg.gameMode) cfg.gameMode = savedGame.cfg.gameMode;
+    if(savedGame.cfg.timeSec != null) cfg.timeSec = savedGame.cfg.timeSec;
+    if(savedGame.cfg.modeId) cfg.modeId = savedGame.cfg.modeId;
+  }
+  cfg.human = mp.myColor;
+  cfg.bot = 'off';
+
+  // Create engine and restore state
+  S = new ChessEngine(savedGame.state.variant || 'classic');
+  S.restoreState(savedGame.state);
+  S.humanColor = mp.myColor;
+
+  if(savedGame.moveHistory) S.moveHistory = savedGame.moveHistory;
+  if(savedGame.positionHistory) S.positionHistory = savedGame.positionHistory;
+
+  lastMove = null;
+  selected = null;
+  legalCache = [];
+  hintMove = null;
+  pendingPromo = null;
+  takenByW = [];
+  takenByB = [];
+  isBotThinking = false;
+  hintsLeft = 2;
+  undosLeft = 3;
+
+  // Apply board skin
+  if(cfg.board && BOARDS[cfg.board]) {
+    const b = BOARDS[cfg.board];
+    document.documentElement.style.setProperty('--sq-l', b.light);
+    document.documentElement.style.setProperty('--sq-d', b.dark);
+  }
+
+  hideAllScreens();
+
+  const boardBox = document.getElementById('boardBox');
+  if(boardBox) {
+    boardBox.classList.toggle('flipped', mp.myColor === 'b');
+    boardBox.classList.remove('skin-rajasthani');
+    const skin = SKINS[cfg.skin];
+    if(skin && skin.css) boardBox.classList.add(skin.css);
+  }
+
+  buildGrid();
+  fullRender();
+  refreshBars();
+  updateCounters();
+
+  const movesEl = document.getElementById('moves');
+  if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
+
+  // Status
+  const sl = document.getElementById('statusLine');
+  if(sl) sl.textContent = S.turn === mp.myColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+
+  // Clock
+  if(cfg.timeSec > 0) {
+    S.clockOn = true;
+    S.time = {w: cfg.timeSec, b: cfg.timeSec};
+    startClock();
+  } else {
+    S.clockOn = false;
+    S.time = null;
+  }
+  updateClockUI();
+
+  // Re-register listeners
+  ChesMP.onMove(move => { handleIncomingMove(move); });
+  ChesMP.onEnd((winner) => {
+    const result = winner === mp.myColor ? 'win' : 'loss';
+    endGame('checkmate', winner);
+  });
+  ChesMP._listenGame();
+
+  toast('Сетевая игра: vs ' + (mp.opponent ? mp.opponent.name : 'Соперник'));
 }
 
 /* === ТАБЛИЦА ЛИДЕРОВ === */
@@ -2067,6 +2184,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if(resumeBtn) {
       resumeBtn.style.display = '';
       resumeBtn.disabled = false;
+      // Build label with mode info
+      const isMp = savedGame.mp && savedGame.mp.lobbyId;
+      const modeId = savedGame.cfg ? savedGame.cfg.modeId : '';
+      const modeIcons = { classic: '♟', meme: '🔫', fischer: '🎲' };
+      const modeIcon = modeIcons[modeId] || '♟';
+      const modeNames = { classic: 'Классика', meme: 'Мемасия', fischer: 'Фишер 960' };
+      const modeName = modeNames[modeId] || 'Классика';
+      if(isMp) {
+        const oppName = savedGame.mp.opponent ? savedGame.mp.opponent.name : 'Соперник';
+        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">⚔ По сети vs ' + oppName + '</small>';
+      } else {
+        const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
+        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏠 Локальная' + botLabel + '</small>';
+      }
     }
   } else {
     if(resumeBtn) resumeBtn.style.display = 'none';
