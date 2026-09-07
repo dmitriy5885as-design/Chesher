@@ -2850,6 +2850,7 @@ document.addEventListener('DOMContentLoaded', () => {
           showScreen('scrMenu');
         }
       }
+      renderProfBar();
     });
   });
 
