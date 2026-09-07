@@ -783,7 +783,7 @@ function hideAllScreens() {
 }
 
 /* --- Советы на главном экране --- */
-const TIPS = [
+const TIPS_ALL = [
   '💡 Конь — единственная фигура, которая может перепрыгивать через другие.',
   '💡 Ферзь сочетает силу ладьи и слона — самая мощная фигура.',
   '💡 Рокировка — единственный ход, когда двигаются две фигуры за раз.',
@@ -797,17 +797,32 @@ const TIPS = [
   '💡 Подсказка: нажмите 💡 на панели во время игры, чтобы увидеть лучший ход.',
   '💡 За победу над ботом вы получаете 10 🪙, за ничью — 3 🪙.',
   '💡 Купите скины в 🛍 Магазине за монеты!',
-  '💡 Ежедневный бонус: зайдите в игру и получите 25 🪙 бесплатно.',
   '💡 Используйте ↩️ Назад, чтобы отменить последний ход.',
+  '🔥 Попробуй режим 🔫 Мемасия — шахматы с видео-реакциями на каждый ход!',
+  '🔥 В Мемасии пистолеты наводятся на фигуры, а видео показывают шах и угрозы!',
+  '🔥 Рейтинговый режим 🏆 — играйте по сети и поднимайте свой ELO рейтинг!',
+  '🔥 Режим «На одном ПК» 👥 — играйте с другом за одним компьютером!',
+  '🔥 Фишер 960 🎲 — случайная расстановка фигур для настоящих стратегов!',
 ];
+function getTips() {
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  return TIPS_ALL.filter(t => {
+    if(isGuest && t.indexOf('ежедневн') !== -1) return false;
+    return true;
+  });
+}
 
-let _tipIdx = Math.floor(Math.random() * TIPS.length);
+let _tipIdx = 0;
+let _tipList = [];
 function showRandomTip() {
   const el = document.getElementById('tipBox');
   if(!el) return;
-  el.innerHTML = TIPS[_tipIdx];
+  _tipList = getTips();
+  if(!_tipList.length) { el.innerHTML = ''; return; }
+  _tipIdx = Math.floor(Math.random() * _tipList.length);
+  el.innerHTML = _tipList[_tipIdx];
   el.style.cursor = 'pointer';
-  el.onclick = () => { _tipIdx = (_tipIdx + 1) % TIPS.length; el.innerHTML = TIPS[_tipIdx]; };
+  el.onclick = () => { _tipIdx = (_tipIdx + 1) % _tipList.length; el.innerHTML = _tipList[_tipIdx]; };
 }
 
 /* --- Новая игра --- */

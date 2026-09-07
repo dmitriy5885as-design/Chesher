@@ -577,6 +577,9 @@ const Store = {
     const profile = Store.getCurrentProfile();
     if(!profile) return false;
     
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) return false;
+    
     const today = new Date().toISOString().split('T')[0];
     if(profile.lastBonus === today) return false;
     
