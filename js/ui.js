@@ -348,10 +348,9 @@ function renderProfScr() {
   const ph = document.getElementById('profTabHistory'); if(ph) ph.style.display = 'none';
   const ps = document.getElementById('profTabSettings'); if(ps) ps.style.display = 'none';
 
-  // Hide "new profile" if logged in
+  // Hide "new profile" for all users
   const profNewGroup = document.getElementById('profNewGroup');
-  const isAuth = ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous;
-  if(profNewGroup) profNewGroup.style.display = isAuth ? 'none' : '';
+  if(profNewGroup) profNewGroup.style.display = 'none';
 
   // Guest: show nick (1-time) + avatar; Authenticated: show nick + avatar normally
   const nickGroup = document.getElementById('nickGroup');
@@ -374,8 +373,22 @@ function renderProfScr() {
       const nickWarn = document.getElementById('nickCooldown');
       if(nickWarn) nickWarn.innerHTML = '<span style="color:var(--gold)">⚠ Сменить имя можно только один раз. Выбирайте с умом!</span>';
     }
-    // Guest avatar: always available
-    if(avaGroup) avaGroup.style.display = '';
+    // Guest: hide file upload, show only suggested avatars
+    if(avaGroup) {
+      const fileLabel = avaGroup.querySelector('label[for]');
+      const fileInput = document.getElementById('customAvaInput');
+      const fileHint = avaGroup.querySelector('div[style*="font-size:11px"]');
+      if(fileLabel && fileLabel.querySelector('input[type="file"]')) fileLabel.style.display = 'none';
+      if(fileInput) fileInput.closest('label') ? fileInput.closest('label').style.display = 'none' : null;
+      // Hide the file size hint text
+      if(fileHint) fileHint.style.display = 'none';
+      // Also hide the save button area for file uploads (keep clear for suggested)
+      const saveBtn = document.getElementById('customAvaSave');
+      if(saveBtn) saveBtn.style.display = 'none';
+      // Update title
+      const avaTitle = avaGroup.querySelector('h3');
+      if(avaTitle) avaTitle.textContent = '🖼 Аватарка';
+    }
   } else {
     if(nickGroup) nickGroup.style.display = '';
     if(avaGroup) avaGroup.style.display = '';
