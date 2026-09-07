@@ -810,6 +810,7 @@ function showRandomTip() {
 
 /* --- Новая игра --- */
 function newGame() {
+  if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.forceUnlock();
   // Clear saved game
   ChessEngine.clearStorage();
 
@@ -990,6 +991,7 @@ function stopClock() {
 function endGame(reason, winnerColor, drawReason) {
   S.gameOver = true;
   stopClock();
+  if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.forceUnlock();
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
 
@@ -1100,6 +1102,7 @@ function onSquareClick(e) {
   if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
   if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return;
   if(cfg.gameMode === 'bot' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return;
 
   const sq = e.currentTarget;
   const r = parseInt(sq.dataset.r);
