@@ -135,6 +135,10 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   letter-spacing:1px;color:var(--green);border:1px solid #4c6636;border-radius:4px;
   padding:2px 6px;vertical-align:2px}
 .modeCard.soon{opacity:.6;pointer-events:none}
+.modeCard.mode-ranked{border-color:#e6a817;box-shadow:0 0 16px rgba(230,168,23,.35),0 0 32px rgba(230,168,23,.15);animation:glowPulseYellow 2.5s ease-in-out infinite}
+.modeCard.mode-meme{border-color:#10b981;box-shadow:0 0 16px rgba(16,185,129,.35),0 0 32px rgba(16,185,129,.15);animation:glowPulseEmerald 2.5s ease-in-out infinite}
+@keyframes glowPulseYellow{0%,100%{box-shadow:0 0 16px rgba(230,168,23,.35),0 0 32px rgba(230,168,23,.15)}50%{box-shadow:0 0 22px rgba(230,168,23,.5),0 0 44px rgba(230,168,23,.25)}}
+@keyframes glowPulseEmerald{0%,100%{box-shadow:0 0 16px rgba(16,185,129,.35),0 0 32px rgba(16,185,129,.15)}50%{box-shadow:0 0 22px rgba(16,185,129,.5),0 0 44px rgba(16,185,129,.25)}}
 
 /* --- Групповые заголовки --- */
 .grpTitle{width:min(520px,94vw);color:var(--mut);font-size:11px;font-weight:800;

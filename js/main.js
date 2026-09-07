@@ -90,7 +90,7 @@ function renderModeList() {
   
   MODES.forEach(m => {
     const d = document.createElement('div');
-    d.className = 'modeCard' + (m.id === 'bot' ? ' reco' : '') + (m.soon ? ' soon' : '');
+    d.className = 'modeCard' + (m.id === 'bot' ? ' reco' : '') + (m.soon ? ' soon' : '') + (m.id === 'ranked' ? ' mode-ranked' : '') + (m.id === 'meme' ? ' mode-meme' : '');
     const tag = m.soon ? '<span class="tag soon">СКОРО</span>' : '';
     d.innerHTML = '<div class="ic">' + m.icon + '</div>' +
       '<div class="tx"><div class="nm">' + m.name + '</div>' +
