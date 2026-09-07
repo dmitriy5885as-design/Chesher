@@ -353,12 +353,33 @@ function renderProfScr() {
   const isAuth = ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous;
   if(profNewGroup) profNewGroup.style.display = isAuth ? 'none' : '';
 
-  // Hide nick/avatar settings for guests
+  // Guest: show nick (1-time) + avatar; Authenticated: show nick + avatar normally
   const nickGroup = document.getElementById('nickGroup');
-  const isGuestProf = !ChesAuth.user || ChesAuth.user.isAnonymous;
-  if(nickGroup) nickGroup.style.display = isGuestProf ? 'none' : '';
   const avaGroup = document.getElementById('customAvaGroup');
-  if(avaGroup) avaGroup.style.display = isGuestProf ? 'none' : '';
+  const isGuestProf = !ChesAuth.user || ChesAuth.user.isAnonymous;
+
+  if(isGuestProf) {
+    // Guest nick: 1-time only
+    if(nickGroup) nickGroup.style.display = '';
+    const guestNameChanged = localStorage.getItem('chesher_guest_name_changed');
+    const nickTitle = nickGroup ? nickGroup.querySelector('h3') : null;
+    if(guestNameChanged) {
+      if(nickTitle) nickTitle.textContent = '✏️ Имя (уже использовано)';
+      const nickInputEl = document.getElementById('nickInput');
+      const nickBtnEl = document.getElementById('nickChangeBtn');
+      if(nickInputEl) { nickInputEl.disabled = true; nickInputEl.placeholder = 'Имя уже задано'; }
+      if(nickBtnEl) { nickBtnEl.disabled = true; nickBtnEl.textContent = '✓ Задано'; }
+    } else {
+      if(nickTitle) nickTitle.textContent = '✏️ Имя (только 1 раз!)';
+      const nickWarn = document.getElementById('nickCooldown');
+      if(nickWarn) nickWarn.innerHTML = '<span style="color:var(--gold)">⚠ Сменить имя можно только один раз. Выбирайте с умом!</span>';
+    }
+    // Guest avatar: always available
+    if(avaGroup) avaGroup.style.display = '';
+  } else {
+    if(nickGroup) nickGroup.style.display = '';
+    if(avaGroup) avaGroup.style.display = '';
+  }
 
   // Show playerId in profile header
   const profHeader = document.getElementById('profHeader');
@@ -380,29 +401,44 @@ function renderProfScr() {
   const nickInput = document.getElementById('nickInput');
   const nickBtn = document.getElementById('nickChangeBtn');
   const nickCd = document.getElementById('nickCooldown');
+  const isGuestProfile = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const guestNameUsed = isGuestProfile && localStorage.getItem('chesher_guest_name_changed');
   if(cu && nickBtn) {
-    const cooldown = cu.getNickChangeCooldown();
-    if(cooldown) {
+    if(guestNameUsed) {
       nickBtn.disabled = true;
-      nickBtn.textContent = '⏳';
-      if(nickCd) nickCd.textContent = 'Следующая смена через: ' + cooldown;
+      nickBtn.textContent = '✓ Задано';
+      nickInput.disabled = true;
+      nickInput.value = cu.name || '';
+      if(nickCd) nickCd.innerHTML = '<span style="color:var(--mut)">Имя уже задано</span>';
     } else {
-      nickBtn.disabled = false;
-      nickBtn.textContent = 'Изменить';
-      if(nickCd) nickCd.textContent = '';
+      const cooldown = cu.getNickChangeCooldown();
+      if(!isGuestProfile && cooldown) {
+        nickBtn.disabled = true;
+        nickBtn.textContent = '⏳';
+        if(nickCd) nickCd.textContent = 'Следующая смена через: ' + cooldown;
+      } else {
+        nickBtn.disabled = false;
+        nickBtn.textContent = isGuestProfile ? 'Задать имя' : 'Изменить';
+        if(nickCd && !isGuestProfile) nickCd.textContent = '';
+      }
     }
     nickBtn.onclick = () => {
+      if(guestNameUsed) { toast('Имя уже задано — его нельзя изменить'); return; }
       const name = nickInput.value.trim();
       if(!name) { toast('Введите ник'); return; }
       if(name.length < 2) { toast('Минимум 2 символа'); return; }
+      if(isGuestProfile && !confirm('Вы уверены? Имя можно задать только ОДИН раз!')) return;
       if(cu.changeNick(name)) {
+        if(isGuestProfile) {
+          localStorage.setItem('chesher_guest_name_changed', '1');
+        }
         saveProfiles();
         if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
           ChesAuth.updateProfile({ name: name });
         }
         renderProfScr();
         renderProfBar();
-        toast('Ник изменён на "' + name + '"');
+        toast('Имя задано: "' + name + '"');
         nickInput.value = '';
       }
     };
