@@ -140,7 +140,7 @@ function paintMarks() {
 
 /* --- Обновление панелей --- */
 function refreshBars() {
-  const humanCol = S ? S.humanColor : cfg.human;
+  const humanCol = cfg.gameMode === 'local' && S ? S.turn : (S ? S.humanColor : cfg.human);
   const topCol = humanCol === 'w' ? 'b' : 'w';
   const elNameTop = document.getElementById('nameTop');
   const elNameBot = document.getElementById('nameBot');
@@ -151,7 +151,13 @@ function refreshBars() {
   const botId = cu ? (cu.botId || 1) : 1;
   const bot = BOT_LIST.find(b => b.id === botId);
 
-  if(cfg.bot !== 'off' && bot) {
+  if(cfg.gameMode === 'local' && S) {
+    const myLabel = humanCol === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+    const oppLabel = topCol === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+    if(elNameTop) elNameTop.textContent = oppLabel;
+    if(elAvaTop) elAvaTop.textContent = topCol === 'w' ? '⚪' : '⚫';
+    if(elNmTop) elNmTop.textContent = oppLabel;
+  } else if(cfg.bot !== 'off' && bot) {
     if(elNameTop) elNameTop.textContent = bot.emoji + ' ' + bot.name;
     if(elAvaTop) elAvaTop.textContent = bot.emoji;
     if(elNmTop) elNmTop.textContent = bot.name;
@@ -179,8 +185,14 @@ function refreshBars() {
   }
 
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
-  const myName = isGuest ? 'Гость' : (cu.name || 'Игрок');
-  const myAva = isGuest ? '👽' : (cu.ava || '👽');
+  let myName, myAva;
+  if(cfg.gameMode === 'local' && S) {
+    myName = humanCol === 'w' ? 'Игрок 1' : 'Игрок 2';
+    myAva = humanCol === 'w' ? '⚪' : '⚫';
+  } else {
+    myName = isGuest ? 'Гость' : (cu.name || 'Игрок');
+    myAva = isGuest ? '👽' : (cu.ava || '👽');
+  }
   const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
   if(elNameBot) elNameBot.textContent = myAva + ' ' + myName + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
 

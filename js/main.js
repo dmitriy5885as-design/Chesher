@@ -99,7 +99,7 @@ function renderModeList() {
       selectedModeId = m.id;
       cfg.modeId = m.id;
       cfg.gameMode = m.id === 'bot' ? 'bot' : m.id === 'fischer' ? 'fischer' : m.id;
-      if(m.id === 'bot' || m.id === 'fischer') {
+      if(m.id === 'bot' || m.id === 'fischer' || m.id === 'ranked') {
         modesBox.style.display = 'none';
         showBotSelection();
       } else if(m.id === 'multiplayer') {
@@ -272,7 +272,7 @@ function buildModesCfg(modeId) {
   const variantGroup = document.getElementById('variantCfgGroup');
   const cfgTitle = document.getElementById('modesCfgTitle');
   
-  const modeNames = {classic:'Классика',bot:'Против бота',fischer:'Фишер 960',meme:'Мемасия',tournament:'Турнир'};
+  const modeNames = {classic:'Классика',bot:'Против бота',fischer:'Фишер 960',meme:'Мемасия',tournament:'Турнир',local:'На одном ПК',ranked:'Рейтинговая'};
   if(cfgTitle) cfgTitle.textContent = 'Настройки: ' + (modeNames[modeId] || modeId);
   
   // Tournament placeholder
@@ -282,8 +282,8 @@ function buildModesCfg(modeId) {
     return;
   }
   
-  // For bot/fischer — redirect to bot selection
-  if(modeId === 'bot' || modeId === 'fischer') {
+  // For bot/fischer/ranked — redirect to bot selection
+  if(modeId === 'bot' || modeId === 'fischer' || modeId === 'ranked') {
     showBotSelection();
     return;
   }
@@ -294,6 +294,27 @@ function buildModesCfg(modeId) {
   if(sideGroup) sideGroup.style.display = 'none';
   if(variantGroup) variantGroup.style.display = 'none';
   if(timeGroup) timeGroup.style.display = '';
+  
+  // Local 2-player mode
+  if(modeId === 'local') {
+    if(sideGroup) sideGroup.style.display = 'none';
+    cfg.bot = 'off';
+    
+    // Time
+    buildSeg('segTime', [
+      {v: 120, label: '⚡ 2 мин', sub: ''},
+      {v: 300, label: '🔥 5 мин', sub: ''},
+      {v: 600, label: '🎯 10 мин', sub: ''},
+      {v: 1800, label: '🕐 30 мин', sub: ''},
+      {v: 0, label: '∞', sub: 'без часов'}
+    ], () => cfg.timeSec, v => {
+      cfg.timeSec = v;
+      saveCfg();
+    });
+    
+    saveCfg();
+    return;
+  }
   
   // Мемасия mode
   if(modeId === 'meme') {
@@ -784,8 +805,15 @@ function newGame() {
   if(cfg.modeId === 'meme') {
     cfg.gameMode = 'meme';
     MemeConfig.set('enabled', true);
-  } else if(cfg.modeId === 'bot' || cfg.bot !== 'off') {
+  } else if(cfg.modeId === 'ranked') {
+    cfg.gameMode = 'ranked';
+    MemeConfig.set('enabled', false);
+  } else if(cfg.modeId === 'bot' || (cfg.bot !== 'off' && cfg.modeId !== 'local')) {
     cfg.gameMode = 'bot';
+    MemeConfig.set('enabled', false);
+  } else if(cfg.modeId === 'local') {
+    cfg.gameMode = 'local';
+    cfg.bot = 'off';
     MemeConfig.set('enabled', false);
   } else if(cfg.variant === 'fischer960') {
     cfg.gameMode = 'fischer';
@@ -828,7 +856,7 @@ function newGame() {
   S.humanColor = humanColor;
 
   // Bot greeting
-  if(cfg.bot !== 'off') {
+  if(cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') {
     const cu = ProfilesManager.getCurrent();
     const botId = cu ? (cu.botId || 1) : 1;
     const bot = BOT_LIST.find(b => b.id === botId);
@@ -893,7 +921,7 @@ function newGame() {
   updateClockUI();
 
   // If human plays black, bot moves first
-  if(humanColor === 'b' && cfg.bot !== 'off') {
+  if(humanColor === 'b' && (cfg.gameMode === 'bot' || cfg.gameMode === 'ranked')) {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 600);
@@ -989,7 +1017,14 @@ function endGame(reason, winnerColor, drawReason) {
     resign: 'Сдача', draw: 'По соглашению',
     '50-move': 'Правило 50 ходов', repetition: 'Тройное повторение', insufficient: 'Недостаток материала'
   };
-  if(goT) goT.textContent = result === 'win' ? '🏆 Победа!' : result === 'loss' ? '😔 Поражение' : '🤝 Ничья';
+  if(goT) {
+    if(cfg.gameMode === 'local' && reason !== 'draw' && winnerColor) {
+      const winnerName = winnerColor === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+      goT.textContent = '🏆 ' + winnerName + ' победил!';
+    } else {
+      goT.textContent = result === 'win' ? '🏆 Победа!' : result === 'loss' ? '😔 Поражение' : '🤝 Ничья';
+    }
+  }
   if(goS) goS.textContent = reasons[drawReason] || reasons[reason] || '';
   openOv('ovOver');
   snd[result === 'win' ? 'win' : result === 'loss' ? 'lose' : 'draw']();
@@ -999,10 +1034,12 @@ function endGame(reason, winnerColor, drawReason) {
   // Record match history
   if(!cu.matchHistory) cu.matchHistory = [];
   let opponentName = 'Локальная игра';
-  if(cfg.gameMode === 'bot') {
+  if(cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') {
     const botId = cu.botId || 1;
     const bot = BOT_LIST.find(b => b.id === botId);
     opponentName = bot ? '🤖 ' + bot.name : '🤖 Бот';
+  } else if(cfg.gameMode === 'local') {
+    opponentName = winnerColor === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
   } else if(cfg.gameMode === 'multiplayer' && ChesMP && ChesMP.opponent) {
     opponentName = ChesMP.opponent.name;
   } else if(cfg.gameMode === 'meme') {
@@ -1036,7 +1073,7 @@ function endGame(reason, winnerColor, drawReason) {
 function onSquareClick(e) {
   if(!S || S.gameOver || isBotThinking) return;
   if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
-  if(cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if((cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
 
   const sq = e.currentTarget;
   const r = parseInt(sq.dataset.r);
@@ -1314,12 +1351,23 @@ function executeMove(move) {
   // Save game state
   if(S && !S.gameOver) S.saveToStorage();
 
+  // Local 2-player: flip board and show "pass device" between turns
+  if(cfg.gameMode === 'local' && !S.gameOver) {
+    const boardBox = document.getElementById('boardBox');
+    if(boardBox) boardBox.classList.toggle('flipped', S.turn === 'b');
+    refreshBars();
+    showPassScreen();
+  }
+
   // Update status line
   const sl = document.getElementById('statusLine');
   if(sl) {
     if(S.inCheck(S.turn)) { sl.textContent = '⚠ Шах!'; snd.check(); }
     else if(cfg.gameMode === 'multiplayer') {
       sl.textContent = S.turn === S.humanColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+    }
+    else if(cfg.gameMode === 'local') {
+      sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
     }
     else sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
   }
@@ -1338,10 +1386,29 @@ function executeMove(move) {
   if(drawReason) {
     setTimeout(() => endGame('draw', null, drawReason), 300);
     return;
+}
+
+/* --- Экран передачи устройства (local 2P) --- */
+function showPassScreen() {
+  if(!S || S.gameOver) return;
+  const nextColor = S.turn === 'w' ? '⚪ Белые' : '⚫ Чёрные';
+  const nextPlayer = S.turn === 'w' ? 'Игрок 1' : 'Игрок 2';
+  let passEl = document.getElementById('passOverlay');
+  if(!passEl) {
+    passEl = document.createElement('div');
+    passEl.id = 'passOverlay';
+    passEl.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-family:inherit';
+    document.body.appendChild(passEl);
   }
+  passEl.innerHTML = '<div style="font-size:clamp(22px,5vw,36px);font-weight:800;letter-spacing:3px;margin-bottom:12px">' + nextColor + '</div>' +
+    '<div style="font-size:clamp(14px,3vw,20px);opacity:.7;margin-bottom:30px">' + nextPlayer + ', ваш ход</div>' +
+    '<div style="font-size:clamp(12px,2.5vw,16px);opacity:.4">Нажмите чтобы продолжить</div>';
+  passEl.style.display = 'flex';
+  passEl.onclick = () => { passEl.style.display = 'none'; passEl.onclick = null; };
+}
 
   // Bot's turn
-  if(cfg.bot !== 'off' && S.turn !== S.humanColor && !S.gameOver) {
+  if((cfg.gameMode === 'bot' || cfg.gameMode === 'ranked') && S.turn !== S.humanColor && !S.gameOver) {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 1200);
@@ -2003,10 +2070,10 @@ function renderLeaderboard(mode) {
   const players = profiles
     .filter(p => p.name && p.name !== 'Гость' && p.name !== 'Guest')
     .map(p => {
-      const ratings = p.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000};
+      const ratings = p.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000,ranked:1000};
       let rating;
       if(lbMode === 'overall') {
-        rating = Math.round((ratings.classic + ratings.bot + ratings.fischer + ratings.meme) / 4);
+        rating = Math.round((ratings.classic + ratings.bot + ratings.fischer + ratings.meme + ratings.ranked) / 5);
       } else {
         rating = ratings[lbMode] || 0;
       }
@@ -2124,7 +2191,7 @@ function cheatMaxElo() {
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
   cu.elo = 3000;
-  cu.ratings = {classic:3000, bot:3000, fischer:3000, meme:3000};
+  cu.ratings = {classic:3000, bot:3000, fischer:3000, meme:3000, ranked:3000};
   saveProfiles();
   renderProfBar();
   toast('↑ Эло 3000');
@@ -2133,7 +2200,7 @@ function cheatResetElo() {
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
   cu.elo = 0;
-  cu.ratings = {classic:1000, bot:1000, fischer:1000, meme:1000};
+  cu.ratings = {classic:1000, bot:1000, fischer:1000, meme:1000, ranked:1000};
   saveProfiles();
   renderProfBar();
   toast('↓ Эло 1000');
@@ -2187,13 +2254,18 @@ document.addEventListener('DOMContentLoaded', () => {
       // Build label with mode info
       const isMp = savedGame.mp && savedGame.mp.lobbyId;
       const modeId = savedGame.cfg ? savedGame.cfg.modeId : '';
-      const modeIcons = { classic: '♟', meme: '🔫', fischer: '🎲' };
+      const modeIcons = { classic: '♟', meme: '🔫', fischer: '🎲', local: '👥', ranked: '🏆' };
       const modeIcon = modeIcons[modeId] || '♟';
-      const modeNames = { classic: 'Классика', meme: 'Мемасия', fischer: 'Фишер 960' };
-      const modeName = modeNames[modeId] || 'Классика';
+      const modeNames2 = { classic: 'Классика', meme: 'Мемасия', fischer: 'Фишер 960', local: 'На одном ПК', ranked: 'Рейтинговая', bot: 'Против бота' };
+      const modeName = modeNames2[modeId] || 'Классика';
       if(isMp) {
         const oppName = savedGame.mp.opponent ? savedGame.mp.opponent.name : 'Соперник';
         resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">⚔ По сети vs ' + oppName + '</small>';
+      } else if(modeId === 'local') {
+        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">👥 Два игрока</small>';
+      } else if(modeId === 'ranked') {
+        const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
+        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏆 За ELO рейтинг' + botLabel + '</small>';
       } else {
         const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
         resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏠 Локальная' + botLabel + '</small>';

@@ -18,17 +18,19 @@ const cfg = {
   skin: 'classic',
   board: 'classic',
   shopTab: 'skins',
-  gameMode: 'classic' // classic | bot | fischer | meme
+  gameMode: 'classic' // classic | bot | fischer | meme | local | ranked | multiplayer
 };
 
 /* --- Режимы игры --- */
 const MODES = [
   {id: 'meme', icon: '🔫', name: 'Мемасия', desc: 'Шахматы, но есть нюансы...'},
-  {id: 'classic', icon: '♟', name: 'Классика', desc: 'Стандартные шахматы против игрока'},
+  {id: 'classic', icon: '♟', name: 'Классика', desc: 'Стандартные шахматы против бота'},
+  {id: 'local', icon: '👥', name: 'На одном ПК', desc: 'Два игрока за одним компьютером'},
   {id: 'bot', icon: '🤖', name: 'Против бота', desc: 'Игра против ИИ'},
+  {id: 'ranked', icon: '🏆', name: 'Рейтинговая', desc: 'Игра за ELO рейтинг'},
   {id: 'fischer', icon: '🎲', name: 'Фишер 960', desc: 'Случайная расстановка фигур'},
   {id: 'multiplayer', icon: '🌐', name: 'По сети', desc: 'Игра с другом онлайн'},
-  {id: 'tournament', icon: '🏆', name: 'Турнир', desc: 'Скоро...', soon: true}
+  {id: 'tournament', icon: '🏅', name: 'Турнир', desc: 'Скоро...', soon: true}
 ];
 
 /* --- Звук через Web Audio API --- */
