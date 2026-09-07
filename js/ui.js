@@ -191,7 +191,7 @@ function refreshBars() {
     myAva = humanCol === 'w' ? '⚪' : '⚫';
   } else {
     myName = isGuest ? ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') : (cu.name || 'Игрок');
-    myAva = isGuest ? '👽' : (cu.ava || '👽');
+    myAva = cu.ava || '👽';
   }
   const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
   if(elNameBot) elNameBot.textContent = myAva + ' ' + myName + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
@@ -308,7 +308,7 @@ function renderProfBar() {
     if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      pbAva.textContent = isGuest ? '👽' : (cu.ava || '👽');
+      pbAva.textContent = cu.ava || '👽';
     }
   }
   if(isGuest) {
