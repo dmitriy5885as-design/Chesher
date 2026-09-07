@@ -2829,32 +2829,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Profile
-  bind('npCreate', () => {
-    const inp = document.getElementById('npName');
-    const name = inp ? inp.value.trim() : '';
-    if(!name) { toast('Введите имя'); return; }
-    const selectedAva = document.querySelector('#emoGrid .emo.sel');
-    const avaIdx = selectedAva ? parseInt(selectedAva.dataset.idx) : Math.floor(Math.random() * DEFAULT_AVATARS.length);
-    ProfilesManager.newProfile(name, avaIdx);
-    renderProfScr();
-    renderProfBar();
-    if(inp) inp.value = '';
-    toast('Профиль создан');
-  });
 
-  // Avatar grid
-  const emoGrid = document.getElementById('emoGrid');
-  if(emoGrid) {
-    DEFAULT_AVATARS.forEach((ava, i) => {
-      const d = document.createElement('div');
-      d.className = 'emo' + (i === 0 ? ' sel' : '');
-      d.textContent = ava;
-      d.dataset.idx = i;
-      d.addEventListener('click', () => {
-        emoGrid.querySelectorAll('.emo').forEach(e => e.classList.remove('sel'));
-        d.classList.add('sel');
-      });
-      emoGrid.appendChild(d);
+
     });
   }
 

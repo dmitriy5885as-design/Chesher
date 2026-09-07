@@ -348,10 +348,6 @@ function renderProfScr() {
   const ph = document.getElementById('profTabHistory'); if(ph) ph.style.display = 'none';
   const ps = document.getElementById('profTabSettings'); if(ps) ps.style.display = 'none';
 
-  // Hide "new profile" for all users
-  const profNewGroup = document.getElementById('profNewGroup');
-  if(profNewGroup) profNewGroup.style.display = 'none';
-
   // Guest: show nick (1-time) + avatar; Authenticated: show nick + avatar normally
   const nickGroup = document.getElementById('nickGroup');
   const avaGroup = document.getElementById('customAvaGroup');
