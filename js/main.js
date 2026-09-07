@@ -1311,8 +1311,8 @@ function executeMove(move) {
 
   fullRender();
   
-  // Save game state
-  if(S && !S.gameOver) S.saveToStorage();
+  // Save game state (skip for multiplayer — can't resume without server)
+  if(S && !S.gameOver && cfg.gameMode !== 'multiplayer') S.saveToStorage();
 
   // Update status line
   const sl = document.getElementById('statusLine');
@@ -1706,6 +1706,10 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.gameMode = 'multiplayer';
   cfg.human = mpColor;
   cfg.bot = 'off';
+
+  ChessEngine.clearStorage();
+  const resumeBtn = document.getElementById('mResume');
+  if(resumeBtn) resumeBtn.style.display = 'none';
 
   const ls = NetUI._lobbySettings || ChesMP.lobbySettings || {};
   const mpMode = ls.mode || 'classic';
