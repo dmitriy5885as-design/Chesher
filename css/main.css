@@ -1429,8 +1429,9 @@ body.mobile-mode .segBtn{min-height:40px}
 body.mobile-mode .btn .btnText{display:none}
 body.mobile-mode #side .btn{padding:0 12px;font-size:16px}
 
-/* Мобильный: девблог/фидбек скрыты, показ в настройках */
+/* Мобильный: девблог/фидбек/QR скрыты, показ в настройках */
 .mobileOnlyLinks{display:none}
 body.mobile-mode .mobileOnlyLinks{display:block!important}
 body.mobile-mode .devblogTop,
-body.mobile-mode .feedbackBtn{display:none!important}
+body.mobile-mode .feedbackBtn,
+body.mobile-mode .qrBtn{display:none!important}

@@ -2460,6 +2460,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('qrOverlay');
     if(overlay) overlay.classList.remove('show');
   });
+  bind('qrBtnMob', () => {
+    const overlay = document.getElementById('qrOverlay');
+    const qrImg = document.getElementById('qrImg');
+    const qrUrl = document.getElementById('qrUrl');
+    if(!overlay) return;
+    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(GAME_URL);
+    if(qrUrl) qrUrl.textContent = GAME_URL;
+    overlay.classList.add('show');
+  });
   const qrUrlEl = document.getElementById('qrUrl');
   if(qrUrlEl) qrUrlEl.addEventListener('click', () => {
     navigator.clipboard.writeText(GAME_URL).then(() => toast('📋 Ссылка скопирована!')).catch(() => {});
