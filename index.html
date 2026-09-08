@@ -7,10 +7,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.21.0">
+  <link rel="stylesheet" href="css/main.css?v=0.22.0">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.21.0">
+  <link rel="stylesheet" href="css/animations.css?v=0.22.0">
 
 </head>
 <body>
@@ -430,6 +430,11 @@
     <div class="setGroup" style="margin-top:20px">
       <button class="mBtn" id="btnReset" style="background:var(--red);color:#fff">🗑 Сбросить все данные</button>
     </div>
+
+    <div class="setGroup mobileOnlyLinks" style="margin-top:20px">
+      <button class="mBtn" id="feedbackBtnMob">💬 Пожелания и идеи</button>
+      <button class="mBtn" id="devblogBtnMob">📝 Девблог</button>
+    </div>
   </div>
   
   <!-- ИГРА -->
@@ -480,10 +485,10 @@
       <div id="modeLabel"></div>
       <button class="btn primary" id="btnNew">Новая партия</button>
       <button class="btn" id="btnGoMenu">🏠 Главное меню</button>
-      <button class="btn" id="btnSet">⚙ Настройки</button>
+      <button class="btn" id="btnSet">⚙ <span class="btnText">Настройки</span></button>
       <div class="row2">
-        <button class="btn" id="btnHint">💡 Ход <span id="hintN">(2)</span></button>
-        <button class="btn" id="btnUndo">↩️ Назад <span id="undoN">(3)</span></button>
+        <button class="btn" id="btnHint">💡 <span class="btnText">Ход</span> <span id="hintN">(2)</span></button>
+        <button class="btn" id="btnUndo">↩️ <span class="btnText">Назад</span> <span id="undoN">(3)</span></button>
       </div>
       <div class="row2">
         <button class="btn warn" id="btnRes">Сдаться</button>
@@ -550,22 +555,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке -->
-  <script src="js/chess-logic.js?v=0.20.0"></script>
-  <script src="js/bot.js?v=0.20.0"></script>
-  <script src="js/elo.js?v=0.20.0"></script>
-  <script src="js/profile.js?v=0.20.0"></script>
-  <script src="js/ui.js?v=0.20.0"></script>
-  <script src="js/chat.js?v=0.20.0"></script>
-  <script src="js/store.js?v=0.20.0"></script>
-  <script src="js/settings.js?v=0.20.0"></script>
-  <script src="js/meme/MemeEventBus.js?v=0.20.0"></script>
-  <script src="js/meme/MemeConfig.js?v=0.20.0"></script>
-  <script src="js/meme/MemeThreatHandler.js?v=0.20.0"></script>
-  <script src="js/firebase-config.js?v=0.20.0"></script>
-  <script src="js/auth.js?v=0.20.0"></script>
-  <script src="js/friends.js?v=0.20.0"></script>
-  <script src="js/multiplayer.js?v=0.20.0"></script>
-  <script src="js/net-ui.js?v=0.20.0"></script>
+  <script src="js/chess-logic.js?v=0.22.0"></script>
+  <script src="js/bot.js?v=0.22.0"></script>
+  <script src="js/elo.js?v=0.22.0"></script>
+  <script src="js/profile.js?v=0.22.0"></script>
+  <script src="js/ui.js?v=0.22.0"></script>
+  <script src="js/chat.js?v=0.22.0"></script>
+  <script src="js/store.js?v=0.22.0"></script>
+  <script src="js/settings.js?v=0.22.0"></script>
+  <script src="js/meme/MemeEventBus.js?v=0.22.0"></script>
+  <script src="js/meme/MemeConfig.js?v=0.22.0"></script>
+  <script src="js/meme/MemeThreatHandler.js?v=0.22.0"></script>
+  <script src="js/firebase-config.js?v=0.22.0"></script>
+  <script src="js/auth.js?v=0.22.0"></script>
+  <script src="js/friends.js?v=0.22.0"></script>
+  <script src="js/multiplayer.js?v=0.22.0"></script>
+  <script src="js/net-ui.js?v=0.22.0"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -675,7 +680,7 @@
     </div>
   </div>
   
-  <script src="js/main.js?v=0.20.0"></script>
+  <script src="js/main.js?v=0.22.0"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>

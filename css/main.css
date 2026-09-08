@@ -1410,6 +1410,10 @@ body.mobile-mode .memeAvailList{max-height:120px}
 /* --- Чат в игре --- */
 body.mobile-mode #chatBox{border-radius:8px}
 
+/* Мобильный: скрыть чат в игре, оставить название режима */
+body.mobile-mode .chatBox{display:none!important}
+body.mobile-mode #modeLabel{display:block!important}
+
 /* --- Кнопка фидбека --- */
 body.mobile-mode .feedbackBtn{
   bottom:max(12px,env(safe-area-inset-bottom))!important;right:12px!important;
@@ -1420,3 +1424,13 @@ body.mobile-mode .sq{min-height:12px}
 body.mobile-mode .btn{min-height:44px}
 body.mobile-mode .mBtn{min-height:48px}
 body.mobile-mode .segBtn{min-height:40px}
+
+/* === Мобильный: упрощение элементов === */
+body.mobile-mode .btn .btnText{display:none}
+body.mobile-mode #side .btn{padding:0 12px;font-size:16px}
+
+/* Мобильный: девблог/фидбек скрыты, показ в настройках */
+.mobileOnlyLinks{display:none}
+body.mobile-mode .mobileOnlyLinks{display:block!important}
+body.mobile-mode .devblogTop,
+body.mobile-mode .feedbackBtn{display:none!important}

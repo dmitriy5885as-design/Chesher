@@ -39,7 +39,7 @@ function showScreen(id) {
   const feedbackBtnEl = document.getElementById('feedbackBtn');
   if(feedbackBtnEl) feedbackBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const phoneBtnEl = document.getElementById('phoneBtn');
-  if(phoneBtnEl) phoneBtnEl.style.display = '';
+  if(phoneBtnEl) phoneBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const qrBtnEl = document.getElementById('qrBtn');
   if(qrBtnEl) qrBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const friendsBtn = document.getElementById('friendsFloatBtn');
@@ -2971,8 +2971,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if(fbText) fbText.value = '';
     });
   }
-  const feedbackSend = document.getElementById('feedbackSend');
-  if(feedbackSend) {
+
+  // Mobile settings: devblog + feedback (reuse top button actions)
+  const devblogBtnMob = document.getElementById('devblogBtnMob');
+  if(devblogBtnMob) {
+    devblogBtnMob.addEventListener('click', () => {
+      snd.ui();
+      renderDevblog();
+      showScreen('scrDevblog');
+    });
+  }
+  const feedbackBtnMob = document.getElementById('feedbackBtnMob');
+  if(feedbackBtnMob) {
+    feedbackBtnMob.addEventListener('click', () => {
+      snd.ui();
+      openOv('ovFeedback');
+      const fbStatus = document.getElementById('feedbackStatus');
+      if(fbStatus) fbStatus.textContent = '';
+      const fbText = document.getElementById('feedbackText');
+      if(fbText) fbText.value = '';
+    });
+  }
+  const feedbackSend = document.getElementById('feedbackSend');  if(feedbackSend) {
     feedbackSend.addEventListener('click', () => {
       const fbText = document.getElementById('feedbackText');
       const fbStatus = document.getElementById('feedbackStatus');
