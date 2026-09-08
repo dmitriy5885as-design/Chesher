@@ -39,7 +39,9 @@ function showScreen(id) {
   const feedbackBtnEl = document.getElementById('feedbackBtn');
   if(feedbackBtnEl) feedbackBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const phoneBtnEl = document.getElementById('phoneBtn');
-  if(phoneBtnEl) phoneBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  if(phoneBtnEl) phoneBtnEl.style.display = '';
+  const qrBtnEl = document.getElementById('qrBtn');
+  if(qrBtnEl) qrBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
   const friendsBtn = document.getElementById('friendsFloatBtn');
   if(friendsBtn) friendsBtn.style.display = id === 'scrMenu' ? '' : 'none';
   if(id !== 'scrMenu') {
@@ -952,7 +954,7 @@ function newGame() {
   updateClockUI();
 
   // If human plays black, bot moves first
-  if(humanColor === 'b' && cfg.gameMode === 'bot') {
+  if(humanColor === 'b' && (cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off') {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 600);
@@ -1119,6 +1121,7 @@ function onSquareClick(e) {
   if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
   if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return;
   if(cfg.gameMode === 'bot' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'meme' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
   if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return;
 
   const sq = e.currentTarget;
@@ -1432,6 +1435,14 @@ function executeMove(move) {
   if(drawReason) {
     setTimeout(() => endGame('draw', null, drawReason), 300);
     return;
+  }
+
+  // Bot's turn
+  if((cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off' && S.turn !== S.humanColor && !S.gameOver) {
+    const sl = document.getElementById('statusLine');
+    if(sl) sl.textContent = '🤖 Бот думает...';
+    setTimeout(botMove, 800 + Math.random() * 1200);
+  }
 }
 
 /* --- Экран передачи устройства (local 2P) --- */
@@ -1451,14 +1462,6 @@ function showPassScreen() {
     '<div style="font-size:clamp(12px,2.5vw,16px);opacity:.4">Нажмите чтобы продолжить</div>';
   passEl.style.display = 'flex';
   passEl.onclick = () => { passEl.style.display = 'none'; passEl.onclick = null; };
-}
-
-  // Bot's turn
-  if(cfg.gameMode === 'bot' && S.turn !== S.humanColor && !S.gameOver) {
-    const sl = document.getElementById('statusLine');
-    if(sl) sl.textContent = '🤖 Бот думает...';
-    setTimeout(botMove, 800 + Math.random() * 1200);
-  }
 }
 
 /* --- Ход бота --- */
@@ -2425,6 +2428,46 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
   bind('helpBtn', () => { toast('Раздел помощи скоро будет доступен!'); });
+
+  // Mobile mode toggle
+  const phoneBtn = document.getElementById('phoneBtn');
+  if(phoneBtn) {
+    if(localStorage.getItem('chesher_mobile') === 'on') {
+      document.body.classList.add('mobile-mode');
+      phoneBtn.title = 'Десктопный режим';
+    }
+    phoneBtn.addEventListener('click', () => {
+      document.body.classList.toggle('mobile-mode');
+      const isMobile = document.body.classList.contains('mobile-mode');
+      localStorage.setItem('chesher_mobile', isMobile ? 'on' : 'off');
+      phoneBtn.title = isMobile ? 'Десктопный режим' : 'Мобильный режим';
+      toast(isMobile ? '📱 Мобильный режим' : '🖥 Десктопный режим');
+    });
+  }
+
+  // QR code button
+  const GAME_URL = 'https://dmitriy5885as-design.github.io/Chesher/';
+  bind('qrBtn', () => {
+    const overlay = document.getElementById('qrOverlay');
+    const qrImg = document.getElementById('qrImg');
+    const qrUrl = document.getElementById('qrUrl');
+    if(!overlay) return;
+    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(GAME_URL);
+    if(qrUrl) qrUrl.textContent = GAME_URL;
+    overlay.classList.add('show');
+  });
+  bind('qrClose', () => {
+    const overlay = document.getElementById('qrOverlay');
+    if(overlay) overlay.classList.remove('show');
+  });
+  const qrUrlEl = document.getElementById('qrUrl');
+  if(qrUrlEl) qrUrlEl.addEventListener('click', () => {
+    navigator.clipboard.writeText(GAME_URL).then(() => toast('📋 Ссылка скопирована!')).catch(() => {});
+  });
+  const qrOverlayEl = document.getElementById('qrOverlay');
+  if(qrOverlayEl) qrOverlayEl.addEventListener('click', (e) => {
+    if(e.target === qrOverlayEl) qrOverlayEl.classList.remove('show');
+  });
 
   // Daily gift
   function updateGiftBtn() {

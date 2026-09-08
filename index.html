@@ -7,10 +7,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/main.css?v=0.21.0">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/animations.css?v=0.21.0">
 
 </head>
 <body>
@@ -578,11 +578,22 @@
   <!-- Кнопка помощи + Ежедневный подарок + Телефон -->
   <button class="helpBtn" id="helpBtn" title="Помощь новым игрокам">?</button>
   <button class="giftBtn" id="giftBtn" title="Ежедневный подарок">🎁</button>
-  <button class="phoneBtn" id="phoneBtn" title="Скоро">📱</button>
+  <button class="phoneBtn" id="phoneBtn" title="Мобильный режим">📱</button>
 
   <!-- Девблог — левый верх -->
   <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">📝</button>
   <button class="devblogBtn feedbackBtn" id="feedbackBtn" title="Пожелания и идеи">💬</button>
+  <button class="qrBtn" id="qrBtn" title="QR-код для мобильного">📲</button>
+
+  <!-- QR Overlay -->
+  <div class="qrOverlay" id="qrOverlay">
+    <div class="qrModal">
+      <h3>📲 QR-КОД</h3>
+      <img id="qrImg" style="display:block;margin:0 auto 16px;border-radius:8px;background:#fff;padding:8px" width="200" height="200" alt="QR">
+      <div class="qrUrl" id="qrUrl" title="Нажмите чтобы скопировать"></div>
+      <button class="qrClose" id="qrClose">Закрыть</button>
+    </div>
+  </div>
 
   <!-- Валюта — правый ниж -->
   <div class="cornerFloat" id="cornerFloat">

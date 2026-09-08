@@ -180,7 +180,7 @@ function refreshBars() {
   const tW = (takenByW || []).map(t => getSkinGlyph('w', t)).join('');
   const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
   if(subTop) {
-    subTop.textContent = topCol === 'w' ? tW : tB;
+    subTop.textContent = topCol === 'w' ? tB : tW;
     if(!subTop.textContent.trim()) subTop.textContent = '';
   }
 
@@ -210,15 +210,15 @@ function refreshBars() {
 
   // subBot: my captured pieces
   if(subBot) {
-    subBot.textContent = humanCol === 'w' ? tW : tB;
+    subBot.textContent = humanCol === 'w' ? tB : tW;
     if(!subBot.textContent.trim()) subBot.textContent = '';
   }
 
   // Taken pieces in pbar (opponent bar shows what opponent captured, my bar shows what I captured)
   const elTakTop = document.getElementById('takTop');
   const elTakBot = document.getElementById('takBot');
-  if(elTakTop) elTakTop.textContent = topCol === 'w' ? tW : tB;
-  if(elTakBot) elTakBot.textContent = humanCol === 'w' ? tW : tB;
+  if(elTakTop) elTakTop.textContent = topCol === 'w' ? tB : tW;
+  if(elTakBot) elTakBot.textContent = humanCol === 'w' ? tB : tW;
 
   // Material advantage
   const mat = (takenByW || []).reduce((s, t) => s + (VAL[t]||0), 0) -
