@@ -361,8 +361,8 @@ function buildModesCfg(modeId) {
       if(!sideBox) return;
       sideBox.innerHTML = '';
       const sides = [
-        {v: 'w', label: 'Ход первым'},
-        {v: 'b', label: 'Ответный ход'},
+        {v: 'w', label: '⚪ Белые'},
+        {v: 'b', label: '⚫ Чёрные'},
         {v: 'random', label: '🎲 Случайно'}
       ];
       sides.forEach(it => {
