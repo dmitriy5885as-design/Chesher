@@ -61,6 +61,7 @@ function showScreen(id) {
     renderCoins();
     renderStats();
     showRandomTip();
+    syncResumeRow();
   }
   if(id === 'scrSet') {
     buildSettings();
@@ -946,7 +947,7 @@ function newGame() {
   S.humanColor = humanColor;
 
   // Bot greeting
-  if(cfg.gameMode === 'bot') {
+  if(cfg.gameMode === 'bot' || cfg.gameMode === 'meme') {
     const cu = ProfilesManager.getCurrent();
     const botId = cu ? (cu.botId || 1) : 1;
     const bot = BOT_LIST.find(b => b.id === botId);
@@ -1016,6 +1017,14 @@ function newGame() {
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 600);
   }
+
+  // Preload meme assets (gun images, sound, assigned videos) — avoids the freeze before video plays
+  if(cfg.gameMode === 'meme' && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.warmup) {
+    MemeThreatHandler.warmup();
+  }
+
+  // Save fresh game so it's always resumable/abandonable from the menu
+  if(typeof S !== 'undefined' && S) S.saveToStorage();
 }
 
 /* --- Часы --- */
@@ -2107,6 +2116,38 @@ function hideResumeBtn() {
   if(row) row.style.display = 'none';
 }
 
+function syncResumeRow() {
+  const savedGame = ChessEngine.loadFromStorage();
+  const resumeBtn = document.getElementById('mResume');
+  if(savedGame && savedGame.state && !savedGame.state.gameOver && resumeBtn) {
+    showResumeBtn();
+    resumeBtn.disabled = false;
+    const isMp = savedGame.mp && savedGame.mp.lobbyId;
+    const modeId = savedGame.cfg ? savedGame.cfg.modeId : '';
+    const modeIcons = { classic: '♟', meme: '🔫', fischer: '🎲', local: '👥', ranked: '🏆' };
+    const modeIcon = modeIcons[modeId] || '♟';
+    const modeNames2 = { classic: 'Классика', meme: 'Мемасия', fischer: 'Фишер 960', local: 'На одном ПК', ranked: 'Рейтинговая', bot: 'Против бота' };
+    const modeName = modeNames2[modeId] || 'Классика';
+    if(isMp) {
+      const oppName = savedGame.mp.opponent ? savedGame.mp.opponent.name : 'Соперник';
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">⚔ По сети vs ' + oppName + '</small>';
+    } else if(modeId === 'local') {
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">👥 Два игрока</small>';
+    } else if(modeId === 'ranked') {
+      const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏆 За ELO рейтинг' + botLabel + '</small>';
+    } else {
+      const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏠 Локальная' + botLabel + '</small>';
+    }
+  } else {
+    hideResumeBtn();
+    if(savedGame) ChessEngine.clearStorage();
+  }
+}
+
+let backToGame = false;
+
 function resumeGame() {
   const savedGame = ChessEngine.loadFromStorage();
   if(!savedGame || !savedGame.state) {
@@ -2489,38 +2530,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Generate guest ID immediately
   if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
-
-  // Check for saved game
-  const savedGame = ChessEngine.loadFromStorage();
-  const resumeBtn = document.getElementById('mResume');
-  if(savedGame && savedGame.state && !savedGame.state.gameOver) {
-    if(resumeBtn) {
-      showResumeBtn();
-      resumeBtn.disabled = false;
-      // Build label with mode info
-      const isMp = savedGame.mp && savedGame.mp.lobbyId;
-      const modeId = savedGame.cfg ? savedGame.cfg.modeId : '';
-      const modeIcons = { classic: '♟', meme: '🔫', fischer: '🎲', local: '👥', ranked: '🏆' };
-      const modeIcon = modeIcons[modeId] || '♟';
-      const modeNames2 = { classic: 'Классика', meme: 'Мемасия', fischer: 'Фишер 960', local: 'На одном ПК', ranked: 'Рейтинговая', bot: 'Против бота' };
-      const modeName = modeNames2[modeId] || 'Классика';
-      if(isMp) {
-        const oppName = savedGame.mp.opponent ? savedGame.mp.opponent.name : 'Соперник';
-        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">⚔ По сети vs ' + oppName + '</small>';
-      } else if(modeId === 'local') {
-        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">👥 Два игрока</small>';
-      } else if(modeId === 'ranked') {
-        const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
-        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏆 За ELO рейтинг' + botLabel + '</small>';
-      } else {
-        const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
-        resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏠 Локальная' + botLabel + '</small>';
-      }
-    }
-  } else {
-    hideResumeBtn();
-    ChessEngine.clearStorage();
-  }
 
   // Build board and start
   showScreen('scrMenu');
@@ -3004,8 +3013,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Game screen
   bind('btnNew', () => { askConfirm('Новая игра?', 'Текущая партия будет потеряна', () => { newGame(); hideAllScreens(); }); });
-  bind('btnGoMenu', () => { showScreen('scrMenu'); });
-  bind('btnSet', () => showScreen('scrSet'));
+  bind('btnGoMenu', () => { backToGame = false; showScreen('scrMenu'); });
+  bind('btnSet', () => { backToGame = !!(typeof S !== 'undefined' && S && !S.gameOver); showScreen('scrSet'); });
   bind('btnHint', () => showHint());
   bind('btnUndo', () => undoMove());
   bind('btnRes', () => resignGame());
@@ -3013,7 +3022,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Game over overlay
   bind('overNew', () => { closeAllOverlays(); newGame(); hideAllScreens(); });
-  bind('overMenu', () => { closeAllOverlays(); showScreen('scrMenu'); });
+  bind('overMenu', () => { backToGame = false; closeAllOverlays(); showScreen('scrMenu'); });
 
   // Settings
   bind('setApply', () => { saveCfg(); newGame(); hideAllScreens(); });
@@ -3056,6 +3065,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Back buttons
   document.querySelectorAll('[data-back]').forEach(b => {
     b.addEventListener('click', () => {
+      if(backToGame) {
+        backToGame = false;
+        hideAllScreens();
+        return;
+      }
       const currentScreen = document.querySelector('.screen.show');
       if(currentScreen && currentScreen.id === 'scrBots') {
         showScreen('scrModes');

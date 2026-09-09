@@ -18,6 +18,8 @@ const MemeThreatHandler = (() => {
   var _pendingMemeData = null;
   var _activeEls = [];
   var _safetyTimers = [];
+  var gunAudio = null;
+  var _seenVideos = {};
 
   function getSquarePos(row, col) {
     var b = document.getElementById('boardBox');
@@ -105,9 +107,13 @@ const MemeThreatHandler = (() => {
     guns.push(el);
 
     try {
-      var gunSnd = new Audio(GUN_SOUND);
-      gunSnd.volume = MemeConfig.get('volume') || 0.7;
-      gunSnd.play();
+      if(!gunAudio) {
+        gunAudio = new Audio(GUN_SOUND);
+        gunAudio.preload = 'auto';
+      }
+      gunAudio.currentTime = 0;
+      gunAudio.volume = MemeConfig.get('volume') || 0.7;
+      gunAudio.play();
     } catch(e) {}
 
     setTimeout(function() {
@@ -143,6 +149,7 @@ const MemeThreatHandler = (() => {
 
     var vid = document.createElement('video');
     vid.src = encodeURI(videoSrc);
+    vid.preload = 'auto';
     vid.autoplay = true;
     vid.muted = !!muted;
     vid.loop = false;
@@ -319,7 +326,41 @@ const MemeThreatHandler = (() => {
     }
   }
 
+  function warmup() {
+    try {
+      var il = new Image(); il.src = GUN_LEFT;
+      var ir = new Image(); ir.src = GUN_RIGHT;
+    } catch(e) {}
+    try {
+      var a = document.createElement('audio');
+      a.preload = 'auto';
+      a.src = GUN_SOUND;
+      a.load();
+    } catch(e) {}
+    if(MemeConfig.isMemeMode && MemeConfig.isMemeMode()) {
+      try {
+        var vp = MemeConfig.get('videoPresets');
+        if(vp && typeof vp === 'object') {
+          var walk = function(v) {
+            if(Array.isArray(v)) {
+              for(var i = 0; i < v.length; i++) walk(v[i]);
+            } else if(typeof v === 'string' && /\.mp4$/i.test(v) && !_seenVideos[v]) {
+              _seenVideos[v] = 1;
+              var l = document.createElement('link');
+              l.rel = 'preload';
+              l.as = 'video';
+              l.href = v;
+              document.head.appendChild(l);
+            }
+          };
+          walk(vp);
+        }
+      } catch(e) {}
+    }
+  }
+
   function init() {
+    warmup();
     MemeEventBus.subscribe('MEME_EVENTS', function(event) {
       _pendingMemeData = event.data;
     });
@@ -333,7 +374,7 @@ const MemeThreatHandler = (() => {
     clearAll();
   }
 
-  return { showGun: showGun, clearAll: clearAll, clearGuns: clearGuns, init: init, isVideoLocked: isVideoLocked, forceUnlock: forceUnlock };
+  return { showGun: showGun, clearAll: clearAll, clearGuns: clearGuns, init: init, warmup: warmup, isVideoLocked: isVideoLocked, forceUnlock: forceUnlock };
 })();
 
 if(typeof window !== 'undefined') {
