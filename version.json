@@ -1,5 +1,15 @@
 [
   {
+    "ver": "v0.23.4",
+    "date": "10.09.2026",
+    "items": [
+      "Shop: new tab Видео мемы with auto-playing muted videos and click-to-expand preview with sound",
+      "Sound: unify volume sliders with meme slider style (green accent)",
+      "Sound settings: align toggle to right like value column",
+      "Sound slider track invisible (undefined --border var)"
+    ]
+  },
+  {
     "ver": "v0.23.3",
     "date": "10.09.2026",
     "items": [
