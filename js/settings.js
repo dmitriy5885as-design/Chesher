@@ -176,6 +176,7 @@ function buildSndSliders() {
     lbl.textContent = label;
     const sw = document.createElement('label');
     sw.className = 'toggle';
+    sw.style.marginLeft = 'auto';
     const inp = document.createElement('input');
     inp.type = 'checkbox';
     inp.checked = cfg[key];
