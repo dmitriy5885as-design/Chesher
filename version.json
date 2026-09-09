@@ -1,5 +1,17 @@
 [
   {
+    "ver": "v0.23.1",
+    "date": "09.09.2026",
+    "items": [
+      "Meme bots: cards shrink to fit, no clipping",
+      "Meme bots: paginated with ◀▶ arrows and dots instead of scroll",
+      "Meme mode: color buttons back to ⚪Белые ⚫Чёрные 🎲Случайно",
+      "Meme bot grid: horizontal scrollable row sorted by ELO",
+      "Meme mode: slider timer like online, color buttons 'ход первым/ответный ход', all bots grid",
+      "Shop: fix both coin chips aligned right together"
+    ]
+  },
+  {
     "ver": "v0.23.0",
     "date": "09.09.2026",
     "items": [
