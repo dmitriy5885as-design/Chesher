@@ -3059,6 +3059,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('version.json?t=' + Date.now());
       DEVLOG = await res.json();
+      if(DEVLOG.length) {
+        updateMenuVersion();
+      }
     } catch(e) {
       DEVLOG = [];
     }
@@ -3220,5 +3223,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('scrAuth');
   }
 
-  console.log('CHESHER v0.23.0 alpha — инициализация завершена');
+  console.log('CHESHER ' + (DEVLOG.length ? DEVLOG[0].ver : 'init') + ' alpha — инициализация завершена');
 });
