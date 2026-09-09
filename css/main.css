@@ -1406,6 +1406,9 @@ body.mobile-mode .rankedCard{padding:12px}
 /* --- Мем-конфиг --- */
 body.mobile-mode .memePieceCard{padding:6px}
 body.mobile-mode .memeAvailList{max-height:120px}
+body.mobile-mode #segBot{grid-template-columns:repeat(3,1fr)!important;gap:4px!important}
+body.mobile-mode .memeBotCard{padding:6px 2px!important}
+#sideCfgGroup .segBtn{margin:0 4px}
 
 /* --- Чат в игре --- */
 body.mobile-mode #chatBox{border-radius:8px}

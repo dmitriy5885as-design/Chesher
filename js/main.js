@@ -336,19 +336,15 @@ function buildModesCfg(modeId) {
   if(modeId === 'meme') {
     if(botToggleGroup) botToggleGroup.style.display = '';
     if(sideGroup) sideGroup.style.display = '';
+    if(timeGroup) timeGroup.style.display = '';
     
     // Bot toggle handler
     if(botToggle) {
       botToggle.checked = cfg.bot !== 'off';
       botToggle.onchange = () => {
         if(botToggle.checked) {
-          cfg.bot = 'medium';
           if(botGroup) botGroup.style.display = '';
-          buildSeg('segBot', [
-            {v: 'easy', label: 'Лёгкий', sub: 'рандом'},
-            {v: 'medium', label: 'Средний', sub: 'взятия'},
-            {v: 'hard', label: 'Сильный', sub: 'минимакс'}
-          ], () => cfg.bot, v => { cfg.bot = v; saveCfg(); });
+          renderMemeBotGrid();
         } else {
           cfg.bot = 'off';
           if(botGroup) botGroup.style.display = 'none';
@@ -359,24 +355,85 @@ function buildModesCfg(modeId) {
       botToggle.onchange();
     }
     
-    // Side selection
-    buildSeg('segSide', [
-      {v: 'w', label: '⚪ Белые', sub: 'ход первыми'},
-      {v: 'b', label: '⚫ Чёрные', sub: 'ответный ход'},
-      {v: 'random', label: '🎲 Случайно', sub: ''}
-    ], () => cfg.human, v => { cfg.human = v; saveCfg(); });
+    // Side selection — "Ход первым" / "Ответный ход"
+    (function() {
+      const sideBox = document.getElementById('segSide');
+      if(!sideBox) return;
+      sideBox.innerHTML = '';
+      const sides = [
+        {v: 'w', label: 'Ход первым'},
+        {v: 'b', label: 'Ответный ход'},
+        {v: 'random', label: '🎲 Случайно'}
+      ];
+      sides.forEach(it => {
+        const b = document.createElement('button');
+        b.className = 'segBtn';
+        b.innerHTML = it.label;
+        b.style.minWidth = '120px';
+        b.style.margin = '0 4px';
+        b.dataset.v = String(it.v);
+        b.addEventListener('click', () => {
+          snd.ui();
+          cfg.human = it.v;
+          saveCfg();
+          [...sideBox.children].forEach(x => x.classList.toggle('sel', x.dataset.v === String(cfg.human)));
+        });
+        sideBox.appendChild(b);
+      });
+      [...sideBox.children].forEach(x => x.classList.toggle('sel', x.dataset.v === String(cfg.human)));
+    })();
     
-    // Time
-    buildSeg('segTime', [
-      {v: 120, label: '⚡ 2 мин', sub: ''},
-      {v: 300, label: '🔥 5 мин', sub: ''},
-      {v: 600, label: '🎯 10 мин', sub: ''},
-      {v: 0, label: '∞', sub: 'без часов'}
-    ], () => cfg.timeSec, v => {
-      cfg.timeSec = v;
-      if(timeInput) timeInput.style.display = (v !== 0) ? '' : 'none';
-      saveCfg();
-    });
+    // Time control — slider like online mode
+    (function() {
+      const timeBox = document.getElementById('segTime');
+      if(!timeBox) return;
+      const timeMarks = [
+        {v:120, label:'2 мин'},
+        {v:300, label:'5 мин'},
+        {v:600, label:'10 мин'},
+        {v:1800, label:'30 мин'},
+        {v:0, label:'∞'}
+      ];
+      const curIdx = timeMarks.findIndex(m => m.v === cfg.timeSec);
+      const sliderVal = curIdx >= 0 ? curIdx : 2;
+      timeBox.innerHTML =
+        '<div class="timeSliderWrap">' +
+          '<input type="range" id="memeTimeSlider" min="0" max="' + (timeMarks.length - 1) + '" value="' + sliderVal + '" class="timeSlider">' +
+          '<div class="timeSliderLabels">' +
+            '<span>2 мин</span><span>∞</span>' +
+          '</div>' +
+          '<div class="timeSliderMarks" id="memeTimeMarks"></div>' +
+          '<div class="timeSliderValue" id="memeTimeValue">' + _formatTime(cfg.timeSec) + '</div>' +
+        '</div>';
+      const slider = document.getElementById('memeTimeSlider');
+      const marksEl = document.getElementById('memeTimeMarks');
+      const valEl = document.getElementById('memeTimeValue');
+      if(marksEl) {
+        timeMarks.forEach((m, i) => {
+          const dot = document.createElement('div');
+          dot.className = 'timeMark' + (i === sliderVal ? ' sel' : '');
+          dot.style.left = (i / (timeMarks.length - 1) * 100) + '%';
+          dot.title = m.v === 0 ? 'Бесконечно' : m.label;
+          dot.onclick = () => {
+            slider.value = i;
+            cfg.timeSec = timeMarks[i].v;
+            valEl.textContent = _formatTime(timeMarks[i].v);
+            marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === i));
+            saveCfg();
+          };
+          marksEl.appendChild(dot);
+        });
+      }
+      if(slider) {
+        slider.oninput = () => {
+          const idx = parseInt(slider.value);
+          cfg.timeSec = timeMarks[idx].v;
+          valEl.textContent = _formatTime(timeMarks[idx].v);
+          marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === idx));
+          saveCfg();
+        };
+      }
+    })();
     
     // Meme video settings — рендерим прямо здесь
     var memeGroup = document.getElementById('memeModesGroup');
@@ -1738,6 +1795,57 @@ function _formatTime(sec) {
   }
   const m = Math.floor(sec / 60);
   return m + ' мин';
+}
+
+function renderMemeBotGrid() {
+  const grid = document.getElementById('segBot');
+  if(!grid) return;
+  grid.innerHTML = '';
+  const cu = ProfilesManager.getCurrent();
+  const elo = cu ? (cu.elo || 0) : 0;
+  const wins = cu ? (cu.st ? (cu.st.wins || 0) : 0) : 0;
+  const leagues = [
+    {name:'Начинающие', color:'#4caf50', emoji:'🟢'},
+    {name:'Любители', color:'#2196f3', emoji:'🔵'},
+    {name:'Опытные', color:'#ff9800', emoji:'🟡'},
+    {name:'Мастера', color:'#f44336', emoji:'🔴'}
+  ];
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(110px, 1fr))';
+  grid.style.gap = '6px';
+  leagues.forEach(league => {
+    const leagueBots = BOT_LIST.filter(b => b.league === league.name);
+    if(!leagueBots.length) return;
+    const header = document.createElement('div');
+    header.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:' + league.color + ';padding:4px 0;border-bottom:1px solid ' + league.color + '33';
+    header.textContent = league.emoji + ' ' + league.name.toUpperCase();
+    grid.appendChild(header);
+    leagueBots.forEach(bot => {
+      const available = wins >= (bot.winsReq || 0);
+      const card = document.createElement('div');
+      card.className = 'memeBotCard';
+      card.style.cssText = 'display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);cursor:' + (available ? 'pointer' : 'not-allowed') + ';opacity:' + (available ? '1' : '.4') + ';transition:.15s;text-align:center;min-width:0';
+      card.innerHTML = '<div style="font-size:24px">' + bot.emoji + '</div>' +
+        '<div style="font-size:11px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + bot.name + '</div>' +
+        '<div style="font-size:10px;color:var(--mut)">' + bot.rating + ' Эло</div>' +
+        (!available ? '<div style="font-size:10px;color:var(--red);margin-top:2px">🔒 ' + bot.winsReq + ' побед</div>' : '');
+      if(cu.botId === bot.id) {
+        card.style.borderColor = 'var(--accent)';
+        card.style.boxShadow = '0 0 8px rgba(255,136,0,.3)';
+      }
+      if(available) {
+        card.addEventListener('click', () => {
+          cu.botId = bot.id;
+          cfg.bot = 'on';
+          saveCfg();
+          renderMemeBotGrid();
+        });
+        card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--accent)'; });
+        card.addEventListener('mouseleave', () => { if(cu.botId !== bot.id) card.style.borderColor = 'var(--line)'; });
+      }
+      grid.appendChild(card);
+    });
+  });
 }
 
 function startLobbyFromSetup() {
