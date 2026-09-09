@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.6",
+    "date": "10.09.2026",
+    "items": [
+      "Fix meme mode: bot greeting at game start, preload gun/video assets, back-from-settings returns to game"
+    ]
+  },
+  {
     "ver": "v0.23.5",
     "date": "10.09.2026",
     "items": [
