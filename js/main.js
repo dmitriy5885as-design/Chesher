@@ -2406,6 +2406,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCoins();
   renderStats();
   showRandomTip();
+  loadDevlog().then(() => updateMenuVersion());
 
   // Load saved board theme
   if(cfg.board && BOARDS[cfg.board]) {
@@ -2943,7 +2944,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!wrap) return;
     if(!DEVLOG.length) {
       wrap.innerHTML = '<div style="text-align:center;color:var(--mut);padding:40px">Загрузка...</div>';
-      loadDevlog().then(() => renderDevblog());
+      loadDevlog().then(() => {
+        renderDevblog();
+        updateMenuVersion();
+      });
       return;
     }
     wrap.innerHTML = '';
@@ -2957,6 +2961,13 @@ document.addEventListener('DOMContentLoaded', () => {
         '</ul>';
       wrap.appendChild(div);
     });
+  }
+
+  function updateMenuVersion() {
+    const foot = document.querySelector('#scrMenu .menuFoot');
+    if(foot && DEVLOG.length) {
+      foot.textContent = 'CHESHER ' + DEVLOG[0].ver + ' alpha';
+    }
   }
 
   const devblogBtn = document.getElementById('devblogBtn');
@@ -3084,5 +3095,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('scrAuth');
   }
 
-  console.log('CHESHER v0.19.1 alpha — инициализация завершена');
+  console.log('CHESHER v0.23.0 alpha — инициализация завершена');
 });
