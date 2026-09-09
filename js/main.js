@@ -1802,49 +1802,28 @@ function renderMemeBotGrid() {
   if(!grid) return;
   grid.innerHTML = '';
   const cu = ProfilesManager.getCurrent();
-  const elo = cu ? (cu.elo || 0) : 0;
   const wins = cu ? (cu.st ? (cu.st.wins || 0) : 0) : 0;
-  const leagues = [
-    {name:'Начинающие', color:'#4caf50', emoji:'🟢'},
-    {name:'Любители', color:'#2196f3', emoji:'🔵'},
-    {name:'Опытные', color:'#ff9800', emoji:'🟡'},
-    {name:'Мастера', color:'#f44336', emoji:'🔴'}
-  ];
-  grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(110px, 1fr))';
-  grid.style.gap = '6px';
-  leagues.forEach(league => {
-    const leagueBots = BOT_LIST.filter(b => b.league === league.name);
-    if(!leagueBots.length) return;
-    const header = document.createElement('div');
-    header.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:' + league.color + ';padding:4px 0;border-bottom:1px solid ' + league.color + '33';
-    header.textContent = league.emoji + ' ' + league.name.toUpperCase();
-    grid.appendChild(header);
-    leagueBots.forEach(bot => {
-      const available = wins >= (bot.winsReq || 0);
-      const card = document.createElement('div');
-      card.className = 'memeBotCard';
-      card.style.cssText = 'display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);cursor:' + (available ? 'pointer' : 'not-allowed') + ';opacity:' + (available ? '1' : '.4') + ';transition:.15s;text-align:center;min-width:0';
-      card.innerHTML = '<div style="font-size:24px">' + bot.emoji + '</div>' +
-        '<div style="font-size:11px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + bot.name + '</div>' +
-        '<div style="font-size:10px;color:var(--mut)">' + bot.rating + ' Эло</div>' +
-        (!available ? '<div style="font-size:10px;color:var(--red);margin-top:2px">🔒 ' + bot.winsReq + ' побед</div>' : '');
-      if(cu.botId === bot.id) {
-        card.style.borderColor = 'var(--accent)';
-        card.style.boxShadow = '0 0 8px rgba(255,136,0,.3)';
-      }
-      if(available) {
-        card.addEventListener('click', () => {
-          cu.botId = bot.id;
-          cfg.bot = 'on';
-          saveCfg();
-          renderMemeBotGrid();
-        });
-        card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--accent)'; });
-        card.addEventListener('mouseleave', () => { if(cu.botId !== bot.id) card.style.borderColor = 'var(--line)'; });
-      }
-      grid.appendChild(card);
-    });
+  const sorted = BOT_LIST.slice().sort((a, b) => a.rating - b.rating);
+  grid.style.cssText = 'display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:8px 0;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin';
+  grid.style.msOverflowStyle = 'none';
+  sorted.forEach(bot => {
+    const available = wins >= (bot.winsReq || 0);
+    const selected = cu.botId === bot.id;
+    const card = document.createElement('div');
+    card.style.cssText = 'flex:0 0 80px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;padding:10px 6px;border-radius:10px;border:2px solid ' + (selected ? 'var(--accent)' : 'var(--line)') + ';background:' + (selected ? 'rgba(255,136,0,.08)' : 'var(--panel2)') + ';cursor:' + (available ? 'pointer' : 'not-allowed') + ';opacity:' + (available ? '1' : '.35') + ';transition:.15s;text-align:center;min-width:80px' + (selected ? ';box-shadow:0 0 10px rgba(255,136,0,.25)' : '');
+    card.innerHTML = '<div style="font-size:26px;line-height:1">' + bot.emoji + '</div>' +
+      '<div style="font-size:10px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + bot.name + '</div>' +
+      '<div style="font-size:9px;color:var(--mut);margin-top:1px">' + bot.rating + ' Эло</div>' +
+      (!available ? '<div style="font-size:9px;color:var(--red);margin-top:2px">🔒</div>' : '');
+    if(available) {
+      card.addEventListener('click', () => {
+        cu.botId = bot.id;
+        cfg.bot = 'on';
+        saveCfg();
+        renderMemeBotGrid();
+      });
+    }
+    grid.appendChild(card);
   });
 }
 
