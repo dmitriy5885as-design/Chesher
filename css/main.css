@@ -376,10 +376,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 .sndSliderRow{display:flex;align-items:center;gap:12px;padding:8px 0}
 .sndSliderLabel{flex:0 0 140px;font-size:13px;color:var(--txt);font-weight:600}
-.sndRange{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--line);outline:none;cursor:pointer}
-.sndRange::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg)}
-.sndRange::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg)}
-.sndSliderVal{flex:0 0 40px;text-align:right;font-size:13px;color:var(--mut);font-weight:600}
+.sndRange{flex:1;min-width:0;accent-color:var(--green);cursor:pointer}
+.sndSliderVal{flex:0 0 44px;text-align:right;font-size:13px;color:var(--mut);font-weight:600}
 .setBotRow{display:flex;align-items:center;gap:12px;padding:10px 12px;
   background:var(--panel2);border:1px solid var(--line);border-radius:10px}
 .setBotEmoji{font-size:36px;flex-shrink:0}
