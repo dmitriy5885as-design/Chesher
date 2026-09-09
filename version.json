@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.7",
+    "date": "10.09.2026",
+    "items": [
+      "UI rework: left cards = avatar+name only, bottom bar = nick+#id, capture collection strip, status under header, fix mode label"
+    ]
+  },
+  {
     "ver": "v0.23.6",
     "date": "10.09.2026",
     "items": [
