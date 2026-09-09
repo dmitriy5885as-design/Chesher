@@ -650,36 +650,6 @@ function buildMemeModesSeg() {
   buildMemeSegInner(box, group);
 }
 
-/* --- Информация о текущем боте --- */
-function buildBotInfo() {
-  const el = document.getElementById('setBotInfo');
-  if(!el) return;
-  
-  const cu = ProfilesManager.getCurrent();
-  const botId = cu ? (cu.botId || 1) : 1;
-  const bot = BOT_LIST.find(b => b.id === botId);
-  
-  if(cfg.bot === 'off') {
-    el.innerHTML = '<div class="setBotRow">' +
-      '<span class="setBotEmoji">👥</span>' +
-      '<div class="setBotText"><b>Игра на двоих</b><br><small>Без компьютерного соперника</small></div>' +
-    '</div>';
-  } else if(bot) {
-    const leagueColors = {'Начинающие':'#4caf50','Любители':'#2196f3','Опытные':'#ff9800','Мастера':'#f44336'};
-    const lColor = leagueColors[bot.league] || '#888';
-    el.innerHTML = '<div class="setBotRow">' +
-      '<span class="setBotEmoji">' + bot.emoji + '</span>' +
-      '<div class="setBotText"><b>' + bot.name + '</b><br>' +
-      '<small style="color:' + lColor + '">' + bot.league + ' · ' + bot.rating + ' Эло</small></div>' +
-    '</div>';
-  } else {
-    el.innerHTML = '<div class="setBotRow">' +
-      '<span class="setBotEmoji">🤖</span>' +
-      '<div class="setBotText"><b>Бот</b><br><small>Выберите соперника</small></div>' +
-    '</div>';
-  }
-}
-
 /* --- Секция скина фигур --- */
 function buildSkinSeg() {
   if(typeof SKINS === 'undefined') return function() {};
@@ -752,20 +722,8 @@ function repaintAllSegs() {
 
 /* --- Построение всего экрана настроек --- */
 function buildSettings() {
-  buildBotInfo();
   buildSndSliders();
   repaintMeme = buildMemeSeg();
-  
-  // Кнопка выбора бота
-  const btnBot = document.getElementById('btnChangeBot');
-  if(btnBot) {
-    btnBot.onclick = () => {
-      const cu = ProfilesManager.getCurrent();
-      const elo = cu ? (cu.elo || 0) : 0;
-      showScreen('scrBots');
-      try { renderBotsScreen(elo); } catch(e) {}
-    };
-  }
 }
 
 /* --- Сохранение конфига --- */
