@@ -3,7 +3,8 @@
     "ver": "v0.23.2",
     "date": "10.09.2026",
     "items": [
-      "Devblog: version always synced with latest entry, console log dynamic"
+      "Devblog: version always synced with latest entry, console log dynamic",
+      "Settings: remove opponent block from general settings"
     ]
   },
   {

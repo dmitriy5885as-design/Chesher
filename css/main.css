@@ -247,6 +247,9 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   border-radius:13px;padding:15px 16px;margin-bottom:12px}
 .setGroup h3{font-size:11px;letter-spacing:2px;color:var(--mut);
   text-transform:uppercase;margin-bottom:9px}
+.setSectionTitle{width:min(520px,94vw);margin:16px auto 10px;font-size:12px;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
+.setSectionTitle::after{content:'';flex:1;height:1px;background:var(--line)}
 .seg{display:flex;flex-wrap:wrap;gap:8px}
 .segBtn{flex:1 1 calc(25% - 8px);min-width:96px;padding:11px 8px;border-radius:9px;
   border:1px solid var(--line);background:var(--panel2);color:var(--mut);

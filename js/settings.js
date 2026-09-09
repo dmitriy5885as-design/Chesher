@@ -622,22 +622,27 @@ function buildMemeSegInner(box, group) {
 function buildMemeSeg() {
   var box = document.getElementById('memeOpts');
   var group = document.getElementById('memeCfgGroup');
+  var title = document.getElementById('modeSetTitle');
   if(!box || !group) return function() {};
 
   var isMeme = cfg.gameMode === 'meme' || cfg.modeId === 'meme';
   if(!isMeme) {
     group.style.display = 'none';
+    if(title) title.style.display = 'none';
     return function() {};
   }
   group.style.display = '';
+  if(title) title.style.display = '';
   buildMemeSegInner(box, group);
 
   return function() {
     var isMeme = cfg.gameMode === 'meme' || cfg.modeId === 'meme';
     if(!isMeme) {
       group.style.display = 'none';
+      if(title) title.style.display = 'none';
     } else {
       group.style.display = '';
+      if(title) title.style.display = '';
     }
   };
 }
