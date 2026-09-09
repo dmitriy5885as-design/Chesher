@@ -1,5 +1,13 @@
 [
   {
+    "ver": "v0.23.5",
+    "date": "10.09.2026",
+    "items": [
+      "Menu: add exit-game button (✕) next to resume — confirm + clear storage + notify MP lobby",
+      "Video preview: click video toggles pause/play, pause indicator"
+    ]
+  },
+  {
     "ver": "v0.23.4",
     "date": "10.09.2026",
     "items": [
