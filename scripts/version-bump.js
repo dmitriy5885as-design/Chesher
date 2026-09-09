@@ -136,8 +136,8 @@ function main() {
   );
 
   if (commits.length === 0) {
-    console.log('No new commits since last version.');
-    console.log('Creating empty patch entry...');
+    console.log('No new commits since last version — nothing to release.');
+    return;
   }
 
   // 5. Clean up commit messages — remove prefixes like "feat:", "fix:", etc.

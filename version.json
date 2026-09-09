@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.3",
+    "date": "10.09.2026",
+    "items": [
+      "Settings: split into Общие настройки and Настройки режима sections"
+    ]
+  },
+  {
     "ver": "v0.23.2",
     "date": "10.09.2026",
     "items": [
