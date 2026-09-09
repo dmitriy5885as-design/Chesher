@@ -604,6 +604,17 @@ const Store = {
     video.muted = false;
     video.play().catch(() => {});
 
+    wrap.addEventListener('click', e => {
+      e.stopPropagation();
+      if(video.paused) {
+        video.play().catch(() => {});
+        wrap.classList.remove('paused');
+      } else {
+        video.pause();
+        wrap.classList.add('paused');
+      }
+    });
+
     dim.addEventListener('click', e => {
       if(e.target === dim) Store.closeVideoPreview();
     });
