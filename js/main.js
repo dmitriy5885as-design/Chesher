@@ -1025,6 +1025,8 @@ function newGame() {
 
   // Save fresh game so it's always resumable/abandonable from the menu
   if(typeof S !== 'undefined' && S) S.saveToStorage();
+
+  refreshModeLabel();
 }
 
 /* --- Часы --- */
@@ -2217,6 +2219,7 @@ function resumeGame() {
 
   hideAllScreens();
   toast('Игра восстановлена');
+  refreshModeLabel();
 }
 
 /* --- Восстановление мультиплеерной игры --- */
@@ -2326,6 +2329,7 @@ async function resumeMultiplayer(savedGame) {
   ChesMP._listenGame();
 
   toast('Сетевая игра: vs ' + (mp.opponent ? mp.opponent.name : 'Соперник'));
+  refreshModeLabel();
 }
 
 /* === ТАБЛИЦА ЛИДЕРОВ === */

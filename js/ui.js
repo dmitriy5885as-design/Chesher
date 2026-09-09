@@ -174,15 +174,10 @@ function refreshBars() {
     if(elNmTop) elNmTop.textContent = 'Соперник';
   }
 
-  // subTop: opponent captured pieces
-  const subTop = document.getElementById('subTop');
-  const subBot = document.getElementById('subBot');
+  // subTop/subBot (captured pieces in left cards) removed — cards show avatar + name only
+
   const tW = (takenByW || []).map(t => getSkinGlyph('w', t)).join('');
   const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
-  if(subTop) {
-    subTop.textContent = topCol === 'w' ? tB : tW;
-    if(!subTop.textContent.trim()) subTop.textContent = '';
-  }
 
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   let myName, myAva;
@@ -194,7 +189,7 @@ function refreshBars() {
     myAva = cu.ava || '👽';
   }
   const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
-  if(elNameBot) elNameBot.textContent = myAva + ' ' + myName + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (playerPid ? '  #' + playerPid : '');
+  if(elNameBot) elNameBot.textContent = myName + (playerPid ? '  #' + playerPid : '');
 
   // Update avatar in player card
   const elAvaBot = document.getElementById('avaBot');
@@ -208,26 +203,35 @@ function refreshBars() {
   }
   if(elNmBot) elNmBot.textContent = myName;
 
-  // subBot: my captured pieces
-  if(subBot) {
-    subBot.textContent = humanCol === 'w' ? tB : tW;
-    if(!subBot.textContent.trim()) subBot.textContent = '';
-  }
-
-  // Taken pieces in pbar (opponent bar shows what opponent captured, my bar shows what I captured)
+  // Taken pieces in pbar (opponent bar shows what opponent captured)
   const elTakTop = document.getElementById('takTop');
-  const elTakBot = document.getElementById('takBot');
   if(elTakTop) elTakTop.textContent = topCol === 'w' ? tB : tW;
-  if(elTakBot) elTakBot.textContent = humanCol === 'w' ? tB : tW;
 
   // Material advantage
   const mat = (takenByW || []).reduce((s, t) => s + (VAL[t]||0), 0) -
               (takenByB || []).reduce((s, t) => s + (VAL[t]||0), 0);
   const advTop = topCol === 'w' ? mat : -mat;
   const elAdvTop = document.getElementById('advTop');
-  const elAdvBot = document.getElementById('advBot');
   if(elAdvTop) elAdvTop.textContent = advTop > 0 ? '+' + advTop : '';
-  if(elAdvBot) elAdvBot.textContent = (-advTop > 0) ? '+' + (-advTop) : '';
+
+  // Collection of captured pieces (my side) below the board
+  const capPieces = humanCol === 'w' ? tB : tW;
+  const capScore = (humanCol === 'w' ? (takenByB || []) : (takenByW || [])).reduce((s, t) => s + (VAL[t]||0), 0);
+  const capCol = document.getElementById('captureCol');
+  const pEl = document.getElementById('capColPieces');
+  const sEl = document.getElementById('capColScore');
+  if(capCol && pEl && sEl) {
+    if(capPieces) {
+      pEl.textContent = capPieces;
+      const n = Math.abs(capScore) % 100;
+      const d = n % 10;
+      const word = (n > 10 && n < 20) ? 'очков' : (d === 1 ? 'очко' : (d >= 2 && d <= 4 ? 'очка' : 'очков'));
+      sEl.textContent = '· ' + capScore + ' ' + word;
+      capCol.style.display = '';
+    } else {
+      capCol.style.display = 'none';
+    }
+  }
 
   updateClockUI();
 }

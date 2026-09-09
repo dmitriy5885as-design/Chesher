@@ -7,10 +7,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.33.0">
+  <link rel="stylesheet" href="css/main.css?v=0.34.0">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.33.0">
+  <link rel="stylesheet" href="css/animations.css?v=0.34.0">
 
 </head>
 <body>
@@ -442,6 +442,7 @@
   
   <!-- ИГРА -->
   <header><h1>CHESHER</h1></header>
+  <div id="statusLine">Загрузка…</div>
   
   <div id="wrap">
     <div class="pbar pbarTop">
@@ -453,7 +454,6 @@
       <div class="pCard" id="pTop" title="Профиль соперника">
         <div class="ava" id="avaTop">🤖</div>
         <div class="nm" id="nmTop">Соперник</div>
-        <div class="sub" id="subTop">0% · 0</div>
         <button class="muteBtn" id="muteBtn" title="Заглушить соперника">🔊</button>
       </div>
       <div class="chatBox" id="chatBox">
@@ -466,7 +466,6 @@
       <div class="pCard clickable" id="pBot" title="Ваш профиль — нажмите для эмоций">
         <div class="ava" id="avaBot">🐣</div>
         <div class="nm" id="nmBot">Вы</div>
-        <div class="sub" id="subBot">0% · 0</div>
       </div>
       <div class="emPop" id="emoPopBot"></div>
     </div>
@@ -478,11 +477,13 @@
       </div>
     </div>
     <div class="pbar pbarBot">
-      <div class="who"><div class="name" id="nameBot">Вы</div>
-        <div class="taken"><span id="takBot"></span><span class="adv" id="advBot"></span></div></div>
-        <div class="clock" id="clkBot">∞</div>
+      <div class="who"><div class="name" id="nameBot">Вы</div></div>
+      <div class="clock" id="clkBot">∞</div>
     </div>
-    <div id="statusLine">Загрузка…</div>
+    <div class="capCol" id="captureCol" style="display:none">
+      <div class="capColLabel">Коллекция срубленных фигур</div>
+      <div class="capColRow"><span id="capColPieces"></span><span id="capColScore"></span></div>
+    </div>
     
     <aside id="side">
       <div id="modeLabel"></div>
@@ -558,22 +559,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке -->
-  <script src="js/chess-logic.js?v=0.33.0"></script>
-  <script src="js/bot.js?v=0.33.0"></script>
-  <script src="js/elo.js?v=0.33.0"></script>
-  <script src="js/profile.js?v=0.33.0"></script>
-  <script src="js/ui.js?v=0.33.0"></script>
-  <script src="js/chat.js?v=0.33.0"></script>
-  <script src="js/store.js?v=0.33.0"></script>
-  <script src="js/settings.js?v=0.33.0"></script>
-  <script src="js/meme/MemeEventBus.js?v=0.33.0"></script>
-  <script src="js/meme/MemeConfig.js?v=0.33.0"></script>
-  <script src="js/meme/MemeThreatHandler.js?v=0.33.0"></script>
-  <script src="js/firebase-config.js?v=0.33.0"></script>
-  <script src="js/auth.js?v=0.33.0"></script>
-  <script src="js/friends.js?v=0.33.0"></script>
-  <script src="js/multiplayer.js?v=0.33.0"></script>
-  <script src="js/net-ui.js?v=0.33.0"></script>
+  <script src="js/chess-logic.js?v=0.34.0"></script>
+  <script src="js/bot.js?v=0.34.0"></script>
+  <script src="js/elo.js?v=0.34.0"></script>
+  <script src="js/profile.js?v=0.34.0"></script>
+  <script src="js/ui.js?v=0.34.0"></script>
+  <script src="js/chat.js?v=0.34.0"></script>
+  <script src="js/store.js?v=0.34.0"></script>
+  <script src="js/settings.js?v=0.34.0"></script>
+  <script src="js/meme/MemeEventBus.js?v=0.34.0"></script>
+  <script src="js/meme/MemeConfig.js?v=0.34.0"></script>
+  <script src="js/meme/MemeThreatHandler.js?v=0.34.0"></script>
+  <script src="js/firebase-config.js?v=0.34.0"></script>
+  <script src="js/auth.js?v=0.34.0"></script>
+  <script src="js/friends.js?v=0.34.0"></script>
+  <script src="js/multiplayer.js?v=0.34.0"></script>
+  <script src="js/net-ui.js?v=0.34.0"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -683,7 +684,7 @@
     </div>
   </div>
   
-  <script src="js/main.js?v=0.33.0"></script>
+  <script src="js/main.js?v=0.34.0"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>

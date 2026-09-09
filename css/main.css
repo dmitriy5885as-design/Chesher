@@ -515,9 +515,16 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 #boardBox.flipped .piece.dead{animation:capPopF .25s ease forwards}
 
 /* --- Статус и ходы --- */
-#statusLine{grid-column:2;grid-row:5;margin-top:8px;text-align:center;
-  font-size:clamp(13px,2.1vw,16px);color:var(--mut);font-weight:600;min-height:22px}
+#statusLine{margin:2px auto 6px;text-align:center;
+  font-size:clamp(13px,2.1vw,16px);color:var(--mut);font-weight:600;min-height:20px}
 #statusLine b{color:var(--gold)}
+
+/* --- Коллекция срубленных фигур --- */
+.capCol{grid-column:2;grid-row:4;margin:10px auto 0;text-align:center;max-width:var(--bsz)}
+.capColLabel{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.capColRow{display:flex;align-items:center;justify-content:center;gap:8px}
+#capColPieces{font-size:17px;letter-spacing:1px;color:#cbc7bd;line-height:1.2}
+#capColScore{color:var(--gold);font-size:13px;font-weight:700}
 
 /* --- Сайдбар --- */
 #side{min-width:250px;max-width:370px;width:100%;
