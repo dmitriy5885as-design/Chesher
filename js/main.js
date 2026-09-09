@@ -1797,6 +1797,7 @@ function _formatTime(sec) {
   return m + ' мин';
 }
 
+let _memeBotPage = 0;
 function renderMemeBotGrid() {
   const grid = document.getElementById('segBot');
   if(!grid) return;
@@ -1804,13 +1805,30 @@ function renderMemeBotGrid() {
   const cu = ProfilesManager.getCurrent();
   const wins = cu ? (cu.st ? (cu.st.wins || 0) : 0) : 0;
   const sorted = BOT_LIST.slice().sort((a, b) => a.rating - b.rating);
-  grid.style.cssText = 'display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:8px 0;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin';
-  grid.style.msOverflowStyle = 'none';
-  sorted.forEach(bot => {
+
+  const containerW = grid.parentElement ? grid.parentElement.clientWidth - 16 : 320;
+  const perPage = Math.max(3, Math.floor(containerW / 88));
+  const totalPages = Math.ceil(sorted.length / perPage);
+  if(_memeBotPage >= totalPages) _memeBotPage = 0;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%';
+
+  const arrowL = document.createElement('button');
+  arrowL.innerHTML = '◀';
+  arrowL.style.cssText = 'flex:0 0 32px;height:32px;border:none;border-radius:50%;background:var(--panel2);color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:' + (_memeBotPage > 0 ? '1' : '.25') + ';pointer-events:' + (_memeBotPage > 0 ? 'auto' : 'none') + ';transition:.15s';
+  arrowL.onclick = () => { if(_memeBotPage > 0) { _memeBotPage--; renderMemeBotGrid(); } };
+
+  const cardsWrap = document.createElement('div');
+  cardsWrap.style.cssText = 'display:flex;gap:8px;flex:1;justify-content:center;overflow:hidden';
+
+  const start = _memeBotPage * perPage;
+  const pageBots = sorted.slice(start, start + perPage);
+  pageBots.forEach(bot => {
     const available = wins >= (bot.winsReq || 0);
     const selected = cu.botId === bot.id;
     const card = document.createElement('div');
-    card.style.cssText = 'flex:0 0 80px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;padding:10px 6px;border-radius:10px;border:2px solid ' + (selected ? 'var(--accent)' : 'var(--line)') + ';background:' + (selected ? 'rgba(255,136,0,.08)' : 'var(--panel2)') + ';cursor:' + (available ? 'pointer' : 'not-allowed') + ';opacity:' + (available ? '1' : '.35') + ';transition:.15s;text-align:center;min-width:80px' + (selected ? ';box-shadow:0 0 10px rgba(255,136,0,.25)' : '');
+    card.style.cssText = 'flex:0 0 80px;display:flex;flex-direction:column;align-items:center;padding:10px 6px;border-radius:10px;border:2px solid ' + (selected ? 'var(--accent)' : 'var(--line)') + ';background:' + (selected ? 'rgba(255,136,0,.08)' : 'var(--panel2)') + ';cursor:' + (available ? 'pointer' : 'not-allowed') + ';opacity:' + (available ? '1' : '.35') + ';transition:.15s;text-align:center;min-width:80px' + (selected ? ';box-shadow:0 0 10px rgba(255,136,0,.25)' : '');
     card.innerHTML = '<div style="font-size:26px;line-height:1">' + bot.emoji + '</div>' +
       '<div style="font-size:10px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + bot.name + '</div>' +
       '<div style="font-size:9px;color:var(--mut);margin-top:1px">' + bot.rating + ' Эло</div>' +
@@ -1823,8 +1841,28 @@ function renderMemeBotGrid() {
         renderMemeBotGrid();
       });
     }
-    grid.appendChild(card);
+    cardsWrap.appendChild(card);
   });
+
+  const arrowR = document.createElement('button');
+  arrowR.innerHTML = '▶';
+  arrowR.style.cssText = 'flex:0 0 32px;height:32px;border:none;border-radius:50%;background:var(--panel2);color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:' + (_memeBotPage < totalPages - 1 ? '1' : '.25') + ';pointer-events:' + (_memeBotPage < totalPages - 1 ? 'auto' : 'none') + ';transition:.15s';
+  arrowR.onclick = () => { if(_memeBotPage < totalPages - 1) { _memeBotPage++; renderMemeBotGrid(); } };
+
+  const dots = document.createElement('div');
+  dots.style.cssText = 'display:flex;justify-content:center;gap:5px;width:100%;margin-top:6px';
+  for(let i = 0; i < totalPages; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:' + (i === _memeBotPage ? 'var(--accent)' : 'var(--line)') + ';cursor:pointer;transition:.15s';
+    dot.onclick = () => { _memeBotPage = i; renderMemeBotGrid(); };
+    dots.appendChild(dot);
+  }
+
+  wrap.appendChild(arrowL);
+  wrap.appendChild(cardsWrap);
+  wrap.appendChild(arrowR);
+  grid.appendChild(wrap);
+  grid.appendChild(dots);
 }
 
 function startLobbyFromSetup() {
