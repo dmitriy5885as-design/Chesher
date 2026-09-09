@@ -1046,8 +1046,7 @@ function startClock() {
       }
       toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
       ChessEngine.clearStorage();
-      const resumeBtn = document.getElementById('mResume');
-      if(resumeBtn) resumeBtn.style.display = 'none';
+      hideResumeBtn();
       renderCoins();
       renderProfBar();
       renderStats();
@@ -1168,8 +1167,7 @@ function endGame(reason, winnerColor, drawReason) {
   
   // Clear saved game
   ChessEngine.clearStorage();
-  const resumeBtn = document.getElementById('mResume');
-  if(resumeBtn) resumeBtn.style.display = 'none';
+  hideResumeBtn();
 }
 
 /* --- Клик по клетке --- */
@@ -2013,8 +2011,7 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.human = mpColor;
   cfg.bot = 'off';
 
-  const resumeBtn = document.getElementById('mResume');
-  if(resumeBtn) resumeBtn.style.display = 'none';
+  hideResumeBtn();
 
   const ls = NetUI._lobbySettings || ChesMP.lobbySettings || {};
   const mpMode = ls.mode || 'classic';
@@ -2100,6 +2097,16 @@ function applyReal(move, promoType) {
 }
 
 /* --- Восстановление игры --- */
+function showResumeBtn() {
+  const row = document.getElementById('resumeRow');
+  if(row) row.style.display = 'flex';
+}
+
+function hideResumeBtn() {
+  const row = document.getElementById('resumeRow');
+  if(row) row.style.display = 'none';
+}
+
 function resumeGame() {
   const savedGame = ChessEngine.loadFromStorage();
   if(!savedGame || !savedGame.state) {
@@ -2189,8 +2196,7 @@ async function resumeMultiplayer(savedGame) {
   if(!data || data.status === 'finished' || data.status === 'cancelled') {
     toast('Игра завершена или лобби удалено');
     ChessEngine.clearStorage();
-    const resumeBtn = document.getElementById('mResume');
-    if(resumeBtn) resumeBtn.style.display = 'none';
+    hideResumeBtn();
     return;
   }
 
@@ -2489,7 +2495,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resumeBtn = document.getElementById('mResume');
   if(savedGame && savedGame.state && !savedGame.state.gameOver) {
     if(resumeBtn) {
-      resumeBtn.style.display = '';
+      showResumeBtn();
       resumeBtn.disabled = false;
       // Build label with mode info
       const isMp = savedGame.mp && savedGame.mp.lobbyId;
@@ -2512,7 +2518,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   } else {
-    if(resumeBtn) resumeBtn.style.display = 'none';
+    hideResumeBtn();
     ChessEngine.clearStorage();
   }
 
@@ -2549,6 +2555,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Main menu
   bind('mPlay', () => { showMultiplayerMenu(); });
   bind('mResume', () => resumeGame());
+  bind('mResumeClose', () => {
+    const savedGame = ChessEngine.loadFromStorage();
+    const isMp = !!(savedGame && savedGame.mp && savedGame.mp.lobbyId);
+    const msg = isMp
+      ? 'Завершить сетевую партию? Соперник узнает о вашем выходе, рейтинг не изменится.'
+      : 'Завершить партию? Прогресс будет потерян.';
+    if(!confirm(msg)) return;
+    if(isMp && savedGame.mp.lobbyId && typeof ChesMP !== 'undefined' && ChesMP && firebaseRtdb) {
+      try { firebaseRtdb.ref('lobbies/' + savedGame.mp.lobbyId).update({ status: 'cancelled' }); } catch(e) {}
+    }
+    ChessEngine.clearStorage();
+    hideResumeBtn();
+    toast('Партия завершена');
+  });
   bind('mModes', () => { showScreen('scrModes'); showModesList(); });
   bind('mShop', () => showScreen('scrShop'));
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
