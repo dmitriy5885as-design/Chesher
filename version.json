@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.9",
+    "date": "10.09.2026",
+    "items": [
+      "Shop videos: no autoplay, static preview + name, play on click"
+    ]
+  },
+  {
     "ver": "v0.23.8",
     "date": "10.09.2026",
     "items": [
