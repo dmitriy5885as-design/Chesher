@@ -361,7 +361,7 @@ const Store = {
     const note = document.querySelector('#scrShop .note');
 
     if(cfg.shopTab === 'videos') {
-      if(note) note.textContent = 'Все видео-мемы: играют автоматически без звука. Нажми на видео, чтобы открыть его крупнее и со звуком. Клик за границами видео — вернуть как было.';
+      if(note) note.textContent = 'Все видео-мемы: не проигрываются автоматически. Нажми на видео, чтобы открыть его крупнее и со звуком. Клик за границами видео — вернуть как было.';
       if(typeof AVAILABLE_VIDEOS !== 'undefined') {
         AVAILABLE_VIDEOS.forEach(v => {
           const card = document.createElement('div');
@@ -369,7 +369,8 @@ const Store = {
           card.dataset.id = v.file;
           card.innerHTML =
             '<div class="shopItemPreview vidPrev">' +
-              '<video loop muted playsinline autoplay src="' + v.file + '" preload="metadata"></video>' +
+              '<video loop muted playsinline preload="metadata" src="' + v.file + '#t=0.001"></video>' +
+              '<span class="vidPlayBadge">▶</span>' +
             '</div>' +
             '<div class="shopItemName">' + v.name + '</div>';
           grid.appendChild(card);
@@ -625,11 +626,12 @@ const Store = {
     if(!dim) return;
     const video = dim.querySelector('video');
     if(video) {
+      video.pause();
       video.muted = true;
+      video.currentTime = 0;
       if(Store.videoOrigin && document.contains(Store.videoOrigin)) {
         const prev = Store.videoOrigin.querySelector('.vidPrev');
         if(prev) prev.appendChild(video);
-        video.play().catch(() => {});
       }
     }
     dim.remove();
