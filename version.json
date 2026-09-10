@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.8",
+    "date": "10.09.2026",
+    "items": [
+      "Threat video defaults+backfill; capture collection inside bottom bar; status+title centered over board"
+    ]
+  },
+  {
     "ver": "v0.23.7",
     "date": "10.09.2026",
     "items": [
