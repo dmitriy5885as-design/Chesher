@@ -21,7 +21,7 @@ const MemeConfig = (() => {
     return {
       check:      { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
       capture:    { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      threat:     { w: [], b: [] },
+      threat:     { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
       defense:    { w: [], b: [] },
       promotion:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
       sacrifice:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
@@ -37,8 +37,23 @@ const MemeConfig = (() => {
     });
   }
 
+  function backfillDefaults(vp) {
+    ['threat'].forEach(function(k) {
+      if(!vp[k]) return;
+      if(!Array.isArray(vp[k].w) || !vp[k].w.length) vp[k].w = [DEFAULT_VIDEO];
+      if(!Array.isArray(vp[k].b) || !vp[k].b.length) vp[k].b = [DEFAULT_VIDEO];
+      PIECE_KEYS.forEach(function(pk) {
+        if(vp[k][pk]) {
+          if(!Array.isArray(vp[k][pk].w) || !vp[k][pk].w.length) vp[k][pk].w = [DEFAULT_VIDEO];
+          if(!Array.isArray(vp[k][pk].b) || !vp[k][pk].b.length) vp[k][pk].b = [DEFAULT_VIDEO];
+        }
+      });
+    });
+    return vp;
+  }
+
   function migratePresets(vp) {
-    if(!vp) return defaultPresets();
+    if(!vp) return backfillDefaults(defaultPresets());
 
     if(vp.check && typeof vp.check === 'object' && !Array.isArray(vp.check)) {
       var hasPieceKeys = PIECE_KEYS.some(function(pk) { return vp.check[pk]; });
@@ -49,7 +64,7 @@ const MemeConfig = (() => {
           if(vp[k] && vp[k].b) newP[k].b = Array.isArray(vp[k].b) ? vp[k].b : [vp[k].b];
         });
         MEME_EVENT_TYPES.forEach(function(k) { ensureArrays(newP[k]); });
-        return newP;
+        return backfillDefaults(newP);
       } else {
         MEME_EVENT_TYPES.forEach(function(k) {
           if(!vp[k]) vp[k] = { w: [], b: [] };
@@ -61,7 +76,7 @@ const MemeConfig = (() => {
           if(!Array.isArray(vp[k].w)) vp[k].w = [];
           if(!Array.isArray(vp[k].b)) vp[k].b = [];
         });
-        return vp;
+        return backfillDefaults(vp);
       }
     }
 
@@ -69,7 +84,7 @@ const MemeConfig = (() => {
       if(!vp[k]) vp[k] = { w: [], b: [] };
       ensureArrays(vp[k]);
     });
-    return vp;
+    return backfillDefaults(vp);
   }
 
   const DEFAULTS = {

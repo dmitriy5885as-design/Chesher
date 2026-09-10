@@ -214,10 +214,10 @@ function refreshBars() {
   const elAdvTop = document.getElementById('advTop');
   if(elAdvTop) elAdvTop.textContent = advTop > 0 ? '+' + advTop : '';
 
-  // Collection of captured pieces (my side) below the board
+  // Collection of captured pieces (my side) inside the bottom player bar
   const capPieces = humanCol === 'w' ? tB : tW;
   const capScore = (humanCol === 'w' ? (takenByB || []) : (takenByW || [])).reduce((s, t) => s + (VAL[t]||0), 0);
-  const capCol = document.getElementById('captureCol');
+  const capCol = document.getElementById('capCol');
   const pEl = document.getElementById('capColPieces');
   const sEl = document.getElementById('capColScore');
   if(capCol && pEl && sEl) {
