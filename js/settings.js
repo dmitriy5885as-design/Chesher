@@ -7,6 +7,7 @@
 /* --- Объект настроек --- */
 const cfg = {
   timeSec: 0,
+  timeInc: 0,
   bot: 'medium',
   variant: 'classic',
   human: 'w',
@@ -737,6 +738,7 @@ function saveCfg() {
   try {
     localStorage.setItem('chesher_cfg', JSON.stringify({
       timeSec: cfg.timeSec,
+      timeInc: cfg.timeInc,
       bot: cfg.bot,
       variant: cfg.variant,
       human: cfg.human,

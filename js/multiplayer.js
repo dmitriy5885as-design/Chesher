@@ -14,6 +14,8 @@ const ChesMP = {
   _endCallback: null,
   _startCallback: null,
   _lobbyUpdateCallback: null,
+  _drawCallback: null,
+  _drawRespCallback: null,
   _isHost: false,
   _started: false,
 
@@ -53,6 +55,7 @@ const ChesMP = {
 
     const cfg = settings || {};
     const timeSec = cfg.timeSec != null ? cfg.timeSec : 300;
+    const timeInc = cfg.timeInc != null ? cfg.timeInc : 0;
     const mode = cfg.mode || 'classic';
     const colorPref = cfg.color || 'random';
     const isWhite = colorPref === 'w' ? true : colorPref === 'b' ? false : Math.random() < 0.5;
@@ -70,6 +73,7 @@ const ChesMP = {
       mode: mode,
       ranked: !!settings.ranked,
       timeSec: timeSec,
+      timeInc: timeInc,
       color: isWhite ? 'b' : 'w',
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       moves: [],
@@ -108,7 +112,7 @@ const ChesMP = {
     this.lobbyId = lobbyId;
     this.myColor = lobby.color;
     this.opponent = { uid: lobby.host, name: lobby.hostName, ava: lobby.hostAva };
-    this.lobbySettings = { mode: lobby.mode || 'classic', timeSec: lobby.timeSec != null ? lobby.timeSec : 300 };
+    this.lobbySettings = { mode: lobby.mode || 'classic', timeSec: lobby.timeSec != null ? lobby.timeSec : 300, timeInc: lobby.timeInc != null ? lobby.timeInc : 0 };
     this._isHost = false;
     this._listenGame();
     return true;
@@ -179,6 +183,20 @@ const ChesMP = {
         this._moveCallback(move);
       }
     });
+
+    ref.child('draw').on('child_added', snap => {
+      const d = snap.val();
+      if(d && d.by !== ChesAuth.getUid() && this._drawCallback) {
+        this._drawCallback(d);
+      }
+    });
+
+    ref.child('drawResp').on('child_added', snap => {
+      const r = snap.val();
+      if(r && r.by !== ChesAuth.getUid() && this._drawRespCallback) {
+        this._drawRespCallback(r);
+      }
+    });
   },
 
   /* --- Отправить ход --- */
@@ -207,11 +225,30 @@ const ChesMP = {
     });
   },
 
-  /* --- Отмена/выход --- */
+  /* --- Отменить/выйти --- */
   async cancelLobby() {
     if(!firebaseRtdb || !this.lobbyId) return;
     await firebaseRtdb.ref('lobbies/' + this.lobbyId).update({ status: 'cancelled' });
     this.cleanup();
+  },
+
+  /* --- Предложить ничью --- */
+  async offerDraw() {
+    if(!firebaseRtdb || !this.lobbyId) return;
+    await firebaseRtdb.ref('lobbies/' + this.lobbyId + '/draw').push({
+      by: ChesAuth.getUid(),
+      ts: Date.now()
+    });
+  },
+
+  /* --- Ответить на предложение ничьей --- */
+  async respondDraw(accepted) {
+    if(!firebaseRtdb || !this.lobbyId) return;
+    await firebaseRtdb.ref('lobbies/' + this.lobbyId + '/drawResp').push({
+      by: ChesAuth.getUid(),
+      accepted: !!accepted,
+      ts: Date.now()
+    });
   },
 
   /* --- Очистка --- */
@@ -221,6 +258,12 @@ const ChesMP = {
     this.myColor = null;
     this.opponent = null;
     this._gameRef = null;
+    this._moveCallback = null;
+    this._endCallback = null;
+    this._startCallback = null;
+    this._lobbyUpdateCallback = null;
+    this._drawCallback = null;
+    this._drawRespCallback = null;
     this._isHost = false;
     this._started = false;
   },
@@ -256,5 +299,7 @@ const ChesMP = {
   onMove(fn) { this._moveCallback = fn; },
   onEnd(fn) { this._endCallback = fn; },
   onStart(fn) { this._startCallback = fn; },
-  onLobbyUpdate(fn) { this._lobbyUpdateCallback = fn; }
+  onLobbyUpdate(fn) { this._lobbyUpdateCallback = fn; },
+  onDraw(fn) { this._drawCallback = fn; },
+  onDrawResp(fn) { this._drawRespCallback = fn; }
 };

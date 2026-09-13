@@ -743,19 +743,96 @@ function renderMatchHistory(cu) {
     histBox.innerHTML = '<div style="color:var(--mut);text-align:center;padding:20px;font-size:13px">Пока нет сыгранных матчей</div>';
     return;
   }
-  histBox.innerHTML = history.slice(-30).reverse().map(h => {
+  histBox.innerHTML = history.slice(-30).reverse().map((h, i) => {
     const icon = h.result === 'win' ? '🏆' : h.result === 'loss' ? '😔' : '🤝';
     const color = h.result === 'win' ? '#4caf50' : h.result === 'loss' ? '#f44336' : '#ff9800';
     const time = h.time ? new Date(h.time).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const hasReplay = h.moves && h.moves.length > 0;
+    const idx = history.length - 1 - i;
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--line)">' +
       '<span style="font-size:20px">' + icon + '</span>' +
       '<div style="flex:1">' +
         '<div style="font-size:14px;font-weight:600;color:' + color + '">' + (h.opponent || '—') + '</div>' +
         '<div style="font-size:12px;color:var(--mut)">' + (h.mode || 'Классика') + (h.reason ? ' · ' + h.reason : '') + '</div>' +
       '</div>' +
+      (hasReplay ? '<button class="btn" onclick="openReplay(' + idx + ')" title="Просмотр партии">▶</button>' : '') +
       '<div style="font-size:11px;color:var(--mut);white-space:nowrap">' + time + '</div>' +
     '</div>';
   }).join('');
+}
+
+/* --- Просмотр партии --- */
+let rvFens = [];
+let rvNotes = [];
+let rvIdx = 0;
+
+function fenToBoard(fen) {
+  const board = [];
+  const rows = fen.split(' ')[0].split('/');
+  for(const row of rows) {
+    const br = [];
+    for(const ch of row) {
+      if(ch >= '1' && ch <= '8') {
+        const n = parseInt(ch, 10);
+        for(let i = 0; i < n; i++) br.push(null);
+      } else {
+        br.push(ch);
+      }
+    }
+    board.push(br);
+  }
+  return board;
+}
+
+function renderReplayBoard(fen) {
+  const box = document.getElementById('rvBoard');
+  const info = document.getElementById('rvInfo');
+  if(!box) return;
+  const board = fenToBoard(fen);
+  box.innerHTML = '';
+  for(let r = 0; r < 8; r++) {
+    for(let c = 0; c < 8; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'sq ' + ((r + c) % 2 === 0 ? 'l' : 'd');
+      cell.style.cssText = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,7vw,26px);cursor:default';
+      const p = board[r][c];
+      if(p) {
+        const color = p === p.toUpperCase() ? 'w' : 'b';
+        const type = p.toLowerCase();
+        cell.textContent = getSkinGlyph(color, type);
+      }
+      box.appendChild(cell);
+    }
+  }
+  if(info) {
+    info.textContent = (rvIdx === 0 ? 'Стартовая позиция' : 'Ход ' + rvIdx) + ' из ' + rvFens.length;
+  }
+  const ml = document.getElementById('rvMoveList');
+  if(ml) {
+    ml.innerHTML = rvNotes.map((n, i) =>
+      '<div style="' + (rvIdx === i + 1 ? 'background:var(--accent);color:#111;' : '') + 'padding:1px 4px;border-radius:4px">' + Math.ceil((i + 1) / 2) + '.' + (i % 2 === 0 ? ' ' : ' ') + n + '</div>'
+    ).join('');
+    ml.scrollTop = ml.scrollHeight;
+  }
+}
+
+function openReplay(matchIdx) {
+  const cu = ProfilesManager.getCurrent();
+  if(!cu) return;
+  const h = (cu.matchHistory || [])[matchIdx];
+  if(!h || !h.moves || !h.moves.length) {
+    toast('Для этой партии нет записи ходов');
+    return;
+  }
+  rvFens = [h.startFen ? h.startFen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'];
+  rvNotes = [];
+  for(const m of h.moves) {
+    rvFens.push(m.fen);
+    rvNotes.push(m.notation || '');
+  }
+  rvIdx = 0;
+  renderReplayBoard(rvFens[0]);
+  openOv('ovReplay');
 }
 
 /* --- Вкладка: Настройки профиля --- */
@@ -826,3 +903,4 @@ window.openPromoModal = openPromoModal;
 window.askConfirm = askConfirm;
 window.spawnPiece = spawnPiece;
 window.updateClockUI = updateClockUI;
+window.openReplay = openReplay;

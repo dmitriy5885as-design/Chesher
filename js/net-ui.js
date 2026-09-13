@@ -20,7 +20,17 @@ const NetUI = {
     const loginBtn = document.getElementById('authLoginBtn');
     const googleBtn = document.getElementById('authGoogleBtn');
     const anonBtn = document.getElementById('authAnonBtn');
+    const resetBtn = document.getElementById('authResetBtn');
     const skipBtn = document.getElementById('authSkipBtn');
+
+    if(resetBtn) resetBtn.onclick = async () => {
+      const email = document.getElementById('authEmail').value.trim();
+      if(!email) { toast('Введите email в поле выше'); return; }
+      try {
+        await ChesAuth.resetPassword(email);
+        toast('Ссылка для сброса отправлена на ' + email);
+      } catch(e) { toast('Ошибка: ' + e.message); }
+    };
 
     if(regBtn) regBtn.onclick = async () => {
       const name = document.getElementById('authName').value.trim();

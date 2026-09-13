@@ -79,6 +79,12 @@ const ChesAuth = {
     return cred.user;
   },
 
+  /* --- Сброс пароля (письмо на email) --- */
+  async resetPassword(email) {
+    if(!firebaseAuth) throw new Error('Firebase not initialized');
+    await firebaseAuth.sendPasswordResetEmail(email.trim());
+  },
+
   /* --- Вход через Google --- */
   async loginGoogle() {
     if(!firebaseAuth) throw new Error('Firebase not initialized');

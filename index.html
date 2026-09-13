@@ -7,10 +7,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.36.0">
+  <link rel="stylesheet" href="css/main.css?v=0.37.0">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.36.0">
+  <link rel="stylesheet" href="css/animations.css?v=0.37.0">
 
 </head>
 <body>
@@ -48,7 +48,7 @@
       <button class="mBtn" id="mModes">☰ Режимы</button>
       <button class="mBtn" id="mShop">🛍 Магазин</button>
       <div class="row2m">
-        <button class="mBtn half" id="mLeaderboard" style="opacity:.4;pointer-events:none;cursor:default">🏆 Таблица лидеров</button>
+        <button class="mBtn half" id="mLeaderboard">🏆 Таблица лидеров</button>
         <button class="mBtn half" id="mSettings">⚙ Настройки</button>
       </div>
     </div>
@@ -147,6 +147,7 @@
         <button class="mBtn" id="authLoginBtn" style="width:100%">Войти</button>
         <button class="mBtn" id="authGoogleBtn" style="width:100%">🔵 Войти через Google</button>
         <button class="mBtn" id="authAnonBtn" style="width:100%;opacity:.6">Анонимно</button>
+        <button class="mBtn" id="authResetBtn" style="width:100%;opacity:.6">🔑 Забыли пароль?</button>
       </div>
       <div style="text-align:center;margin-top:16px">
         <button class="mBtn" id="authSkipBtn" style="opacity:.5">Пропустить</button>
@@ -186,6 +187,10 @@
       <div class="setGroup">
         <h3>⏱ Контроль времени</h3>
         <div id="lobbyTimeSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div class="setGroup">
+        <h3>⏱ Прирост (Фишер)</h3>
+        <div id="lobbyIncSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="setGroup">
         <h3>🎨 Ваш цвет</h3>
@@ -356,6 +361,9 @@
           <p style="color:var(--mut);font-size:11px;margin-top:4px">Введите время в минутах (1-60)</p>
         </div>
       </div>
+      <div class="setGroup" id="timeIncGroup" style="display:none"><h3>⏱ Прирост (Фишер)</h3><small style="color:var(--mut);font-size:11px">Секунды добавляются после каждого хода</small>
+        <div id="segTimeInc"></div>
+      </div>
       <div class="setGroup" id="memeModesGroup" style="display:none"><h3>🔫 Мемасия</h3>
         <div id="memeModesOpts"></div>
       </div>
@@ -376,7 +384,6 @@
       <button class="shopTab" data-mode="bot">🤖 Боты</button>
       <button class="shopTab" data-mode="ranked">🏆 Рейтинг</button>
       <button class="shopTab" data-mode="fischer">🎲 Фишер</button>
-      <button class="shopTab" data-mode="daily">📅 Дневная</button>
       <button class="shopTab" data-mode="overall">🏆 Общий</button>
     </div>
     <div id="lbTop"></div>
@@ -516,6 +523,21 @@
     </div>
   </div></div>
   
+  <!-- ПРОСМОТР ПАРТИИ -->
+  <div class="overlay" id="ovReplay"><div class="modal" style="width:min(92vw,360px)">
+    <h2>↩️ Просмотр партии</h2>
+    <div style="display:flex;justify-content:center;margin:10px 0 6px"><div style="width:min(78vw,268px)"><div style="display:grid;grid-template-columns:repeat(8,1fr);border:2px solid #6b5b3f;border-radius:4px;overflow:hidden" id="rvBoard"></div></div></div>
+    <div style="text-align:center;color:var(--mut);font-size:12px;margin:4px 0 10px" id="rvInfo">0</div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px">
+      <button class="btn" id="rvBack" title="К началу">⏮</button>
+      <button class="btn" id="rvPrev" title="Назад">◀</button>
+      <button class="btn" id="rvNext" title="Вперёд">▶</button>
+      <button class="btn" id="rvFwd" title="К концу">⏭</button>
+    </div>
+    <div id="rvMoveList" style="max-height:150px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;line-height:1.5;margin-bottom:10px"></div>
+    <div class="modalBtns"><button class="btn" data-close="ovReplay">Закрыть</button></div>
+  </div></div>
+
   <!-- ПРЕВРАЩЕНИЕ -->
   <div class="overlay" id="ovPr"><div class="modal">
     <h2>Превращение пешки</h2>
@@ -557,22 +579,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке -->
-  <script src="js/chess-logic.js?v=0.36.0"></script>
-  <script src="js/bot.js?v=0.36.0"></script>
-  <script src="js/elo.js?v=0.36.0"></script>
-  <script src="js/profile.js?v=0.36.0"></script>
-  <script src="js/ui.js?v=0.36.0"></script>
-  <script src="js/chat.js?v=0.36.0"></script>
-  <script src="js/store.js?v=0.36.0"></script>
-  <script src="js/settings.js?v=0.36.0"></script>
-  <script src="js/meme/MemeEventBus.js?v=0.36.0"></script>
-  <script src="js/meme/MemeConfig.js?v=0.36.0"></script>
-  <script src="js/meme/MemeThreatHandler.js?v=0.36.0"></script>
-  <script src="js/firebase-config.js?v=0.36.0"></script>
-  <script src="js/auth.js?v=0.36.0"></script>
-  <script src="js/friends.js?v=0.36.0"></script>
-  <script src="js/multiplayer.js?v=0.36.0"></script>
-  <script src="js/net-ui.js?v=0.36.0"></script>
+  <script src="js/chess-logic.js?v=0.37.0"></script>
+  <script src="js/bot.js?v=0.37.0"></script>
+  <script src="js/elo.js?v=0.37.0"></script>
+  <script src="js/profile.js?v=0.37.0"></script>
+  <script src="js/ui.js?v=0.37.0"></script>
+  <script src="js/chat.js?v=0.37.0"></script>
+  <script src="js/store.js?v=0.37.0"></script>
+  <script src="js/settings.js?v=0.37.0"></script>
+  <script src="js/meme/MemeEventBus.js?v=0.37.0"></script>
+  <script src="js/meme/MemeConfig.js?v=0.37.0"></script>
+  <script src="js/meme/MemeThreatHandler.js?v=0.37.0"></script>
+  <script src="js/firebase-config.js?v=0.37.0"></script>
+  <script src="js/auth.js?v=0.37.0"></script>
+  <script src="js/friends.js?v=0.37.0"></script>
+  <script src="js/multiplayer.js?v=0.37.0"></script>
+  <script src="js/net-ui.js?v=0.37.0"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -682,7 +704,7 @@
     </div>
   </div>
   
-  <script src="js/main.js?v=0.36.0"></script>
+  <script src="js/main.js?v=0.37.0"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>

@@ -15,6 +15,8 @@ let takenByB = [];
 let moveQueue = [];
 let clockInterval = null;
 let isBotThinking = false;
+let gameMoves = [];     // {fen, notation} для повтора партии
+let gameStartFen = '';   // стартовый FEN для повтора
 
 /* --- Получение глифа фигуры (deprecated, use getSkinGlyph) --- */
 function G(color, type) {
@@ -311,6 +313,8 @@ function buildModesCfg(modeId) {
   if(sideGroup) sideGroup.style.display = 'none';
   if(variantGroup) variantGroup.style.display = 'none';
   if(timeGroup) timeGroup.style.display = '';
+  const timeIncGroup = document.getElementById('timeIncGroup');
+  if(timeIncGroup) timeIncGroup.style.display = '';
   
   // Local 2-player mode
   if(modeId === 'local') {
@@ -326,6 +330,16 @@ function buildModesCfg(modeId) {
       {v: 0, label: '∞', sub: 'без часов'}
     ], () => cfg.timeSec, v => {
       cfg.timeSec = v;
+      saveCfg();
+    });
+    
+    buildSeg('segTimeInc', [
+      {v: 0, label: 'Без', sub: ''},
+      {v: 2, label: '+2 с', sub: 'за ход'},
+      {v: 5, label: '+5 с', sub: 'за ход'},
+      {v: 10, label: '+10 с', sub: 'за ход'}
+    ], () => cfg.timeInc, v => {
+      cfg.timeInc = v;
       saveCfg();
     });
     
@@ -436,6 +450,16 @@ function buildModesCfg(modeId) {
       }
     })();
     
+    buildSeg('segTimeInc', [
+      {v: 0, label: 'Без', sub: ''},
+      {v: 2, label: '+2 с', sub: 'за ход'},
+      {v: 5, label: '+5 с', sub: 'за ход'},
+      {v: 10, label: '+10 с', sub: 'за ход'}
+    ], () => cfg.timeInc, v => {
+      cfg.timeInc = v;
+      saveCfg();
+    });
+
     // Meme video settings — рендерим прямо здесь
     var memeGroup = document.getElementById('memeModesGroup');
     var memeBox = document.getElementById('memeModesOpts');
@@ -823,6 +847,16 @@ function buildModesCfg(modeId) {
     if(timeInput) timeInput.style.display = (v !== 0) ? '' : 'none';
     saveCfg();
   });
+
+  buildSeg('segTimeInc', [
+    {v: 0, label: 'Без', sub: ''},
+    {v: 2, label: '+2 с', sub: 'за ход'},
+    {v: 5, label: '+5 с', sub: 'за ход'},
+    {v: 10, label: '+10 с', sub: 'за ход'}
+  ], () => cfg.timeInc, v => {
+    cfg.timeInc = v;
+    saveCfg();
+  });
   
   saveCfg();
 }
@@ -922,6 +956,8 @@ function newGame() {
   
   S = new ChessEngine(cfg.variant || 'classic');
   S.newGame();
+  gameStartFen = S.toFen();
+  gameMoves = [];
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.clearAll();
 
   // Apply board colors
@@ -938,6 +974,7 @@ function newGame() {
   pendingPromo = null;
   takenByW = [];
   takenByB = [];
+  gameMoves = [];
   isBotThinking = false;
   opponentMuted = false;
   const muteBtn = document.getElementById('muteBtn');
@@ -1165,8 +1202,11 @@ function endGame(reason, winnerColor, drawReason) {
     reason: reasons[drawReason] || reasons[reason] || '',
     time: Date.now(),
     eloChange: eloChange,
-    date: dateStr
+    date: dateStr,
+    moves: gameMoves.slice(),
+    startFen: gameStartFen || undefined
   });
+  gameMoves = [];
   if(cu.matchHistory.length > 50) cu.matchHistory = cu.matchHistory.slice(-50);
   saveProfiles();
 
@@ -1259,6 +1299,7 @@ function findKingPos(color) {
 /* --- Выполнить ход --- */
 function executeMove(move) {
   const isHumanMove = S.turn === S.humanColor;
+  const moverCol = S.turn;
   // Record capture
   let capturePiece = null;
   if(move.capture) {
@@ -1272,6 +1313,10 @@ function executeMove(move) {
   }
 
   S.makeMove(move);
+  try {
+    gameMoves.push({ fen: S.toFen(), notation: notationFromMove(move, S.inCheck(S.turn)), fr: move.fr, fc: move.fc, tr: move.tr, tc: move.tc });
+  } catch(e) {}
+  if(cfg.timeInc > 0 && S.clockOn && S.time) S.time[moverCol] = (S.time[moverCol] || 0) + cfg.timeInc;
   lastMove = {fr: move.fr, fc: move.fc, tr: move.tr, tc: move.tc};
   selected = null;
   legalCache = [];
@@ -1681,8 +1726,56 @@ function resignGame() {
 /* --- Ничья --- */
 function offerDraw() {
   if(!S || S.gameOver) return;
+  const isMp = cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked';
+  if(isMp && typeof ChesMP !== 'undefined' && ChesMP.lobbyId) {
+    askConfirm('Предложить ничью?', 'Соперник получит предложение. Ожидайте ответа.', () => {
+      ChesMP.offerDraw();
+      toast('🤝 Предложение отправлено');
+      const bd = document.getElementById('btnDraw');
+      if(bd) bd.style.opacity = '0.45';
+    });
+    return;
+  }
   askConfirm('Предложить ничью?', 'Вы уверены?', () => {
     endGame('draw', null);
+  });
+}
+
+/* --- МП: входящее предложение ничьей --- */
+function showDrawOfferModal() {
+  const old = document.getElementById('ovDrawIn');
+  if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'overlay show';
+  ov.id = 'ovDrawIn';
+  ov.innerHTML = '<div class="modal"><h2>🤝 Ничья</h2><p style="text-align:center;color:var(--mut);line-height:1.55">Соперник предлагает ничью</p><div class="modalBtns"><button class="btn primary" id="drwYes">Принять</button><button class="btn" id="drwNo">Отклонить</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#drwYes').addEventListener('click', () => {
+    ChesMP.respondDraw(true);
+    ov.remove();
+    if(S && !S.gameOver) endGame('draw', null, 'draw');
+  });
+  ov.querySelector('#drwNo').addEventListener('click', () => {
+    ChesMP.respondDraw(false);
+    ov.remove();
+  });
+}
+
+/* --- МП: слушатели ничьей --- */
+function registerMpDraw() {
+  ChesMP.onDraw(() => {
+    const ov = document.getElementById('ovDrawIn');
+    if(!S || S.gameOver || (ov && ov.classList.contains('show'))) return;
+    showDrawOfferModal();
+  });
+  ChesMP.onDrawResp(r => {
+    const bd = document.getElementById('btnDraw');
+    if(bd) bd.style.opacity = '';
+    if(r.accepted) {
+      if(S && !S.gameOver) endGame('draw', null, 'draw');
+    } else {
+      toast('Соперник отклонил предложение ничьей');
+    }
   });
 }
 
@@ -1710,7 +1803,7 @@ function handleIncomingMove(move) {
 }
 
 /* --- Настройка лобби --- */
-let _lobbyCfg = { mode: 'classic', timeSec: 600, color: 'random' };
+let _lobbyCfg = { mode: 'classic', timeSec: 600, color: 'random', timeInc: 0 };
 
 function renderLobbySetup() {
   const modes = [
@@ -1739,6 +1832,12 @@ function renderLobbySetup() {
 
   renderSeg('lobbyModeSeg', modes, 'mode');
   renderSeg('lobbyColorSeg', colors, 'color');
+  renderSeg('lobbyIncSeg', [
+    {v:0, label:'Без'},
+    {v:2, label:'+2 с'},
+    {v:5, label:'+5 с'},
+    {v:10, label:'+10 с'}
+  ], 'timeInc');
 
   // Time slider
   const timeMarks = [
@@ -2031,9 +2130,12 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.memes = mpMode === 'meme';
   MemeConfig.set('enabled', mpMode === 'meme');
   cfg.timeSec = ls.timeSec != null ? ls.timeSec : 300;
+  cfg.timeInc = ls.timeInc != null ? ls.timeInc : 0;
 
   S = new ChessEngine(mpMode === 'fischer' ? 'fischer' : 'classic');
   S.newGame();
+  gameStartFen = S.toFen();
+  gameMoves = [];
   S.humanColor = mpColor;
 
   lastMove = null;
@@ -2083,9 +2185,11 @@ function startMultiplayerGame(mpColor, opponentName) {
 
   ChesMP.onMove(move => { handleIncomingMove(move); });
   ChesMP.onEnd((winner) => {
+    if(winner === 'draw') { endGame('draw', null, 'draw'); return; }
     const result = winner === mpColor ? 'win' : 'loss';
     endGame('checkmate', winner);
   });
+  registerMpDraw();
 
   // Fetch opponent's playerId
   if(ChesMP.opponent && ChesMP.opponent.uid && firebaseDB) {
@@ -2172,6 +2276,7 @@ function resumeGame() {
     if(savedGame.cfg.modeId) cfg.modeId = savedGame.cfg.modeId;
     if(savedGame.cfg.gameMode) cfg.gameMode = savedGame.cfg.gameMode;
     if(savedGame.cfg.timeSec != null) cfg.timeSec = savedGame.cfg.timeSec;
+    if(savedGame.cfg.timeInc != null) cfg.timeInc = savedGame.cfg.timeInc;
   }
   
   // Create engine and restore state
@@ -2193,6 +2298,7 @@ function resumeGame() {
   pendingPromo = null;
   takenByW = [];
   takenByB = [];
+  gameMoves = [];
   isBotThinking = false;
   hintsLeft = 2;
   undosLeft = 3;
@@ -2256,6 +2362,7 @@ async function resumeMultiplayer(savedGame) {
     if(savedGame.cfg.skin) cfg.skin = savedGame.cfg.skin;
     if(savedGame.cfg.gameMode) cfg.gameMode = savedGame.cfg.gameMode;
     if(savedGame.cfg.timeSec != null) cfg.timeSec = savedGame.cfg.timeSec;
+    if(savedGame.cfg.timeInc != null) cfg.timeInc = savedGame.cfg.timeInc;
     if(savedGame.cfg.modeId) cfg.modeId = savedGame.cfg.modeId;
   }
   cfg.human = mp.myColor;
@@ -2276,6 +2383,7 @@ async function resumeMultiplayer(savedGame) {
   pendingPromo = null;
   takenByW = [];
   takenByB = [];
+  gameMoves = [];
   isBotThinking = false;
   hintsLeft = 2;
   undosLeft = 3;
@@ -2323,9 +2431,11 @@ async function resumeMultiplayer(savedGame) {
   // Re-register listeners
   ChesMP.onMove(move => { handleIncomingMove(move); });
   ChesMP.onEnd((winner) => {
+    if(winner === 'draw') { endGame('draw', null, 'draw'); return; }
     const result = winner === mp.myColor ? 'win' : 'loss';
     endGame('checkmate', winner);
   });
+  registerMpDraw();
   ChesMP._listenGame();
 
   toast('Сетевая игра: vs ' + (mp.opponent ? mp.opponent.name : 'Соперник'));
@@ -2362,11 +2472,12 @@ function renderLeaderboard(mode) {
     .filter(p => p.name && p.name !== 'Гость' && p.name !== 'Guest')
     .map(p => {
       const ratings = p.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000,ranked:1000};
+      const rVal = (k) => (ratings[k] && ratings[k] > 0) ? ratings[k] : 1000;
       let rating;
       if(lbMode === 'overall') {
-        rating = Math.round((ratings.classic + ratings.bot + ratings.fischer + ratings.meme + ratings.ranked) / 5);
+        rating = Math.round((['classic','bot','fischer','meme','ranked'].reduce((s,k) => s + rVal(k), 0)) / 5);
       } else {
-        rating = ratings[lbMode] || 0;
+        rating = rVal(lbMode);
       }
       return {
         id: p.id,
@@ -3023,6 +3134,12 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('btnUndo', () => undoMove());
   bind('btnRes', () => resignGame());
   bind('btnDraw', () => offerDraw());
+
+  // Replay viewer
+  bind('rvBack', () => { rvIdx = 0; renderReplayBoard(rvFens[0]); });
+  bind('rvPrev', () => { if(rvIdx > 0) { rvIdx--; renderReplayBoard(rvFens[rvIdx]); } });
+  bind('rvNext', () => { if(rvIdx < rvFens.length - 1) { rvIdx++; renderReplayBoard(rvFens[rvIdx]); } });
+  bind('rvFwd', () => { rvIdx = rvFens.length - 1; renderReplayBoard(rvFens[rvIdx]); });
 
   // Game over overlay
   bind('overNew', () => { closeAllOverlays(); newGame(); hideAllScreens(); });
