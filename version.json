@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.10",
+    "date": "13.09.2026",
+    "items": [
+      "Leaderboard enabled; Fischer increment (local+meme+classic+MP); draw offer MP; match replay; password reset; roadmap update"
+    ]
+  },
+  {
     "ver": "v0.23.9",
     "date": "10.09.2026",
     "items": [
