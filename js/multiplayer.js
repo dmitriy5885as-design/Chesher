@@ -18,6 +18,16 @@ const ChesMP = {
   _drawRespCallback: null,
   _isHost: false,
   _started: false,
+  _ended: false,
+  _rematchFired: false,
+  _resultSent: false,
+  _connAttached: false,
+  lobbyClock: null,
+  round: 0,
+  _sendQueue: [],
+  _sending: false,
+  _sendRetryTimer: null,
+  _connectedRef: null,
 
   /* --- Установить статус онлайн --- */
   setOnline() {
@@ -31,6 +41,14 @@ const ChesMP = {
     firebaseRtdb.ref('status/' + uid).onDisconnect().set({
       online: false,
       lastSeen: Date.now()
+    });
+    // Flush queued moves as soon as we're back online (single listener, no duplicates)
+    if(this._connAttached) return;
+    this._connAttached = true;
+    const connRef = firebaseRtdb.ref('.info/connected');
+    this._connectedRef = connRef;
+    connRef.on('value', snap => {
+      if(snap.val() === true) this._flushSend();
     });
   },
 
@@ -180,17 +198,47 @@ const ChesMP = {
       const data = snap.val();
       if(!data) return;
 
-      if(data.status === 'playing' && !this._started) {
+      if(data.status === 'playing' && (!this._started || this._ended)) {
+        if(this._ended) {
+          // Rematch restart: game was finished, now playing again
+          this._ended = false;
+          this._rematchFired = false;
+          this._resultSent = false;
+        }
         this._started = true;
+        this.lobbyClock = data.clock || null;
+        this.round = data.round || 0;
         if(!this.opponent && data.guest) {
           this.opponent = { uid: data.guest, name: data.guestName, ava: data.guestAva };
         }
         if(this._startCallback) this._startCallback(this.opponent);
       }
 
-      if(data.winner) {
+      // Rematch: both players marked rematch -> host resets the lobby to a fresh game
+      if(data.status === 'finished' && data.rematch && !this._rematchFired) {
+        const uid = ChesAuth.getUid();
+        const hostWant = data.rematch[data.host] === true;
+        const guestWant = data.guest && data.rematch[data.guest] === true;
+        if(hostWant && guestWant) {
+          this._rematchFired = true;
+          this._started = false;
+          this._ended = false;
+          this._resultSent = false;
+          if(data.host === uid) {
+            // Host rebuilds the lobby for a new round (same settings & colors)
+            this.resetForRematch();
+          }
+        }
+      }
+
+      if(data.winner && !this._ended) {
+        this._ended = true;
+        // Game ended normally — do NOT discard the finished status on tab close,
+        // but keep listeners alive so both players can request a rematch
+        if(firebaseRtdb && this.lobbyId) {
+          try { firebaseRtdb.ref('lobbies/' + this.lobbyId).onDisconnect().cancel(); } catch(e) {}
+        }
         if(this._endCallback) this._endCallback(data.winner, data.reason);
-        this.cleanup();
       }
 
       if(this._lobbyUpdateCallback) this._lobbyUpdateCallback(data);
@@ -218,26 +266,73 @@ const ChesMP = {
     });
   },
 
-  /* --- Отправить ход --- */
-  async sendMove(from, to, fen, notation, promo) {
+  /* --- Отправить ход (с очередью и повторами) --- */
+  async sendMove(from, to, fen, notation, promo, clock) {
     if(!firebaseRtdb || !this.lobbyId) return;
     const uid = ChesAuth.getUid();
-    const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
-    await ref.update({ fen, turn: fen.split(' ')[1] });
-    await ref.child('moves').push({
+    const mid = uid + '_' + Date.now() + '_' + from + to;
+    const move = {
+      mid: mid,
       by: uid,
       from,
       to,
       fen,
       notation,
       promo: promo || null,
+      clock: clock || null,
       timestamp: Date.now()
-    });
+    };
+    this._sendQueue.push(move);
+    await this._flushSend();
+  },
+
+  /* --- Отправить накопленные ходы по очереди (идемпотентный по key) --- */
+  async _flushSend() {
+    if(!firebaseRtdb || !this.lobbyId) return;
+    if(this._sending) return;
+    this._sending = true;
+    try {
+      while(this._sendQueue.length) {
+        const m = this._sendQueue[0];
+        const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
+        const upd = { fen: m.fen, turn: m.fen.split(' ')[1] };
+        if(m.clock) upd.clock = m.clock;
+        await ref.update(upd);
+        await ref.child('moves').child(m.mid).set({
+          mid: m.mid,
+          by: m.by,
+          from: m.from,
+          to: m.to,
+          fen: m.fen,
+          notation: m.notation,
+          promo: m.promo,
+          clock: m.clock || null,
+          timestamp: m.timestamp
+        });
+        this._sendQueue.shift();
+      }
+    } catch(e) {
+      console.warn('sendMove retry queued:', e);
+    }
+    this._sending = false;
+    if(this._sendQueue.length) this._scheduleSendRetry();
+  },
+
+  _scheduleSendRetry() {
+    if(this._sendRetryTimer) return;
+    this._sendRetryTimer = setTimeout(() => {
+      this._sendRetryTimer = null;
+      this._flushSend();
+    }, 2500);
   },
 
   /* --- Завершить игру --- */
   async endGame(winner, reason) {
     if(!firebaseRtdb || !this.lobbyId) return;
+    // Each client may hit the same terminal condition (e.g. deterministic timeout);
+    // write the result to the lobby at most once to avoid redundant writes/races.
+    if(this._resultSent) return;
+    this._resultSent = true;
     await firebaseRtdb.ref('lobbies/' + this.lobbyId).update({
       winner,
       reason,
@@ -249,6 +344,11 @@ const ChesMP = {
   async cancelLobby() {
     if(!firebaseRtdb || !this.lobbyId) return;
     await firebaseRtdb.ref('lobbies/' + this.lobbyId).update({ status: 'cancelled' });
+    this.cleanup();
+  },
+
+  /* --- Выйти из лобби без изменения статуса (игра окончена) --- */
+  leaveLobby() {
     this.cleanup();
   },
 
@@ -278,6 +378,16 @@ const ChesMP = {
     if(firebaseRtdb && this.lobbyId) {
       try { firebaseRtdb.ref('lobbies/' + this.lobbyId).onDisconnect().cancel(); } catch(e) {}
     }
+    if(this._connectedRef) {
+      try { this._connectedRef.off(); } catch(e) {}
+      this._connectedRef = null;
+    }
+    if(this._sendRetryTimer) {
+      clearTimeout(this._sendRetryTimer);
+      this._sendRetryTimer = null;
+    }
+    this._sendQueue = [];
+    this._connAttached = false;
     if(this._gameRef) {
       this._gameRef.off();
       this._gameRef = null;
@@ -305,6 +415,9 @@ const ChesMP = {
     this._drawRespCallback = null;
     this._isHost = false;
     this._started = false;
+    this._ended = false;
+    this._rematchFired = false;
+    this._resultSent = false;
   },
 
   /* --- Готовность --- */
@@ -331,7 +444,44 @@ const ChesMP = {
       toast('Оба игрока должны быть готовы');
       return;
     }
-    await ref.update({ status: 'playing' });
+    const timeSec = data.timeSec != null ? data.timeSec : 300;
+    const clockInit = timeSec > 0 ? { w: timeSec, b: timeSec, turn: 'w', lastMoveAt: Date.now() } : null;
+    const upd = { status: 'playing' };
+    if(clockInit) upd.clock = clockInit;
+    await ref.update(upd);
+  },
+
+  /* --- Запросить реванш --- */
+  async requestRematch() {
+    if(!firebaseRtdb || !this.lobbyId) return;
+    const uid = ChesAuth.getUid();
+    await firebaseRtdb.ref('lobbies/' + this.lobbyId + '/rematch').update({ [uid]: true });
+  },
+
+  /* --- Хост пересобирает лобби для реванша --- */
+  async resetForRematch() {
+    if(!firebaseRtdb || !this.lobbyId || !this._isHost) return;
+    const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
+    const snap = await ref.once('value');
+    const data = snap.val();
+    if(!data || data.host !== ChesAuth.getUid()) return;
+    const timeSec = data.timeSec != null ? data.timeSec : 300;
+    const clockInit = timeSec > 0 ? { w: timeSec, b: timeSec, turn: 'w', lastMoveAt: Date.now() } : null;
+    const startFen = data.mode === 'fischer' ? null : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    this._resultSent = false;
+    await ref.update({
+      fen: startFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      turn: 'w',
+      winner: null,
+      reason: null,
+      clock: clockInit,
+      rematch: null,
+      moves: null,
+      draw: null,
+      drawResp: null,
+      status: 'playing',
+      round: (data.round || 0) + 1
+    });
   },
 
   /* --- Колбэки --- */

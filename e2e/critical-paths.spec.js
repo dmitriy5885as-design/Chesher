@@ -145,4 +145,14 @@ test.describe('CHESHER — Критические пути', () => {
     await expect(page.locator('#scrMenu')).toBeVisible();
   });
 
+  // ===================== 10. Оверлей конца партии =====================
+  test('Оверлей конца партии: кнопки включая скрытый реванш', async ({ page }) => {
+    await expect(page.locator('#ovOver')).toBeAttached();
+    // Кнопка «Новая партия» и меню всегда в DOM
+    await expect(page.locator('#overNew')).toBeAttached();
+    await expect(page.locator('#overMenu')).toBeAttached();
+    // Реванш доступен только для сетевых игр — по умолчанию скрыт
+    await expect(page.locator('#overRematch')).toBeHidden();
+  });
+
 });

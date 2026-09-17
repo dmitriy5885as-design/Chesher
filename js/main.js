@@ -1072,6 +1072,28 @@ function startClock() {
   stopClock();
   clockInterval = setInterval(() => {
     if(!S || !S.clockOn || S.gameOver) return;
+
+    // Multiplayer: ticks are derived from the last server clock snapshot, so both
+    // clients see the same remaining time and the timeout decision is deterministic
+    if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && S.mpClock && S.mpClock.lastMoveAt) {
+      const mc = S.mpClock;
+      const elapsed = Math.max(0, (Date.now() - mc.lastMoveAt) / 1000);
+      const turn = S.turn;
+      const remain = Math.max(0, (mc[turn] || 0) - elapsed);
+      S.time = { w: mc.w || 0, b: mc.b || 0 };
+      S.time[turn] = remain;
+      updateClockUI();
+      if(remain <= 0) {
+        stopClock();
+        const loser = turn;
+        const winner = loser === 'w' ? 'b' : 'w';
+        const loserName = loser === S.humanColor ? 'Вы' : 'Соперник';
+        toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
+        endGame('timeout', winner);
+      }
+      return;
+    }
+
     S.time[S.turn]--;
     updateClockUI();
     if(S.time[S.turn] <= 0) {
@@ -1097,6 +1119,14 @@ function stopClock() {
     clearInterval(clockInterval);
     clockInterval = null;
   }
+}
+
+/* --- Реванш --- */
+function requestRematchGame() {
+  if(typeof ChesMP === 'undefined' || !ChesMP.lobbyId) { toast('Нет активного лобби'); return; }
+  ChesMP.requestRematch()
+    .then(() => toast('🔁 Запрос на реванш отправлен...'))
+    .catch(() => toast('Не удалось отправить запрос'));
 }
 
 /* --- Конец игры --- */
@@ -1162,6 +1192,14 @@ function endGame(reason, winnerColor, drawReason) {
   }
   if(goS) goS.textContent = reasons[drawReason] || reasons[reason] || '';
   openOv('ovOver');
+  // Rematch button only for network games with a live lobby
+  const rematchBtn = document.getElementById('overRematch');
+  if(rematchBtn) {
+    const canRematch = (cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') &&
+      (typeof ChesMP !== 'undefined' && ChesMP.lobbyId) &&
+      (reason === 'checkmate' || reason === 'resign' || reason === 'timeout' || reason === 'stalemate' || reason === 'draw' || reason === 'repetition' || reason === 'insufficient' || reason === '50-move');
+    rematchBtn.style.display = canRematch ? '' : 'none';
+  }
   snd[result === 'win' ? 'win' : result === 'loss' ? 'lose' : 'draw']();
   renderStats();
   renderProfBar();
@@ -1325,7 +1363,10 @@ function executeMove(move) {
     const fromSq = String.fromCharCode(97 + move.fc) + (8 - move.fr);
     const toSq = String.fromCharCode(97 + move.tc) + (8 - move.tr);
     const notation = fromSq + (move.capture ? 'x' : '-') + toSq + (move.promo ? '=' + move.promo.toUpperCase() : '') + (S.inCheck(S.turn) ? '+' : '');
-    ChesMP.sendMove(fromSq, toSq, S.toFen(), notation, move.promo);
+    // Authoritative clock snapshot as of this move
+    const mpClock = S.time ? { w: S.time.w, b: S.time.b, turn: S.turn, lastMoveAt: Date.now() } : null;
+    S.mpClock = S.time ? { w: S.time.w, b: S.time.b, turn: S.turn, lastMoveAt: Date.now() } : null;
+    ChesMP.sendMove(fromSq, toSq, S.toFen(), notation, move.promo, mpClock);
   }
 
   // Get captures from the NEW position (restore turn temporarily for isLegal)
@@ -1822,6 +1863,20 @@ function handleIncomingMove(move) {
   }
 
   executeMove(moveObj);
+
+  // Recalibrate local clock from the mover's authoritative snapshot (server clock)
+  if(move.clock && move.clock.lastMoveAt) {
+    S.mpClock = { w: move.clock.w || 0, b: move.clock.b || 0, turn: move.clock.turn, lastMoveAt: move.clock.lastMoveAt };
+    if(S.time) {
+      const elapsed = Math.max(0, (Date.now() - move.clock.lastMoveAt) / 1000);
+      S.time.w = Math.max(0, move.clock.w || 0);
+      S.time.b = Math.max(0, move.clock.b || 0);
+      // Subtract the time that already elapsed since the opponent made this move
+      if(move.clock.turn === 'w') S.time.w = Math.max(0, S.time.w - elapsed);
+      else if(move.clock.turn === 'b') S.time.b = Math.max(0, S.time.b - elapsed);
+      updateClockUI();
+    }
+  }
 }
 
 /* --- Настройка лобби --- */
@@ -2160,11 +2215,12 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.timeInc = ls.timeInc != null ? ls.timeInc : 0;
 
   if(mpMode === 'fischer') {
-    // Deterministic setup shared by both players via lobbyId seed
+    // Deterministic setup shared by both players via lobbyId seed (round varies on rematch)
     let seed = 0;
     if(ChesMP && ChesMP.lobbyId) {
-      for(let i = 0; i < ChesMP.lobbyId.length; i++) {
-        seed = (seed * 31 + ChesMP.lobbyId.charCodeAt(i)) >>> 0;
+      const seedStr = ChesMP.lobbyId + ':' + (ChesMP.round || 0);
+      for(let i = 0; i < seedStr.length; i++) {
+        seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
       }
     }
     if(!seed) seed = 0x9E3779B9;
@@ -2213,10 +2269,21 @@ function startMultiplayerGame(mpColor, opponentName) {
   if(cfg.timeSec > 0) {
     S.clockOn = true;
     S.time = {w: cfg.timeSec, b: cfg.timeSec};
+    // Sync to the authoritative server clock if the lobby already has one
+    const ck = (ChesMP && ChesMP.lobbyClock) || null;
+    if(ck && ck.lastMoveAt) {
+      const elapsed = Math.max(0, (Date.now() - ck.lastMoveAt) / 1000);
+      S.time.w = Math.max(0, ck.w || cfg.timeSec);
+      S.time.b = Math.max(0, ck.b || cfg.timeSec);
+      if(ck.turn === 'w') S.time.w = Math.max(0, S.time.w - elapsed);
+      else if(ck.turn === 'b') S.time.b = Math.max(0, S.time.b - elapsed);
+    }
+    S.mpClock = { w: S.time.w, b: S.time.b, turn: 'w', lastMoveAt: Date.now() };
     startClock();
   } else {
     S.clockOn = false;
     S.time = null;
+    S.mpClock = null;
   }
   updateClockUI();
 
@@ -2457,17 +2524,34 @@ async function resumeMultiplayer(savedGame) {
   const sl = document.getElementById('statusLine');
   if(sl) sl.textContent = S.turn === mp.myColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
 
-  // Clock — keep remaining time from saved state
-  if(S.time && (S.time.w > 0 || S.time.b > 0)) {
-    S.clockOn = true;
-    startClock();
+  // Clock — authoritative server clock first, saved state as fallback
+  const ck = data.clock || null;
+  let haveClock = false;
+  if(ck && ck.lastMoveAt) {
+    const elapsed = Math.max(0, (Date.now() - ck.lastMoveAt) / 1000);
+    S.time = {
+      w: Math.max(0, (ck.w != null ? ck.w : cfg.timeSec) - (ck.turn === 'w' ? elapsed : 0)),
+      b: Math.max(0, (ck.b != null ? ck.b : cfg.timeSec) - (ck.turn === 'b' ? elapsed : 0))
+    };
+    haveClock = true;
+  } else if(S.time && (S.time.w > 0 || S.time.b > 0)) {
+    haveClock = true;
   } else if(cfg.timeSec > 0) {
-    S.clockOn = true;
     S.time = {w: cfg.timeSec, b: cfg.timeSec};
+    haveClock = true;
+  }
+  if(haveClock) {
+    S.clockOn = true;
+    if(data.clock && data.clock.lastMoveAt) {
+      S.mpClock = { w: data.clock.w || 0, b: data.clock.b || 0, turn: data.clock.turn, lastMoveAt: data.clock.lastMoveAt };
+    } else {
+      S.mpClock = { w: S.time.w, b: S.time.b, turn: S.turn, lastMoveAt: Date.now() };
+    }
     startClock();
   } else {
     S.clockOn = false;
     S.time = null;
+    S.mpClock = null;
   }
   updateClockUI();
 
@@ -3187,8 +3271,9 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('rvFwd', () => { rvIdx = rvFens.length - 1; renderReplayBoard(rvFens[rvIdx]); });
 
   // Game over overlay
-  bind('overNew', () => { closeAllOverlays(); newGame(); hideAllScreens(); });
-  bind('overMenu', () => { backToGame = false; closeAllOverlays(); showScreen('scrMenu'); });
+  bind('overNew', () => { closeAllOverlays(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); newGame(); hideAllScreens(); });
+  bind('overRematch', () => { requestRematchGame(); });
+  bind('overMenu', () => { backToGame = false; closeAllOverlays(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); showScreen('scrMenu'); });
 
   // Settings
   bind('setApply', () => { saveCfg(); newGame(); hideAllScreens(); });
