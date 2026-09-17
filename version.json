@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v0.23.11",
+    "date": "17.09.2026",
+    "items": [
+      "ToFen() missing + MP critical bugs (color, ranked moves, server result, listener leak, timeout, promo, undo guard)"
+    ]
+  },
+  {
     "ver": "v0.23.10",
     "date": "13.09.2026",
     "items": [
