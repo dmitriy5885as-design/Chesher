@@ -1,5 +1,13 @@
 [
   {
+    "ver": "v0.23.12",
+    "date": "17.09.2026",
+    "items": [
+      "MP secondary bugs — resume board sync, guest-slot transaction, host-cancel kick, draw modal timeout, invite flow, fischer960 seeded share, lobby onDisconnect",
+      "Cache-bust: v=0.38.0 → 0.38.1"
+    ]
+  },
+  {
     "ver": "v0.23.11",
     "date": "17.09.2026",
     "items": [
