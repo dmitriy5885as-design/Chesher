@@ -172,13 +172,39 @@ class ChessEngine {
     this.positionHistory = [];
   }
 
-  setupFischer960() {
-    // Fisher Random Chess 960 - random back row placement
+  /* --- Фишер 960 с детерминированным seed (для мультиплеера) --- */
+  newGameFischer960(seed) {
+    this.resetBoard();
+    this.variant = 'fischer960';
+    const rand = this._mulberry32(seed >>> 0);
+    this.setupFischer960(rand);
+    this.turn = 'w';
+    this.ep = null;
+    this.halfmove = 0;
+    this.fullmove = 1;
+    this.plyCount = 0;
+    this.gameOver = false;
+    this.moveHistory = [];
+    this.positionHistory = [];
+  }
+
+  /* --- Mulberry32: быстрый детерминированный PRNG --- */
+  _mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  setupFischer960(randFn) {
+    const rand = randFn || Math.random;
     const backRow = ['r','n','b','q','k','b','n','r'];
     
     // Shuffle using Fisher-Yates
     for(let i = backRow.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(rand() * (i + 1));
       [backRow[i], backRow[j]] = [backRow[j], backRow[i]];
     }
     

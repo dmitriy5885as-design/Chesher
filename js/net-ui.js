@@ -316,21 +316,20 @@ const NetUI = {
     ChesMP._listenGame();
 
     // Send invite
-    await ChesFriends.inviteFriend(friendUid);
+    await ChesMP.inviteFriend(friendUid, lobbyId);
     showScreen('scrLobby');
     toast('Приглашение отправлено!');
   },
 
-  async _joinByCode(code) {
+  /* --- Принять приглашение друга --- */
+  async acceptInvite(inv) {
+    if(!inv || !inv.lobbyId) { toast('Приглашение без лобби'); return; }
     if(!ChesAuth.user) {
-      try { await ChesAuth.loginAnon(); } catch(e) { console.error('joinByCode auth error:', e); }
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('acceptInvite auth error:', e); }
     }
     if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
-    const ok = await ChesMP.joinLobby(code);
-    if(!ok) { toast('Лобби не найдено или уже занято'); return; }
 
-    this._showLobby(code, 'Подключено! Готовьтесь...');
-
+    // Register handlers BEFORE listening, so start/move/end events can't be missed
     ChesMP.onStart(opponent => {
       this._startMultiplayerGame();
     });
@@ -345,6 +344,41 @@ const NetUI = {
       const result = winner === ChesMP.myColor ? 'win' : 'loss';
       this._onMultiplayerEnd(result, reason);
     });
+
+    const ok = await ChesMP.acceptInvite(inv);
+    if(!ok) { toast('Лобби не найдено или уже занято'); return; }
+
+    this._showLobby(inv.lobbyId, 'Подключено! Готовьтесь...');
+
+    showScreen('scrLobby');
+  },
+
+  async _joinByCode(code) {
+    if(!ChesAuth.user) {
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('joinByCode auth error:', e); }
+    }
+    if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
+
+    // Register handlers BEFORE listening, so start/move/end events can't be missed
+    ChesMP.onStart(opponent => {
+      this._startMultiplayerGame();
+    });
+    ChesMP.onMove(move => {
+      this._onOpponentMove(move);
+    });
+    ChesMP.onEnd((winner, reason) => {
+      if(winner === 'draw') {
+        this._onMultiplayerEnd('draw', reason);
+        return;
+      }
+      const result = winner === ChesMP.myColor ? 'win' : 'loss';
+      this._onMultiplayerEnd(result, reason);
+    });
+
+    const ok = await ChesMP.joinLobby(code);
+    if(!ok) { toast('Лобби не найдено или уже занято'); return; }
+
+    this._showLobby(code, 'Подключено! Готовьтесь...');
 
     showScreen('scrLobby');
   },
@@ -395,11 +429,24 @@ const NetUI = {
     const actionsEl = document.getElementById('lobbyActions');
     if(!playersEl || !actionsEl) return;
 
-    if(!playersEl || !actionsEl) return;
-
     const uid = ChesAuth.getUid();
     const isHost = data.host === uid;
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+
+    // Game aborted while in lobby/game — kick back to the multiplayer screen
+    if(data.status === 'cancelled') {
+      toast((S && !S.gameOver) ? 'Соперник отменил игру' : 'Игра отменена');
+      if(S && !S.gameOver) {
+        S.gameOver = true;
+        if(typeof stopClock === 'function') stopClock();
+      }
+      if(typeof ChessEngine !== 'undefined' && typeof ChessEngine.clearStorage === 'function') ChessEngine.clearStorage();
+      if(typeof hideResumeBtn === 'function') hideResumeBtn();
+      ChesMP.cleanup();
+      hideAllScreens();
+      showScreen('scrMulti');
+      return;
+    }
 
     if(data.status === 'playing') {
       if(statusEl) statusEl.textContent = 'Игра началась!';

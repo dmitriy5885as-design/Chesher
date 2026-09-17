@@ -957,6 +957,7 @@ function newGame() {
   S = new ChessEngine(cfg.variant || 'classic');
   S.newGame();
   gameStartFen = S.toFen();
+  window._mpReplaySkip = 0;
   gameMoves = [];
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.clearAll();
 
@@ -1747,15 +1748,26 @@ function showDrawOfferModal() {
   ov.id = 'ovDrawIn';
   ov.innerHTML = '<div class="modal"><h2>🤝 Ничья</h2><p style="text-align:center;color:var(--mut);line-height:1.55">Соперник предлагает ничью</p><div class="modalBtns"><button class="btn primary" id="drwYes">Принять</button><button class="btn" id="drwNo">Отклонить</button></div></div>';
   document.body.appendChild(ov);
+  let done = false;
+  const closeDraw = () => { done = true; if(document.body.contains(ov)) ov.remove(); };
   ov.querySelector('#drwYes').addEventListener('click', () => {
     ChesMP.respondDraw(true);
-    ov.remove();
+    closeDraw();
     if(S && !S.gameOver) endGame('draw', null, 'draw');
   });
   ov.querySelector('#drwNo').addEventListener('click', () => {
     ChesMP.respondDraw(false);
-    ov.remove();
+    closeDraw();
   });
+
+  // Auto-decline if the opponent doesn't reply in time
+  setTimeout(() => {
+    if(done || !document.body.contains(ov)) return;
+    done = true;
+    ChesMP.respondDraw(false);
+    ov.remove();
+    toast('Предложение ничьей истекло');
+  }, 30000);
 }
 
 /* --- МП: слушатели ничьей --- */
@@ -1770,7 +1782,7 @@ function registerMpDraw() {
     if(bd) bd.style.opacity = '';
     if(r.accepted) {
       if(S && !S.gameOver) endGame('draw', null, 'draw');
-    } else {
+    } else if(S && !S.gameOver) {
       toast('Соперник отклонил предложение ничьей');
     }
   });
@@ -1779,6 +1791,14 @@ function registerMpDraw() {
 /* --- Мультиплеер: входящий ход --- */
 function handleIncomingMove(move) {
   if(!S || S.gameOver) return;
+
+  // During resume, child_added replays all moves already restored in the board.
+  // Skip the first N (already-applied) events so only genuinely new moves are applied.
+  if(window._mpReplaySkip > 0) {
+    window._mpReplaySkip--;
+    return;
+  }
+
   if(S.turn === S.humanColor) return;
 
   const fromSq = move.from;
@@ -2128,6 +2148,7 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.bot = 'off';
 
   hideResumeBtn();
+  window._mpReplaySkip = 0;
 
   const ls = NetUI._lobbySettings || ChesMP.lobbySettings || {};
   const mpMode = ls.mode || 'classic';
@@ -2138,8 +2159,21 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.timeSec = ls.timeSec != null ? ls.timeSec : 300;
   cfg.timeInc = ls.timeInc != null ? ls.timeInc : 0;
 
-  S = new ChessEngine(mpMode === 'fischer' ? 'fischer' : 'classic');
-  S.newGame();
+  if(mpMode === 'fischer') {
+    // Deterministic setup shared by both players via lobbyId seed
+    let seed = 0;
+    if(ChesMP && ChesMP.lobbyId) {
+      for(let i = 0; i < ChesMP.lobbyId.length; i++) {
+        seed = (seed * 31 + ChesMP.lobbyId.charCodeAt(i)) >>> 0;
+      }
+    }
+    if(!seed) seed = 0x9E3779B9;
+    S = new ChessEngine('fischer960');
+    S.newGameFischer960(seed);
+  } else {
+    S = new ChessEngine('classic');
+    S.newGame();
+  }
   gameStartFen = S.toFen();
   gameMoves = [];
   S.humanColor = mpColor;
@@ -2445,6 +2479,8 @@ async function resumeMultiplayer(savedGame) {
     endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
   });
   registerMpDraw();
+  // Skip the child_added replay events already reflected in the restored board
+  window._mpReplaySkip = (savedGame.state && savedGame.state.plyCount) || 0;
   ChesMP._listenGame();
 
   toast('Сетевая игра: vs ' + (mp.opponent ? mp.opponent.name : 'Соперник'));

@@ -84,6 +84,8 @@ const ChesMP = {
     this.lobbyId = lobbyId;
     this.myColor = isWhite ? 'w' : 'b';
     this._isHost = true;
+    // If the host closes the tab without leaving, mark the lobby cancelled
+    lobbyRef.onDisconnect().update({ status: 'cancelled' });
     return lobbyId;
   },
 
@@ -95,19 +97,28 @@ const ChesMP = {
     const guestProfile = ProfilesManager.getCurrent();
     const guestDisplayName = (guestProfile && guestProfile.name && guestProfile.name !== 'Гость') ? guestProfile.name : 'Гость';
     const name = isGuest ? guestDisplayName : (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок');
-    const lobbyRef = firebaseRtdb.ref('lobbies/' + lobbyId);
-    const snap = await lobbyRef.once('value');
-    const lobby = snap.val();
+    const lobbiesRef = firebaseRtdb.ref('lobbies');
+    const guestAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
 
-    if(!lobby || lobby.status !== 'waiting') return false;
-    if(lobby.host === uid) return false;
-
-    await lobbyRef.update({
-      guest: uid,
-      guestName: name,
-      guestAva: isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽'),
-      guestReady: false
+    // Atomically claim the guest slot — prevents two guests from joining the same lobby
+    const result = await lobbiesRef.child(lobbyId).transaction(node => {
+      if(!node) return;
+      if(node.status !== 'waiting') return;
+      if(node.guest) return;
+      if(node.host === uid) return;
+      node.guest = uid;
+      node.guestName = name;
+      node.guestAva = guestAva;
+      node.guestReady = false;
+      return node;
     });
+
+    if(!result.committed || !result.snapshot) return false;
+    const lobby = result.snapshot.val();
+    if(!lobby) return false;
+
+    // If the guest closes the tab without leaving, mark the lobby cancelled
+    lobbiesRef.child(lobbyId).onDisconnect().update({ status: 'cancelled' });
 
     this.lobbyId = lobbyId;
     this.myColor = lobby.color;
@@ -119,7 +130,7 @@ const ChesMP = {
   },
 
   /* --- Пригласить друга --- */
-  async inviteFriend(friendUid) {
+  async inviteFriend(friendUid, lobbyId) {
     if(!firebaseRtdb || !ChesAuth.user) return false;
     const uid = ChesAuth.getUid();
     const name = ChesAuth.profile ? ChesAuth.profile.name : 'Игрок';
@@ -128,6 +139,7 @@ const ChesMP = {
       from: uid,
       fromName: name,
       fromAva: ChesAuth.profile ? ChesAuth.profile.ava : '👽',
+      lobbyId: lobbyId || this.lobbyId || null,
       createdAt: Date.now()
     });
     return true;
@@ -261,6 +273,11 @@ const ChesMP = {
 
   /* --- Очистка --- */
   cleanup() {
+    // Cancel pending onDisconnect so closing the tab after a finished game
+    // doesn't overwrite status 'finished' with 'cancelled'
+    if(firebaseRtdb && this.lobbyId) {
+      try { firebaseRtdb.ref('lobbies/' + this.lobbyId).onDisconnect().cancel(); } catch(e) {}
+    }
     if(this._gameRef) {
       this._gameRef.off();
       this._gameRef = null;
