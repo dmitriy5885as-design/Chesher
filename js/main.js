@@ -2846,13 +2846,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // QR code button
   const GAME_URL = 'https://dmitriy5885as-design.github.io/Chesher/';
+  function qrTargetUrl() {
+    if(typeof NetUI !== 'undefined' && typeof NetUI._lobbyLink === 'function' &&
+       typeof ChesMP !== 'undefined' && ChesMP.lobbyCode && /^[A-Z2-9]{6}$/.test(ChesMP.lobbyCode)) {
+      return NetUI._lobbyLink(ChesMP.lobbyCode);
+    }
+    return GAME_URL;
+  }
   bind('qrBtn', () => {
     const overlay = document.getElementById('qrOverlay');
     const qrImg = document.getElementById('qrImg');
     const qrUrl = document.getElementById('qrUrl');
     if(!overlay) return;
-    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(GAME_URL);
-    if(qrUrl) qrUrl.textContent = GAME_URL;
+    const url = qrTargetUrl();
+    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    if(qrUrl) qrUrl.textContent = url;
     overlay.classList.add('show');
   });
   bind('qrClose', () => {
@@ -2864,13 +2872,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrImg = document.getElementById('qrImg');
     const qrUrl = document.getElementById('qrUrl');
     if(!overlay) return;
-    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(GAME_URL);
-    if(qrUrl) qrUrl.textContent = GAME_URL;
+    const url = qrTargetUrl();
+    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    if(qrUrl) qrUrl.textContent = url;
     overlay.classList.add('show');
   });
   const qrUrlEl = document.getElementById('qrUrl');
   if(qrUrlEl) qrUrlEl.addEventListener('click', () => {
-    navigator.clipboard.writeText(GAME_URL).then(() => toast('📋 Ссылка скопирована!')).catch(() => {});
+    const t = qrUrlEl.textContent || GAME_URL;
+    navigator.clipboard.writeText(t).then(() => toast('📋 Ссылка скопирована!')).catch(() => {});
   });
   const qrOverlayEl = document.getElementById('qrOverlay');
   if(qrOverlayEl) qrOverlayEl.addEventListener('click', (e) => {

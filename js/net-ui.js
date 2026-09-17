@@ -12,6 +12,7 @@ const NetUI = {
     this._initFriends();
     this._initLobby();
     this._checkAuth();
+    this._handleJoinLink();
   },
 
   /* ==================== АВТОРИЗАЦИЯ ==================== */
@@ -353,7 +354,10 @@ const NetUI = {
     showScreen('scrLobby');
   },
 
+  /* --- Присоединиться по коду/ссылке --- */
   async _joinByCode(code) {
+    const c = String(code || '').trim().toUpperCase();
+    if(!c) return;
     if(!ChesAuth.user) {
       try { await ChesAuth.loginAnon(); } catch(e) { console.error('joinByCode auth error:', e); }
     }
@@ -375,12 +379,54 @@ const NetUI = {
       this._onMultiplayerEnd(result, reason);
     });
 
-    const ok = await ChesMP.joinLobby(code);
+    const ok = await ChesMP.joinLobby(c);
     if(!ok) { toast('Лобби не найдено или уже занято'); return; }
 
-    this._showLobby(code, 'Подключено! Готовьтесь...');
+    this._showLobby(c, 'Подключено! Готовьтесь...');
 
     showScreen('scrLobby');
+  },
+
+  /* --- Ссылка для подключения к лобби по QR --- */
+  _lobbyLink(code) {
+    return 'https://dmitriy5885as-design.github.io/Chesher/#lobby=' + encodeURIComponent(String(code || '').toUpperCase());
+  },
+
+  /* --- Подождать восстановления сессии перед авто-подключением --- */
+  async _awaitAuth(maxMs) {
+    if(ChesAuth.user) return ChesAuth.user;
+    const deadline = Date.now() + (maxMs || 2000);
+    while(Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 150));
+      if(ChesAuth.user) return ChesAuth.user;
+    }
+    return ChesAuth.user;
+  },
+
+  /* --- Автоподключение по QR-ссылке (#lobby=КОД) --- */
+  async _handleJoinLink() {
+    const m = location.hash.match(/(?:#|&)lobby=([A-Za-z0-9]+)/i);
+    if(!m || !m[1]) return;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
+    await this._awaitAuth(2000);
+    await this._joinByCode(m[1]);
+  },
+
+  /* --- Показать QR-код лобби (по коду) --- */
+  _renderLobbyQR(code) {
+    const box = document.getElementById('lobbyQr');
+    if(!box) return;
+    if(!code || !/^[A-Z2-9]{6}$/.test(code)) { box.style.display = 'none'; return; }
+    const link = this._lobbyLink(code);
+    const img = document.getElementById('lobbyQrImg');
+    if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' + encodeURIComponent(link);
+    const copyBtn = document.getElementById('lobbyCopyLink');
+    if(copyBtn) {
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(link).then(() => toast('Ссылка на лобби скопирована!')).catch(() => {});
+      };
+    }
+    box.style.display = '';
   },
 
   _showLobby(lobbyId, status) {
@@ -390,14 +436,18 @@ const NetUI = {
     const actionsEl = document.getElementById('lobbyActions');
     const playersEl = document.getElementById('lobbyPlayers');
 
+    const hasCode = !!(ChesMP.lobbyCode && /^[A-Z2-9]{6}$/.test(ChesMP.lobbyCode));
+    const code = hasCode ? ChesMP.lobbyCode : lobbyId;
+
     if(statusEl) statusEl.textContent = status;
-    if(codeEl) codeEl.style.display = '';
+    if(codeEl) codeEl.style.display = hasCode ? '' : 'none';
     if(idText) {
-      idText.textContent = lobbyId;
+      idText.textContent = code;
       idText.onclick = () => {
-        navigator.clipboard.writeText(lobbyId).then(() => toast('Код скопирован!'));
+        navigator.clipboard.writeText(code).then(() => toast('Код скопирован!')).catch(() => {});
       };
     }
+    this._renderLobbyQR(hasCode ? ChesMP.lobbyCode : null);
 
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
     const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');

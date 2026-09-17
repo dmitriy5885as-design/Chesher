@@ -3,6 +3,10 @@ const { test, expect } = require('@playwright/test');
 test.describe('CHESHER — Критические пути', () => {
 
   test.beforeEach(async ({ page }) => {
+    // Имитируем «возвращающегося» игрока — минуем экран авторизации при первом визите
+    await page.addInitScript(() => {
+      try { localStorage.setItem('chesher_visited', '1'); } catch(e) {}
+    });
     await page.goto('/');
     await page.waitForTimeout(1500);
   });
@@ -153,6 +157,23 @@ test.describe('CHESHER — Критические пути', () => {
     await expect(page.locator('#overMenu')).toBeAttached();
     // Реванш доступен только для сетевых игр — по умолчанию скрыт
     await expect(page.locator('#overRematch')).toBeHidden();
+  });
+
+  // ===================== 11. QR-код лобби =====================
+  test('Лобби: отображаются QR-код и короткий код', async ({ page }) => {
+    await page.evaluate(() => {
+      ChesMP.lobbyCode = 'ABC234';
+      showScreen('scrLobby');
+      NetUI._showLobby('ABC234', 'Ожидание соперника...');
+    });
+
+    await expect(page.locator('#scrLobby')).toBeVisible();
+    await expect(page.locator('#lobbyQr')).toBeVisible();
+    await expect(page.locator('#lobbyIdText')).toHaveText('ABC234');
+    await expect(page.locator('#lobbyCopyLink')).toBeVisible();
+
+    const src = await page.locator('#lobbyQrImg').getAttribute('src');
+    expect(src).toContain('lobby%3DABC234');
   });
 
 });

@@ -6,6 +6,7 @@
 
 const ChesMP = {
   lobbyId: null,
+  lobbyCode: null,
   myColor: null,
   opponent: null,
   _gameRef: null,
@@ -52,6 +53,14 @@ const ChesMP = {
     });
   },
 
+  /* --- Сгенерировать короткий код лобби (без 0/O/1/I) --- */
+  _genCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let c = '';
+    for(let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+    return c;
+  },
+
   /* --- Создать лобби (хост) --- */
   async createLobby(settings) {
     if(!firebaseRtdb) {
@@ -78,8 +87,19 @@ const ChesMP = {
     const colorPref = cfg.color || 'random';
     const isWhite = colorPref === 'w' ? true : colorPref === 'b' ? false : Math.random() < 0.5;
 
+    // Короткий код лобби — по нему можно войти прямо по QR/ссылке
+    const codesRef = firebaseRtdb.ref('codes');
+    let code = this._genCode();
+    for(let attempt = 0; attempt < 5; attempt++) {
+      const snap = await codesRef.child(code).once('value');
+      if(!snap.exists()) break;
+      code = this._genCode();
+    }
+    this.lobbyCode = code;
+
     await lobbyRef.set({
       host: uid,
+      code: code,
       hostName: name,
       hostAva: ava,
       hostReady: false,
@@ -99,6 +119,8 @@ const ChesMP = {
       createdAt: Date.now()
     });
 
+    await codesRef.child(code).set({ lobbyId: lobbyId, createdAt: Date.now() });
+
     this.lobbyId = lobbyId;
     this.myColor = isWhite ? 'w' : 'b';
     this._isHost = true;
@@ -107,10 +129,22 @@ const ChesMP = {
     return lobbyId;
   },
 
-  /* --- Присоединиться к лобби (гость) --- */
-  async joinLobby(lobbyId) {
+  /* --- Присоединиться к лобби (гость): по коду или прямой ссылке --- */
+  async joinLobby(identifier) {
     if(!firebaseRtdb || !ChesAuth.user) return false;
     const uid = ChesAuth.getUid();
+    const id = String(identifier || '').trim().toUpperCase();
+    if(!id) return false;
+
+    // Короткий код → ищем лобби в codes/
+    let lobbyId = id;
+    if(/^[A-Z2-9]{6}$/.test(id)) {
+      const codeSnap = await firebaseRtdb.ref('codes/' + id).once('value');
+      const val = codeSnap.val();
+      if(val && val.lobbyId) lobbyId = val.lobbyId;
+    }
+    this.lobbyCode = /^[A-Z2-9]{6}$/.test(id) ? id : null;
+
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
     const guestProfile = ProfilesManager.getCurrent();
     const guestDisplayName = (guestProfile && guestProfile.name && guestProfile.name !== 'Гость') ? guestProfile.name : 'Гость';
@@ -344,6 +378,10 @@ const ChesMP = {
   async cancelLobby() {
     if(!firebaseRtdb || !this.lobbyId) return;
     await firebaseRtdb.ref('lobbies/' + this.lobbyId).update({ status: 'cancelled' });
+    if(this.lobbyCode) {
+      try { await firebaseRtdb.ref('codes/' + this.lobbyCode).remove(); } catch(e) {}
+      this.lobbyCode = null;
+    }
     this.cleanup();
   },
 
@@ -405,6 +443,7 @@ const ChesMP = {
       this._drawRespRef = null;
     }
     this.lobbyId = null;
+    this.lobbyCode = null;
     this.myColor = null;
     this.opponent = null;
     this._moveCallback = null;
