@@ -480,6 +480,60 @@ class ChessEngine {
     return true;
   }
 
+  /* --- FEN-представление текущей позиции --- */
+  toFen() {
+    const rows = [];
+    for(let r = 0; r < 8; r++) {
+      let s = '', gap = 0;
+      for(let c = 0; c < 8; c++) {
+        const p = this.board[r][c];
+        if(p) {
+          if(gap) { s += gap; gap = 0; }
+          s += p;
+        } else gap++;
+      }
+      if(gap) s += gap;
+      rows.push(s);
+    }
+    const castlingRights = (color, row) => {
+      if(this.variant === 'fischer960') {
+        let kingCol = -1;
+        let r = '';
+        for(let c = 0; c < 8; c++) {
+          const p = this.board[row][c];
+          if(p && pieceTypeStatic(p) === 'k' && pieceColorStatic(p) === color) kingCol = c;
+        }
+        if(kingCol === -1) return '';
+        for(let c = kingCol + 1; c < 8; c++) {
+          const p = this.board[row][c];
+          if(p && pieceTypeStatic(p) === 'r' && pieceColorStatic(p) === color) {
+            r += color === 'w' ? 'K' : 'k';
+            break;
+          }
+        }
+        for(let c = kingCol - 1; c >= 0; c--) {
+          const p = this.board[row][c];
+          if(p && pieceTypeStatic(p) === 'r' && pieceColorStatic(p) === color) {
+            r += color === 'w' ? 'Q' : 'q';
+            break;
+          }
+        }
+        return r;
+      }
+      let rights = '';
+      if(this.board[row][4] === (color === 'w' ? 'K' : 'k')) {
+        if(this.board[row][7] === (color === 'w' ? 'R' : 'r')) rights += color === 'w' ? 'K' : 'k';
+        if(this.board[row][0] === (color === 'w' ? 'R' : 'r')) rights += color === 'w' ? 'Q' : 'q';
+      }
+      return rights;
+    };
+    let castle = castlingRights('w', 7) + castlingRights('b', 0);
+    if(!castle) castle = '-';
+    let ep = '-';
+    if(this.ep && this.ep.r !== undefined) ep = FILES[this.ep.c] + (8 - this.ep.r);
+    return `${rows.join('/')} ${this.turn} ${castle} ${ep} ${this.halfmove} ${this.fullmove}`;
+  }
+
   inCheck(color) {
     const king = findKing(this.board, color || this.turn);
     if(!king) return false;
@@ -637,7 +691,8 @@ class ChessEngine {
           skin: cfg.skin,
           modeId: cfg.modeId,
           gameMode: cfg.gameMode || 'classic',
-          timeSec: cfg.timeSec || 0
+          timeSec: cfg.timeSec || 0,
+          timeInc: cfg.timeInc || 0
         },
         mp: cfg.gameMode === 'multiplayer' ? {
           lobbyId: ChesMP.lobbyId,

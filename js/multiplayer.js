@@ -82,7 +82,7 @@ const ChesMP = {
     });
 
     this.lobbyId = lobbyId;
-    this.myColor = isWhite ? 'b' : 'w';
+    this.myColor = isWhite ? 'w' : 'b';
     this._isHost = true;
     return lobbyId;
   },
@@ -112,7 +112,7 @@ const ChesMP = {
     this.lobbyId = lobbyId;
     this.myColor = lobby.color;
     this.opponent = { uid: lobby.host, name: lobby.hostName, ava: lobby.hostAva };
-    this.lobbySettings = { mode: lobby.mode || 'classic', timeSec: lobby.timeSec != null ? lobby.timeSec : 300, timeInc: lobby.timeInc != null ? lobby.timeInc : 0 };
+    this.lobbySettings = { mode: lobby.mode || 'classic', ranked: !!lobby.ranked, timeSec: lobby.timeSec != null ? lobby.timeSec : 300, timeInc: lobby.timeInc != null ? lobby.timeInc : 0 };
     this._isHost = false;
     this._listenGame();
     return true;
@@ -156,6 +156,13 @@ const ChesMP = {
   _listenGame() {
     if(!this.lobbyId) return;
     const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
+    this._gameRef = ref;
+    const movesRef = ref.child('moves');
+    const drawRef = ref.child('draw');
+    const drawRespRef = ref.child('drawResp');
+    this._movesRef = movesRef;
+    this._drawRef = drawRef;
+    this._drawRespRef = drawRespRef;
 
     ref.on('value', snap => {
       const data = snap.val();
@@ -177,21 +184,21 @@ const ChesMP = {
       if(this._lobbyUpdateCallback) this._lobbyUpdateCallback(data);
     });
 
-    ref.child('moves').on('child_added', snap => {
+    movesRef.on('child_added', snap => {
       const move = snap.val();
       if(move.by !== ChesAuth.getUid() && this._moveCallback) {
         this._moveCallback(move);
       }
     });
 
-    ref.child('draw').on('child_added', snap => {
+    drawRef.on('child_added', snap => {
       const d = snap.val();
       if(d && d.by !== ChesAuth.getUid() && this._drawCallback) {
         this._drawCallback(d);
       }
     });
 
-    ref.child('drawResp').on('child_added', snap => {
+    drawRespRef.on('child_added', snap => {
       const r = snap.val();
       if(r && r.by !== ChesAuth.getUid() && this._drawRespCallback) {
         this._drawRespCallback(r);
@@ -200,7 +207,7 @@ const ChesMP = {
   },
 
   /* --- Отправить ход --- */
-  async sendMove(from, to, fen, notation) {
+  async sendMove(from, to, fen, notation, promo) {
     if(!firebaseRtdb || !this.lobbyId) return;
     const uid = ChesAuth.getUid();
     const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
@@ -211,6 +218,7 @@ const ChesMP = {
       to,
       fen,
       notation,
+      promo: promo || null,
       timestamp: Date.now()
     });
   },
@@ -253,11 +261,25 @@ const ChesMP = {
 
   /* --- Очистка --- */
   cleanup() {
-    if(this._gameRef) this._gameRef.off();
+    if(this._gameRef) {
+      this._gameRef.off();
+      this._gameRef = null;
+    }
+    if(this._movesRef) {
+      this._movesRef.off();
+      this._movesRef = null;
+    }
+    if(this._drawRef) {
+      this._drawRef.off();
+      this._drawRef = null;
+    }
+    if(this._drawRespRef) {
+      this._drawRespRef.off();
+      this._drawRespRef = null;
+    }
     this.lobbyId = null;
     this.myColor = null;
     this.opponent = null;
-    this._gameRef = null;
     this._moveCallback = null;
     this._endCallback = null;
     this._startCallback = null;

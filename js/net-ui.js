@@ -306,6 +306,10 @@ const NetUI = {
 
     // Listen for game end
     ChesMP.onEnd((winner, reason) => {
+      if(winner === 'draw') {
+        this._onMultiplayerEnd('draw', reason);
+        return;
+      }
       const result = winner === ChesMP.myColor ? 'win' : 'loss';
       this._onMultiplayerEnd(result, reason);
     });
@@ -334,6 +338,10 @@ const NetUI = {
       this._onOpponentMove(move);
     });
     ChesMP.onEnd((winner, reason) => {
+      if(winner === 'draw') {
+        this._onMultiplayerEnd('draw', reason);
+        return;
+      }
       const result = winner === ChesMP.myColor ? 'win' : 'loss';
       this._onMultiplayerEnd(result, reason);
     });
@@ -479,6 +487,9 @@ const NetUI = {
     if(result === 'win') {
       toast('🏆 Победа!');
       snd.win();
+    } else if(result === 'draw') {
+      toast('🤝 Ничья');
+      snd.draw();
     } else {
       toast('😔 Поражение');
       snd.lose();

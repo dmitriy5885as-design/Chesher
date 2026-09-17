@@ -1074,16 +1074,9 @@ function startClock() {
     S.time[S.turn]--;
     updateClockUI();
     if(S.time[S.turn] <= 0) {
-      S.gameOver = true;
       stopClock();
       const loser = S.turn;
       const winner = loser === 'w' ? 'b' : 'w';
-      const cu = ProfilesManager.getCurrent();
-      if(cu) {
-        const result = loser === S.humanColor ? 'loss' : 'win';
-        cu.recordResult(result, cfg.bot !== 'off', cfg.modeId);
-        Store.checkAchievements();
-      }
       // Toast notification
       let loserName = loser === S.humanColor ? 'Вы' : 'Соперник';
       if(loser !== S.humanColor && cfg.bot !== 'off') {
@@ -1093,12 +1086,7 @@ function startClock() {
         if(bot) loserName = bot.emoji + ' ' + bot.name;
       }
       toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
-      ChessEngine.clearStorage();
-      hideResumeBtn();
-      renderCoins();
-      renderProfBar();
-      renderStats();
-      snd.lose();
+      endGame('timeout', winner);
     }
   }, 1000);
 }
@@ -1112,6 +1100,7 @@ function stopClock() {
 
 /* --- Конец игры --- */
 function endGame(reason, winnerColor, drawReason) {
+  if(S.gameOver) return;
   S.gameOver = true;
   stopClock();
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.forceUnlock();
@@ -1219,6 +1208,13 @@ function endGame(reason, winnerColor, drawReason) {
   // Clear saved game
   ChessEngine.clearStorage();
   hideResumeBtn();
+
+  // Multiplayer: write result to lobby so the opponent is notified
+  if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && typeof ChesMP !== 'undefined' && ChesMP.lobbyId) {
+    try {
+      ChesMP.endGame(reason === 'draw' ? 'draw' : (winnerColor || 'draw'), reason || 'checkmate');
+    } catch(e) {}
+  }
 }
 
 /* --- Клик по клетке --- */
@@ -1324,11 +1320,11 @@ function executeMove(move) {
   if(move.capture) snd.capture(); else snd.move();
 
   // Multiplayer: send move to server
-  if(cfg.gameMode === 'multiplayer' && typeof ChesMP !== 'undefined' && ChesMP.lobbyId && isHumanMove) {
+  if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && typeof ChesMP !== 'undefined' && ChesMP.lobbyId && isHumanMove) {
     const fromSq = String.fromCharCode(97 + move.fc) + (8 - move.fr);
     const toSq = String.fromCharCode(97 + move.tc) + (8 - move.tr);
     const notation = fromSq + (move.capture ? 'x' : '-') + toSq + (move.promo ? '=' + move.promo.toUpperCase() : '') + (S.inCheck(S.turn) ? '+' : '');
-    ChesMP.sendMove(fromSq, toSq, S.toFen(), notation);
+    ChesMP.sendMove(fromSq, toSq, S.toFen(), notation, move.promo);
   }
 
   // Get captures from the NEW position (restore turn temporarily for isLegal)
@@ -1636,6 +1632,7 @@ function showHint() {
 let undosLeft = 3;
 function undoMove() {
   if(!S || S.moveHistory.length === 0) return;
+  if(cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') { toast('Отмена недоступна в сетевой игре'); return; }
   if(isBotThinking) return;
   if(undosLeft <= 0) { toast('Отмены закончились'); return; }
   undosLeft--;
@@ -1796,8 +1793,13 @@ function handleIncomingMove(move) {
   if(isNaN(fromR) || isNaN(fromC) || isNaN(toR) || isNaN(toC)) return;
 
   const legal = S.getLegalMoves(fromR, fromC);
-  const moveObj = legal.find(m => m.tr === toR && m.tc === toC);
+  let moveObj = legal.find(m => m.tr === toR && m.tc === toC);
   if(!moveObj) return;
+
+  // Apply promotion if the mover promoted
+  if(move.promo && moveObj.type === 'p' && (toR === 0 || toR === 7)) {
+    moveObj.promo = move.promo;
+  }
 
   executeMove(moveObj);
 }
@@ -1999,6 +2001,10 @@ function startLobbyFromSetup() {
       ChesMP.onStart(opponent => { NetUI._startMultiplayerGame(); });
       ChesMP.onMove(move => { NetUI._onOpponentMove(move); });
       ChesMP.onEnd((winner, reason) => {
+        if(winner === 'draw') {
+          NetUI._onMultiplayerEnd('draw', reason);
+          return;
+        }
         const result = winner === ChesMP.myColor ? 'win' : 'loss';
         NetUI._onMultiplayerEnd(result, reason);
       });
@@ -2184,10 +2190,10 @@ function startMultiplayerGame(mpColor, opponentName) {
   if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
 
   ChesMP.onMove(move => { handleIncomingMove(move); });
-  ChesMP.onEnd((winner) => {
+  ChesMP.onEnd((winner, reason) => {
     if(winner === 'draw') { endGame('draw', null, 'draw'); return; }
     const result = winner === mpColor ? 'win' : 'loss';
-    endGame('checkmate', winner);
+    endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
   });
   registerMpDraw();
 
@@ -2417,8 +2423,11 @@ async function resumeMultiplayer(savedGame) {
   const sl = document.getElementById('statusLine');
   if(sl) sl.textContent = S.turn === mp.myColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
 
-  // Clock
-  if(cfg.timeSec > 0) {
+  // Clock — keep remaining time from saved state
+  if(S.time && (S.time.w > 0 || S.time.b > 0)) {
+    S.clockOn = true;
+    startClock();
+  } else if(cfg.timeSec > 0) {
     S.clockOn = true;
     S.time = {w: cfg.timeSec, b: cfg.timeSec};
     startClock();
@@ -2430,10 +2439,10 @@ async function resumeMultiplayer(savedGame) {
 
   // Re-register listeners
   ChesMP.onMove(move => { handleIncomingMove(move); });
-  ChesMP.onEnd((winner) => {
+  ChesMP.onEnd((winner, reason) => {
     if(winner === 'draw') { endGame('draw', null, 'draw'); return; }
     const result = winner === mp.myColor ? 'win' : 'loss';
-    endGame('checkmate', winner);
+    endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
   });
   registerMpDraw();
   ChesMP._listenGame();
