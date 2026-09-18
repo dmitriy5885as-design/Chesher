@@ -15,6 +15,8 @@ let takenByB = [];
 let moveQueue = [];
 let clockInterval = null;
 let isBotThinking = false;
+let gameMoves = [];     // {fen, notation} для повтора партии
+let gameStartFen = '';   // стартовый FEN для повтора
 
 /* --- Получение глифа фигуры (deprecated, use getSkinGlyph) --- */
 function G(color, type) {
@@ -28,8 +30,28 @@ function showScreen(id) {
   if(el) el.classList.add('show');
 
   // Devblog button only on main menu
-  const dbBtn = document.getElementById('devblogBtn');
-  if(dbBtn) dbBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  const cornerFloat = document.getElementById('cornerFloat');
+  if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
+  const helpBtn = document.getElementById('helpBtn');
+  if(helpBtn) helpBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  const giftBtn = document.getElementById('giftBtn');
+  if(giftBtn) giftBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  const devblogBtnEl = document.getElementById('devblogBtn');
+  if(devblogBtnEl) devblogBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const feedbackBtnEl = document.getElementById('feedbackBtn');
+  if(feedbackBtnEl) feedbackBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const phoneBtnEl = document.getElementById('phoneBtn');
+  if(phoneBtnEl) phoneBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const qrBtnEl = document.getElementById('qrBtn');
+  if(qrBtnEl) qrBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
+  const friendsBtn = document.getElementById('friendsFloatBtn');
+  if(friendsBtn) friendsBtn.style.display = id === 'scrMenu' ? '' : 'none';
+  if(id !== 'scrMenu') {
+    const fp = document.getElementById('friendsPanel');
+    const fc = document.getElementById('friendChatPanel');
+    if(fp) fp.classList.remove('open');
+    if(fc) fc.classList.remove('open');
+  }
   const chBtn = document.getElementById('cheatBtn');
   const chPanel = document.getElementById('cheatPanel');
   if(chBtn && id !== 'scrMenu') chBtn.style.display = 'none';
@@ -41,6 +63,7 @@ function showScreen(id) {
     renderCoins();
     renderStats();
     showRandomTip();
+    syncResumeRow();
   }
   if(id === 'scrSet') {
     buildSettings();
@@ -60,6 +83,7 @@ function showScreen(id) {
     renderModeList();
   }
 }
+window.showScreen = showScreen;
 
 /* --- Список режимов --- */
 let selectedModeId = null;
@@ -73,7 +97,7 @@ function renderModeList() {
   
   MODES.forEach(m => {
     const d = document.createElement('div');
-    d.className = 'modeCard' + (m.id === 'bot' ? ' reco' : '') + (m.soon ? ' soon' : '');
+    d.className = 'modeCard' + (m.id === 'bot' ? ' reco' : '') + (m.soon ? ' soon' : '') + (m.id === 'ranked' ? ' mode-ranked' : '') + (m.id === 'meme' ? ' mode-meme' : '');
     const tag = m.soon ? '<span class="tag soon">СКОРО</span>' : '';
     d.innerHTML = '<div class="ic">' + m.icon + '</div>' +
       '<div class="tx"><div class="nm">' + m.name + '</div>' +
@@ -85,8 +109,13 @@ function renderModeList() {
       if(m.id === 'bot' || m.id === 'fischer') {
         modesBox.style.display = 'none';
         showBotSelection();
+      } else if(m.id === 'ranked') {
+        modesBox.style.display = 'none';
+        _lobbyCfg.ranked = true;
+        showRankedScreen();
       } else if(m.id === 'multiplayer') {
         modesBox.style.display = 'none';
+        _lobbyCfg.ranked = false;
         showMultiplayerMenu();
       } else {
         modesBox.style.display = 'none';
@@ -255,7 +284,7 @@ function buildModesCfg(modeId) {
   const variantGroup = document.getElementById('variantCfgGroup');
   const cfgTitle = document.getElementById('modesCfgTitle');
   
-  const modeNames = {classic:'Классика',bot:'Против бота',fischer:'Фишер 960',meme:'Мемасия',tournament:'Турнир'};
+  const modeNames = {classic:'Классика',bot:'Против бота',fischer:'Фишер 960',meme:'Мемасия',tournament:'Турнир',local:'На одном ПК',ranked:'Рейтинговая'};
   if(cfgTitle) cfgTitle.textContent = 'Настройки: ' + (modeNames[modeId] || modeId);
   
   // Tournament placeholder
@@ -271,30 +300,66 @@ function buildModesCfg(modeId) {
     return;
   }
   
+  // Ranked goes to ranked screen
+  if(modeId === 'ranked') {
+    _lobbyCfg.ranked = true;
+    showRankedScreen();
+    return;
+  }
+  
   // Hide all first
   if(botGroup) botGroup.style.display = 'none';
   if(botToggleGroup) botToggleGroup.style.display = 'none';
   if(sideGroup) sideGroup.style.display = 'none';
   if(variantGroup) variantGroup.style.display = 'none';
   if(timeGroup) timeGroup.style.display = '';
+  const timeIncGroup = document.getElementById('timeIncGroup');
+  if(timeIncGroup) timeIncGroup.style.display = '';
+  
+  // Local 2-player mode
+  if(modeId === 'local') {
+    if(sideGroup) sideGroup.style.display = 'none';
+    cfg.bot = 'off';
+    
+    // Time
+    buildSeg('segTime', [
+      {v: 120, label: '⚡ 2 мин', sub: ''},
+      {v: 300, label: '🔥 5 мин', sub: ''},
+      {v: 600, label: '🎯 10 мин', sub: ''},
+      {v: 1800, label: '🕐 30 мин', sub: ''},
+      {v: 0, label: '∞', sub: 'без часов'}
+    ], () => cfg.timeSec, v => {
+      cfg.timeSec = v;
+      saveCfg();
+    });
+    
+    buildSeg('segTimeInc', [
+      {v: 0, label: 'Без', sub: ''},
+      {v: 2, label: '+2 с', sub: 'за ход'},
+      {v: 5, label: '+5 с', sub: 'за ход'},
+      {v: 10, label: '+10 с', sub: 'за ход'}
+    ], () => cfg.timeInc, v => {
+      cfg.timeInc = v;
+      saveCfg();
+    });
+    
+    saveCfg();
+    return;
+  }
   
   // Мемасия mode
   if(modeId === 'meme') {
     if(botToggleGroup) botToggleGroup.style.display = '';
     if(sideGroup) sideGroup.style.display = '';
+    if(timeGroup) timeGroup.style.display = '';
     
     // Bot toggle handler
     if(botToggle) {
       botToggle.checked = cfg.bot !== 'off';
       botToggle.onchange = () => {
         if(botToggle.checked) {
-          cfg.bot = 'medium';
           if(botGroup) botGroup.style.display = '';
-          buildSeg('segBot', [
-            {v: 'easy', label: 'Лёгкий', sub: 'рандом'},
-            {v: 'medium', label: 'Средний', sub: 'взятия'},
-            {v: 'hard', label: 'Сильный', sub: 'минимакс'}
-          ], () => cfg.bot, v => { cfg.bot = v; saveCfg(); });
+          renderMemeBotGrid();
         } else {
           cfg.bot = 'off';
           if(botGroup) botGroup.style.display = 'none';
@@ -305,25 +370,96 @@ function buildModesCfg(modeId) {
       botToggle.onchange();
     }
     
-    // Side selection
-    buildSeg('segSide', [
-      {v: 'w', label: '⚪ Белые', sub: 'ход первыми'},
-      {v: 'b', label: '⚫ Чёрные', sub: 'ответный ход'},
-      {v: 'random', label: '🎲 Случайно', sub: ''}
-    ], () => cfg.human, v => { cfg.human = v; saveCfg(); });
+    // Side selection — "Ход первым" / "Ответный ход"
+    (function() {
+      const sideBox = document.getElementById('segSide');
+      if(!sideBox) return;
+      sideBox.innerHTML = '';
+      const sides = [
+        {v: 'w', label: '⚪ Белые'},
+        {v: 'b', label: '⚫ Чёрные'},
+        {v: 'random', label: '🎲 Случайно'}
+      ];
+      sides.forEach(it => {
+        const b = document.createElement('button');
+        b.className = 'segBtn';
+        b.innerHTML = it.label;
+        b.style.minWidth = '120px';
+        b.style.margin = '0 4px';
+        b.dataset.v = String(it.v);
+        b.addEventListener('click', () => {
+          snd.ui();
+          cfg.human = it.v;
+          saveCfg();
+          [...sideBox.children].forEach(x => x.classList.toggle('sel', x.dataset.v === String(cfg.human)));
+        });
+        sideBox.appendChild(b);
+      });
+      [...sideBox.children].forEach(x => x.classList.toggle('sel', x.dataset.v === String(cfg.human)));
+    })();
     
-    // Time
-    buildSeg('segTime', [
-      {v: 120, label: '⚡ 2 мин', sub: ''},
-      {v: 300, label: '🔥 5 мин', sub: ''},
-      {v: 600, label: '🎯 10 мин', sub: ''},
-      {v: 0, label: '∞', sub: 'без часов'}
-    ], () => cfg.timeSec, v => {
-      cfg.timeSec = v;
-      if(timeInput) timeInput.style.display = (v !== 0) ? '' : 'none';
+    // Time control — slider like online mode
+    (function() {
+      const timeBox = document.getElementById('segTime');
+      if(!timeBox) return;
+      const timeMarks = [
+        {v:120, label:'2 мин'},
+        {v:300, label:'5 мин'},
+        {v:600, label:'10 мин'},
+        {v:1800, label:'30 мин'},
+        {v:0, label:'∞'}
+      ];
+      const curIdx = timeMarks.findIndex(m => m.v === cfg.timeSec);
+      const sliderVal = curIdx >= 0 ? curIdx : 2;
+      timeBox.innerHTML =
+        '<div class="timeSliderWrap">' +
+          '<input type="range" id="memeTimeSlider" min="0" max="' + (timeMarks.length - 1) + '" value="' + sliderVal + '" class="timeSlider">' +
+          '<div class="timeSliderLabels">' +
+            '<span>2 мин</span><span>∞</span>' +
+          '</div>' +
+          '<div class="timeSliderMarks" id="memeTimeMarks"></div>' +
+          '<div class="timeSliderValue" id="memeTimeValue">' + _formatTime(cfg.timeSec) + '</div>' +
+        '</div>';
+      const slider = document.getElementById('memeTimeSlider');
+      const marksEl = document.getElementById('memeTimeMarks');
+      const valEl = document.getElementById('memeTimeValue');
+      if(marksEl) {
+        timeMarks.forEach((m, i) => {
+          const dot = document.createElement('div');
+          dot.className = 'timeMark' + (i === sliderVal ? ' sel' : '');
+          dot.style.left = (i / (timeMarks.length - 1) * 100) + '%';
+          dot.title = m.v === 0 ? 'Бесконечно' : m.label;
+          dot.onclick = () => {
+            slider.value = i;
+            cfg.timeSec = timeMarks[i].v;
+            valEl.textContent = _formatTime(timeMarks[i].v);
+            marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === i));
+            saveCfg();
+          };
+          marksEl.appendChild(dot);
+        });
+      }
+      if(slider) {
+        slider.oninput = () => {
+          const idx = parseInt(slider.value);
+          cfg.timeSec = timeMarks[idx].v;
+          valEl.textContent = _formatTime(timeMarks[idx].v);
+          marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === idx));
+          saveCfg();
+        };
+      }
+    })();
+    
+    buildSeg('segTimeInc', [
+      {v: 0, label: 'Без', sub: ''},
+      {v: 2, label: '+2 с', sub: 'за ход'},
+      {v: 5, label: '+5 с', sub: 'за ход'},
+      {v: 10, label: '+10 с', sub: 'за ход'}
+    ], () => cfg.timeInc, v => {
+      cfg.timeInc = v;
       saveCfg();
     });
-    
+
     // Meme video settings — рендерим прямо здесь
     var memeGroup = document.getElementById('memeModesGroup');
     var memeBox = document.getElementById('memeModesOpts');
@@ -711,6 +847,16 @@ function buildModesCfg(modeId) {
     if(timeInput) timeInput.style.display = (v !== 0) ? '' : 'none';
     saveCfg();
   });
+
+  buildSeg('segTimeInc', [
+    {v: 0, label: 'Без', sub: ''},
+    {v: 2, label: '+2 с', sub: 'за ход'},
+    {v: 5, label: '+5 с', sub: 'за ход'},
+    {v: 10, label: '+10 с', sub: 'за ход'}
+  ], () => cfg.timeInc, v => {
+    cfg.timeInc = v;
+    saveCfg();
+  });
   
   saveCfg();
 }
@@ -731,7 +877,7 @@ function hideAllScreens() {
 }
 
 /* --- Советы на главном экране --- */
-const TIPS = [
+const TIPS_ALL = [
   '💡 Конь — единственная фигура, которая может перепрыгивать через другие.',
   '💡 Ферзь сочетает силу ладьи и слона — самая мощная фигура.',
   '💡 Рокировка — единственный ход, когда двигаются две фигуры за раз.',
@@ -745,19 +891,37 @@ const TIPS = [
   '💡 Подсказка: нажмите 💡 на панели во время игры, чтобы увидеть лучший ход.',
   '💡 За победу над ботом вы получаете 10 🪙, за ничью — 3 🪙.',
   '💡 Купите скины в 🛍 Магазине за монеты!',
-  '💡 Ежедневный бонус: зайдите в игру и получите 25 🪙 бесплатно.',
   '💡 Используйте ↩️ Назад, чтобы отменить последний ход.',
+  '🔥 Попробуй режим 🔫 Мемасия — шахматы с видео-реакциями на каждый ход!',
+  '🔥 В Мемасии пистолеты наводятся на фигуры, а видео показывают шах и угрозы!',
+  '🔥 Рейтинговый режим 🏆 — играйте по сети и поднимайте свой ELO рейтинг!',
+  '🔥 Режим «На одном ПК» 👥 — играйте с другом за одним компьютером!',
+  '🔥 Фишер 960 🎲 — случайная расстановка фигур для настоящих стратегов!',
 ];
+function getTips() {
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  return TIPS_ALL.filter(t => {
+    if(isGuest && t.indexOf('ежедневн') !== -1) return false;
+    return true;
+  });
+}
 
+let _tipIdx = 0;
+let _tipList = [];
 function showRandomTip() {
   const el = document.getElementById('tipBox');
   if(!el) return;
-  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
-  el.innerHTML = tip;
+  _tipList = getTips();
+  if(!_tipList.length) { el.innerHTML = ''; return; }
+  _tipIdx = Math.floor(Math.random() * _tipList.length);
+  el.innerHTML = _tipList[_tipIdx];
+  el.style.cursor = 'pointer';
+  el.onclick = () => { _tipIdx = (_tipIdx + 1) % _tipList.length; el.innerHTML = _tipList[_tipIdx]; };
 }
 
 /* --- Новая игра --- */
 function newGame() {
+  if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.forceUnlock();
   // Clear saved game
   ChessEngine.clearStorage();
 
@@ -765,8 +929,16 @@ function newGame() {
   if(cfg.modeId === 'meme') {
     cfg.gameMode = 'meme';
     MemeConfig.set('enabled', true);
-  } else if(cfg.modeId === 'bot' || cfg.bot !== 'off') {
+  } else if(cfg.modeId === 'ranked') {
+    cfg.gameMode = 'ranked';
+    cfg.bot = 'off';
+    MemeConfig.set('enabled', false);
+  } else if(cfg.modeId === 'bot' || (cfg.bot !== 'off' && cfg.modeId !== 'local')) {
     cfg.gameMode = 'bot';
+    MemeConfig.set('enabled', false);
+  } else if(cfg.modeId === 'local') {
+    cfg.gameMode = 'local';
+    cfg.bot = 'off';
     MemeConfig.set('enabled', false);
   } else if(cfg.variant === 'fischer960') {
     cfg.gameMode = 'fischer';
@@ -784,6 +956,9 @@ function newGame() {
   
   S = new ChessEngine(cfg.variant || 'classic');
   S.newGame();
+  gameStartFen = S.toFen();
+  window._mpReplaySkip = 0;
+  gameMoves = [];
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.clearAll();
 
   // Apply board colors
@@ -800,6 +975,7 @@ function newGame() {
   pendingPromo = null;
   takenByW = [];
   takenByB = [];
+  gameMoves = [];
   isBotThinking = false;
   opponentMuted = false;
   const muteBtn = document.getElementById('muteBtn');
@@ -809,7 +985,7 @@ function newGame() {
   S.humanColor = humanColor;
 
   // Bot greeting
-  if(cfg.bot !== 'off') {
+  if(cfg.gameMode === 'bot' || cfg.gameMode === 'meme') {
     const cu = ProfilesManager.getCurrent();
     const botId = cu ? (cu.botId || 1) : 1;
     const bot = BOT_LIST.find(b => b.id === botId);
@@ -818,7 +994,7 @@ function newGame() {
         cheerful: ['Привет! Давай играть!','Приветствую! Начинаем!','Хо-хо! Поехали!'],
         sleepy:   ['Ой... привет... давай...','Здравствуй... Ну, поиграем...'],
         rush:     ['Быстро! Привет! Поехали!','Привет! Некогда ждать!'],
-        random:   ['Привет! А вот как我会 играть...','Сюрприз! Привет!'],
+        random:   ['Привет! А вот как мы играть...','Сюрприз! Привет!'],
         cautious: ['Здравствуйте. Будем осторожны.','Привет. Без лишних рисков.'],
         aggressive:['Привет! Приготовься!','Давай! Атакуем!'],
         strategic:['Здравствуйте. Изучим позицию.','Привет. План таков...'],
@@ -874,11 +1050,21 @@ function newGame() {
   updateClockUI();
 
   // If human plays black, bot moves first
-  if(humanColor === 'b' && cfg.bot !== 'off') {
+  if(humanColor === 'b' && (cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off') {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 600);
   }
+
+  // Preload meme assets (gun images, sound, assigned videos) — avoids the freeze before video plays
+  if(cfg.gameMode === 'meme' && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.warmup) {
+    MemeThreatHandler.warmup();
+  }
+
+  // Save fresh game so it's always resumable/abandonable from the menu
+  if(typeof S !== 'undefined' && S) S.saveToStorage();
+
+  refreshModeLabel();
 }
 
 /* --- Часы --- */
@@ -886,19 +1072,34 @@ function startClock() {
   stopClock();
   clockInterval = setInterval(() => {
     if(!S || !S.clockOn || S.gameOver) return;
+
+    // Multiplayer: ticks are derived from the last server clock snapshot, so both
+    // clients see the same remaining time and the timeout decision is deterministic
+    if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && S.mpClock && S.mpClock.lastMoveAt) {
+      const mc = S.mpClock;
+      const elapsed = Math.max(0, (Date.now() - mc.lastMoveAt) / 1000);
+      const turn = S.turn;
+      const remain = Math.max(0, (mc[turn] || 0) - elapsed);
+      S.time = { w: mc.w || 0, b: mc.b || 0 };
+      S.time[turn] = remain;
+      updateClockUI();
+      if(remain <= 0) {
+        stopClock();
+        const loser = turn;
+        const winner = loser === 'w' ? 'b' : 'w';
+        const loserName = loser === S.humanColor ? 'Вы' : 'Соперник';
+        toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
+        endGame('timeout', winner);
+      }
+      return;
+    }
+
     S.time[S.turn]--;
     updateClockUI();
     if(S.time[S.turn] <= 0) {
-      S.gameOver = true;
       stopClock();
       const loser = S.turn;
       const winner = loser === 'w' ? 'b' : 'w';
-      const cu = ProfilesManager.getCurrent();
-      if(cu) {
-        const result = loser === S.humanColor ? 'loss' : 'win';
-        cu.recordResult(result, cfg.bot !== 'off', cfg.modeId);
-        Store.checkAchievements();
-      }
       // Toast notification
       let loserName = loser === S.humanColor ? 'Вы' : 'Соперник';
       if(loser !== S.humanColor && cfg.bot !== 'off') {
@@ -908,13 +1109,7 @@ function startClock() {
         if(bot) loserName = bot.emoji + ' ' + bot.name;
       }
       toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
-      ChessEngine.clearStorage();
-      const resumeBtn = document.getElementById('mResume');
-      if(resumeBtn) resumeBtn.style.display = 'none';
-      renderCoins();
-      renderProfBar();
-      renderStats();
-      snd.lose();
+      endGame('timeout', winner);
     }
   }, 1000);
 }
@@ -926,10 +1121,20 @@ function stopClock() {
   }
 }
 
+/* --- Реванш --- */
+function requestRematchGame() {
+  if(typeof ChesMP === 'undefined' || !ChesMP.lobbyId) { toast('Нет активного лобби'); return; }
+  ChesMP.requestRematch()
+    .then(() => toast('🔁 Запрос на реванш отправлен...'))
+    .catch(() => toast('Не удалось отправить запрос'));
+}
+
 /* --- Конец игры --- */
 function endGame(reason, winnerColor, drawReason) {
+  if(S.gameOver) return;
   S.gameOver = true;
   stopClock();
+  if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.forceUnlock();
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
 
@@ -957,10 +1162,17 @@ function endGame(reason, winnerColor, drawReason) {
     if(bot) opponentRating = bot.rating;
   }
 
+  // Capture ELO before recordResult
+  const eloBefore = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
+
   cu.recordResult(result, cfg.bot !== 'off', cfg.modeId);
   Store.checkAchievements();
   renderCoins();
   renderProfBar();
+
+  // Calculate ELO change
+  const eloAfter = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
+  const eloChange = eloAfter - eloBefore;
 
   // Show game over overlay
   const goT = document.getElementById('goT');
@@ -970,9 +1182,24 @@ function endGame(reason, winnerColor, drawReason) {
     resign: 'Сдача', draw: 'По соглашению',
     '50-move': 'Правило 50 ходов', repetition: 'Тройное повторение', insufficient: 'Недостаток материала'
   };
-  if(goT) goT.textContent = result === 'win' ? '🏆 Победа!' : result === 'loss' ? '😔 Поражение' : '🤝 Ничья';
+  if(goT) {
+    if(cfg.gameMode === 'local' && reason !== 'draw' && winnerColor) {
+      const winnerName = winnerColor === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+      goT.textContent = '🏆 ' + winnerName + ' победил!';
+    } else {
+      goT.textContent = result === 'win' ? '🏆 Победа!' : result === 'loss' ? '😔 Поражение' : '🤝 Ничья';
+    }
+  }
   if(goS) goS.textContent = reasons[drawReason] || reasons[reason] || '';
   openOv('ovOver');
+  // Rematch button only for network games with a live lobby
+  const rematchBtn = document.getElementById('overRematch');
+  if(rematchBtn) {
+    const canRematch = (cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') &&
+      (typeof ChesMP !== 'undefined' && ChesMP.lobbyId) &&
+      (reason === 'checkmate' || reason === 'resign' || reason === 'timeout' || reason === 'stalemate' || reason === 'draw' || reason === 'repetition' || reason === 'insufficient' || reason === '50-move');
+    rematchBtn.style.display = canRematch ? '' : 'none';
+  }
   snd[result === 'win' ? 'win' : result === 'loss' ? 'lose' : 'draw']();
   renderStats();
   renderProfBar();
@@ -984,20 +1211,30 @@ function endGame(reason, winnerColor, drawReason) {
     const botId = cu.botId || 1;
     const bot = BOT_LIST.find(b => b.id === botId);
     opponentName = bot ? '🤖 ' + bot.name : '🤖 Бот';
-  } else if(cfg.gameMode === 'multiplayer' && ChesMP && ChesMP.opponent) {
-    opponentName = ChesMP.opponent.name;
+  } else if(cfg.gameMode === 'local') {
+    opponentName = winnerColor === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+  } else if(cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') {
+    opponentName = (ChesMP && ChesMP.opponent) ? ChesMP.opponent.name : 'Соперник';
   } else if(cfg.gameMode === 'meme') {
     opponentName = 'Мемасия';
   } else if(cfg.variant === 'fischer960' || cfg.gameMode === 'fischer') {
     opponentName = 'Фишер 960';
   }
+  const today = new Date();
+  const dateStr = today.getDate() + '.' + (today.getMonth() + 1);
+
   cu.matchHistory.push({
     result: result,
     opponent: opponentName,
     mode: cfg.gameMode || cfg.modeId || 'classic',
     reason: reasons[drawReason] || reasons[reason] || '',
-    time: Date.now()
+    time: Date.now(),
+    eloChange: eloChange,
+    date: dateStr,
+    moves: gameMoves.slice(),
+    startFen: gameStartFen || undefined
   });
+  gameMoves = [];
   if(cu.matchHistory.length > 50) cu.matchHistory = cu.matchHistory.slice(-50);
   saveProfiles();
 
@@ -1009,14 +1246,24 @@ function endGame(reason, winnerColor, drawReason) {
   
   // Clear saved game
   ChessEngine.clearStorage();
-  const resumeBtn = document.getElementById('mResume');
-  if(resumeBtn) resumeBtn.style.display = 'none';
+  hideResumeBtn();
+
+  // Multiplayer: write result to lobby so the opponent is notified
+  if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && typeof ChesMP !== 'undefined' && ChesMP.lobbyId) {
+    try {
+      ChesMP.endGame(reason === 'draw' ? 'draw' : (winnerColor || 'draw'), reason || 'checkmate');
+    } catch(e) {}
+  }
 }
 
 /* --- Клик по клетке --- */
 function onSquareClick(e) {
   if(!S || S.gameOver || isBotThinking) return;
-  if(cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'bot' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(cfg.gameMode === 'meme' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return;
 
   const sq = e.currentTarget;
   const r = parseInt(sq.dataset.r);
@@ -1087,6 +1334,7 @@ function findKingPos(color) {
 /* --- Выполнить ход --- */
 function executeMove(move) {
   const isHumanMove = S.turn === S.humanColor;
+  const moverCol = S.turn;
   // Record capture
   let capturePiece = null;
   if(move.capture) {
@@ -1100,6 +1348,10 @@ function executeMove(move) {
   }
 
   S.makeMove(move);
+  try {
+    gameMoves.push({ fen: S.toFen(), notation: notationFromMove(move, S.inCheck(S.turn)), fr: move.fr, fc: move.fc, tr: move.tr, tc: move.tc });
+  } catch(e) {}
+  if(cfg.timeInc > 0 && S.clockOn && S.time) S.time[moverCol] = (S.time[moverCol] || 0) + cfg.timeInc;
   lastMove = {fr: move.fr, fc: move.fc, tr: move.tr, tc: move.tc};
   selected = null;
   legalCache = [];
@@ -1107,11 +1359,14 @@ function executeMove(move) {
   if(move.capture) snd.capture(); else snd.move();
 
   // Multiplayer: send move to server
-  if(cfg.gameMode === 'multiplayer' && typeof ChesMP !== 'undefined' && ChesMP.lobbyId && isHumanMove) {
+  if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && typeof ChesMP !== 'undefined' && ChesMP.lobbyId && isHumanMove) {
     const fromSq = String.fromCharCode(97 + move.fc) + (8 - move.fr);
     const toSq = String.fromCharCode(97 + move.tc) + (8 - move.tr);
     const notation = fromSq + (move.capture ? 'x' : '-') + toSq + (move.promo ? '=' + move.promo.toUpperCase() : '') + (S.inCheck(S.turn) ? '+' : '');
-    ChesMP.sendMove(fromSq, toSq, S.toFen(), notation);
+    // Authoritative clock snapshot as of this move
+    const mpClock = S.time ? { w: S.time.w, b: S.time.b, turn: S.turn, lastMoveAt: Date.now() } : null;
+    S.mpClock = S.time ? { w: S.time.w, b: S.time.b, turn: S.turn, lastMoveAt: Date.now() } : null;
+    ChesMP.sendMove(fromSq, toSq, S.toFen(), notation, move.promo, mpClock);
   }
 
   // Get captures from the NEW position (restore turn temporarily for isLegal)
@@ -1294,10 +1549,24 @@ function executeMove(move) {
   // Save game state
   if(S && !S.gameOver) S.saveToStorage();
 
+  // Local 2-player: flip board and show "pass device" between turns
+  if(cfg.gameMode === 'local' && !S.gameOver) {
+    const boardBox = document.getElementById('boardBox');
+    if(boardBox) boardBox.classList.toggle('flipped', S.turn === 'b');
+    refreshBars();
+    showPassScreen();
+  }
+
   // Update status line
   const sl = document.getElementById('statusLine');
   if(sl) {
     if(S.inCheck(S.turn)) { sl.textContent = '⚠ Шах!'; snd.check(); }
+    else if(cfg.gameMode === 'multiplayer') {
+      sl.textContent = S.turn === S.humanColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+    }
+    else if(cfg.gameMode === 'local') {
+      sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
+    }
     else sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
   }
 
@@ -1318,11 +1587,30 @@ function executeMove(move) {
   }
 
   // Bot's turn
-  if(cfg.bot !== 'off' && S.turn !== S.humanColor && !S.gameOver) {
+  if((cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off' && S.turn !== S.humanColor && !S.gameOver) {
     const sl = document.getElementById('statusLine');
     if(sl) sl.textContent = '🤖 Бот думает...';
     setTimeout(botMove, 800 + Math.random() * 1200);
   }
+}
+
+/* --- Экран передачи устройства (local 2P) --- */
+function showPassScreen() {
+  if(!S || S.gameOver) return;
+  const nextColor = S.turn === 'w' ? '⚪ Белые' : '⚫ Чёрные';
+  const nextPlayer = S.turn === 'w' ? 'Игрок 1' : 'Игрок 2';
+  let passEl = document.getElementById('passOverlay');
+  if(!passEl) {
+    passEl = document.createElement('div');
+    passEl.id = 'passOverlay';
+    passEl.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-family:inherit';
+    document.body.appendChild(passEl);
+  }
+  passEl.innerHTML = '<div style="font-size:clamp(22px,5vw,36px);font-weight:800;letter-spacing:3px;margin-bottom:12px">' + nextColor + '</div>' +
+    '<div style="font-size:clamp(14px,3vw,20px);opacity:.7;margin-bottom:30px">' + nextPlayer + ', ваш ход</div>' +
+    '<div style="font-size:clamp(12px,2.5vw,16px);opacity:.4">Нажмите чтобы продолжить</div>';
+  passEl.style.display = 'flex';
+  passEl.onclick = () => { passEl.style.display = 'none'; passEl.onclick = null; };
 }
 
 /* --- Ход бота --- */
@@ -1386,6 +1674,7 @@ function showHint() {
 let undosLeft = 3;
 function undoMove() {
   if(!S || S.moveHistory.length === 0) return;
+  if(cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') { toast('Отмена недоступна в сетевой игре'); return; }
   if(isBotThinking) return;
   if(undosLeft <= 0) { toast('Отмены закончились'); return; }
   undosLeft--;
@@ -1476,48 +1765,133 @@ function resignGame() {
 /* --- Ничья --- */
 function offerDraw() {
   if(!S || S.gameOver) return;
+  const isMp = cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked';
+  if(isMp && typeof ChesMP !== 'undefined' && ChesMP.lobbyId) {
+    askConfirm('Предложить ничью?', 'Соперник получит предложение. Ожидайте ответа.', () => {
+      ChesMP.offerDraw();
+      toast('🤝 Предложение отправлено');
+      const bd = document.getElementById('btnDraw');
+      if(bd) bd.style.opacity = '0.45';
+    });
+    return;
+  }
   askConfirm('Предложить ничью?', 'Вы уверены?', () => {
     endGame('draw', null);
+  });
+}
+
+/* --- МП: входящее предложение ничьей --- */
+function showDrawOfferModal() {
+  const old = document.getElementById('ovDrawIn');
+  if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'overlay show';
+  ov.id = 'ovDrawIn';
+  ov.innerHTML = '<div class="modal"><h2>🤝 Ничья</h2><p style="text-align:center;color:var(--mut);line-height:1.55">Соперник предлагает ничью</p><div class="modalBtns"><button class="btn primary" id="drwYes">Принять</button><button class="btn" id="drwNo">Отклонить</button></div></div>';
+  document.body.appendChild(ov);
+  let done = false;
+  const closeDraw = () => { done = true; if(document.body.contains(ov)) ov.remove(); };
+  ov.querySelector('#drwYes').addEventListener('click', () => {
+    ChesMP.respondDraw(true);
+    closeDraw();
+    if(S && !S.gameOver) endGame('draw', null, 'draw');
+  });
+  ov.querySelector('#drwNo').addEventListener('click', () => {
+    ChesMP.respondDraw(false);
+    closeDraw();
+  });
+
+  // Auto-decline if the opponent doesn't reply in time
+  setTimeout(() => {
+    if(done || !document.body.contains(ov)) return;
+    done = true;
+    ChesMP.respondDraw(false);
+    ov.remove();
+    toast('Предложение ничьей истекло');
+  }, 30000);
+}
+
+/* --- МП: слушатели ничьей --- */
+function registerMpDraw() {
+  ChesMP.onDraw(() => {
+    const ov = document.getElementById('ovDrawIn');
+    if(!S || S.gameOver || (ov && ov.classList.contains('show'))) return;
+    showDrawOfferModal();
+  });
+  ChesMP.onDrawResp(r => {
+    const bd = document.getElementById('btnDraw');
+    if(bd) bd.style.opacity = '';
+    if(r.accepted) {
+      if(S && !S.gameOver) endGame('draw', null, 'draw');
+    } else if(S && !S.gameOver) {
+      toast('Соперник отклонил предложение ничьей');
+    }
   });
 }
 
 /* --- Мультиплеер: входящий ход --- */
 function handleIncomingMove(move) {
   if(!S || S.gameOver) return;
+
+  // During resume, child_added replays all moves already restored in the board.
+  // Skip the first N (already-applied) events so only genuinely new moves are applied.
+  if(window._mpReplaySkip > 0) {
+    window._mpReplaySkip--;
+    return;
+  }
+
   if(S.turn === S.humanColor) return;
 
-  const fromR = 8 - parseInt(move.from[1]);
-  const fromC = move.from.charCodeAt(0) - 97;
-  const toR = 8 - parseInt(move.to[1]);
-  const toC = move.to.charCodeAt(0) - 97;
+  const fromSq = move.from;
+  const toSq = move.to;
+  if(!fromSq || !toSq) return;
+
+  const fromR = 8 - parseInt(fromSq[1]);
+  const fromC = fromSq.charCodeAt(0) - 97;
+  const toR = 8 - parseInt(toSq[1]);
+  const toC = toSq.charCodeAt(0) - 97;
+
+  if(isNaN(fromR) || isNaN(fromC) || isNaN(toR) || isNaN(toC)) return;
 
   const legal = S.getLegalMoves(fromR, fromC);
-  const isLegal = legal.some(m => m[0] === toR && m[1] === toC);
-  if(!isLegal) return;
+  let moveObj = legal.find(m => m.tr === toR && m.tc === toC);
+  if(!moveObj) return;
 
-  executeMove(fromR, fromC, toR, toC);
+  // Apply promotion if the mover promoted
+  if(move.promo && moveObj.type === 'p' && (toR === 0 || toR === 7)) {
+    moveObj.promo = move.promo;
+  }
+
+  executeMove(moveObj);
+
+  // Recalibrate local clock from the mover's authoritative snapshot (server clock)
+  if(move.clock && move.clock.lastMoveAt) {
+    S.mpClock = { w: move.clock.w || 0, b: move.clock.b || 0, turn: move.clock.turn, lastMoveAt: move.clock.lastMoveAt };
+    if(S.time) {
+      const elapsed = Math.max(0, (Date.now() - move.clock.lastMoveAt) / 1000);
+      S.time.w = Math.max(0, move.clock.w || 0);
+      S.time.b = Math.max(0, move.clock.b || 0);
+      // Subtract the time that already elapsed since the opponent made this move
+      if(move.clock.turn === 'w') S.time.w = Math.max(0, S.time.w - elapsed);
+      else if(move.clock.turn === 'b') S.time.b = Math.max(0, S.time.b - elapsed);
+      updateClockUI();
+    }
+  }
 }
 
 /* --- Настройка лобби --- */
-let _lobbyCfg = { mode: 'classic', timeSec: 300, color: 'random' };
+let _lobbyCfg = { mode: 'classic', timeSec: 600, color: 'random', timeInc: 0 };
 
 function renderLobbySetup() {
   const modes = [
-    {v:'classic', label:'♟ Классика', sub:'Стандарт'},
-    {v:'meme', label:'🔫 Мемасия', sub:'Нюансы'},
-    {v:'fischer', label:'🎲 Фишер 960', sub:'Рандом'}
-  ];
-  const times = [
-    {v:120, label:'⚡ Пуля', sub:'2 мин'},
-    {v:300, label:'🔥 Блиц', sub:'5 мин'},
-    {v:600, label:'🎯 Рапид', sub:'10 мин'},
-    {v:1800, label:'♔ Классика', sub:'30 мин'},
-    {v:0, label:'∞ Без лимита', sub:'—'}
+    {v:'classic', label:'♟ Классика'},
+    {v:'meme', label:'🔫 Мемасия'},
+    {v:'fischer', label:'🎲 Фишер 960'}
   ];
   const colors = [
-    {v:'w', label:'⚪ Белые', sub:'ход первым'},
-    {v:'b', label:'⚫ Чёрные', sub:'ответный ход'},
-    {v:'random', label:'🎲 Случайно', sub:'автоматически'}
+    {v:'w', label:'⚪ Белые'},
+    {v:'b', label:'⚫ Чёрные'},
+    {v:'random', label:'🎲 Случайно'}
   ];
 
   function renderSeg(boxId, items, key) {
@@ -1527,47 +1901,293 @@ function renderLobbySetup() {
     items.forEach(it => {
       const btn = document.createElement('button');
       btn.className = 'segBtn' + (_lobbyCfg[key] === it.v ? ' sel' : '');
-      btn.innerHTML = '<span class="nm">' + it.label + '</span>' + (it.sub ? '<span class="ds">' + it.sub + '</span>' : '');
+      btn.innerHTML = '<span class="nm">' + it.label + '</span>';
       btn.onclick = () => { _lobbyCfg[key] = it.v; renderSeg(boxId, items, key); };
       box.appendChild(btn);
     });
   }
 
   renderSeg('lobbyModeSeg', modes, 'mode');
-  renderSeg('lobbyTimeSeg', times, 'timeSec');
   renderSeg('lobbyColorSeg', colors, 'color');
+  renderSeg('lobbyIncSeg', [
+    {v:0, label:'Без'},
+    {v:2, label:'+2 с'},
+    {v:5, label:'+5 с'},
+    {v:10, label:'+10 с'}
+  ], 'timeInc');
+
+  // Time slider
+  const timeMarks = [
+    {v:60, label:'1 мин'},
+    {v:180, label:'3 мин'},
+    {v:300, label:'5 мин'},
+    {v:600, label:'10 мин'},
+    {v:900, label:'15 мин'},
+    {v:1200, label:'20 мин'},
+    {v:1800, label:'30 мин'},
+    {v:3600, label:'1 ч'},
+    {v:5400, label:'1.5 ч'},
+    {v:7200, label:'2 ч'},
+    {v:0, label:'∞'}
+  ];
+  const timeBox = document.getElementById('lobbyTimeSeg');
+  if(timeBox) {
+    const curIdx = timeMarks.findIndex(m => m.v === _lobbyCfg.timeSec);
+    const sliderVal = curIdx >= 0 ? curIdx : 3;
+    timeBox.innerHTML =
+      '<div class="timeSliderWrap">' +
+        '<input type="range" id="lobbyTimeSlider" min="0" max="' + (timeMarks.length - 1) + '" value="' + sliderVal + '" class="timeSlider">' +
+        '<div class="timeSliderLabels">' +
+          '<span>1 мин</span><span>∞</span>' +
+        '</div>' +
+        '<div class="timeSliderMarks" id="timeSliderMarks"></div>' +
+        '<div class="timeSliderValue" id="timeSliderValue">' + _formatTime(_lobbyCfg.timeSec) + '</div>' +
+      '</div>';
+    const slider = document.getElementById('lobbyTimeSlider');
+    const marksEl = document.getElementById('timeSliderMarks');
+    const valEl = document.getElementById('timeSliderValue');
+    if(marksEl) {
+      timeMarks.forEach((m, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'timeMark' + (i === sliderVal ? ' sel' : '');
+        dot.style.left = (i / (timeMarks.length - 1) * 100) + '%';
+        dot.title = m.v === 0 ? 'Бесконечно' : m.label + ' мин';
+        dot.onclick = () => {
+          slider.value = i;
+          _lobbyCfg.timeSec = timeMarks[i].v;
+          valEl.textContent = _formatTime(timeMarks[i].v);
+          marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === i));
+        };
+        marksEl.appendChild(dot);
+      });
+    }
+    if(slider) {
+      slider.oninput = () => {
+        const idx = parseInt(slider.value);
+        _lobbyCfg.timeSec = timeMarks[idx].v;
+        valEl.textContent = _formatTime(timeMarks[idx].v);
+        marksEl.querySelectorAll('.timeMark').forEach((d, j) => d.classList.toggle('sel', j === idx));
+      };
+    }
+  }
+}
+
+function _formatTime(sec) {
+  if(sec === 0) return '∞ Без ограничений';
+  if(sec >= 3600) {
+    const h = sec / 3600;
+    return (h % 1 === 0 ? h : h.toFixed(1)) + ' ч';
+  }
+  const m = Math.floor(sec / 60);
+  return m + ' мин';
+}
+
+let _memeBotPage = 0;
+function renderMemeBotGrid() {
+  const grid = document.getElementById('segBot');
+  if(!grid) return;
+  grid.innerHTML = '';
+  const cu = ProfilesManager.getCurrent();
+  const wins = cu ? (cu.st ? (cu.st.wins || 0) : 0) : 0;
+  const sorted = BOT_LIST.slice().sort((a, b) => a.rating - b.rating);
+
+  const containerW = grid.parentElement ? grid.parentElement.clientWidth - 16 : 320;
+  const perPage = Math.max(3, Math.floor((containerW - 80) / 78));
+  const totalPages = Math.ceil(sorted.length / perPage);
+  if(_memeBotPage >= totalPages) _memeBotPage = 0;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:center;gap:4px;width:100%';
+
+  const arrowL = document.createElement('button');
+  arrowL.innerHTML = '◀';
+  arrowL.style.cssText = 'flex:0 0 28px;height:28px;border:none;border-radius:50%;background:var(--panel2);color:var(--accent);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:' + (_memeBotPage > 0 ? '1' : '.25') + ';pointer-events:' + (_memeBotPage > 0 ? 'auto' : 'none') + ';transition:.15s';
+  arrowL.onclick = () => { if(_memeBotPage > 0) { _memeBotPage--; renderMemeBotGrid(); } };
+
+  const cardsWrap = document.createElement('div');
+  cardsWrap.style.cssText = 'display:flex;gap:6px;flex:1;overflow:hidden';
+
+  const start = _memeBotPage * perPage;
+  const pageBots = sorted.slice(start, start + perPage);
+  pageBots.forEach(bot => {
+    const available = wins >= (bot.winsReq || 0);
+    const selected = cu.botId === bot.id;
+    const card = document.createElement('div');
+    card.style.cssText = 'flex:1 1 0px;min-width:56px;max-width:76px;display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:10px;border:2px solid ' + (selected ? 'var(--accent)' : 'var(--line)') + ';background:' + (selected ? 'rgba(255,136,0,.08)' : 'var(--panel2)') + ';cursor:' + (available ? 'pointer' : 'not-allowed') + ';opacity:' + (available ? '1' : '.35') + ';transition:.15s;text-align:center' + (selected ? ';box-shadow:0 0 10px rgba(255,136,0,.25)' : '');
+    card.innerHTML = '<div style="font-size:22px;line-height:1">' + bot.emoji + '</div>' +
+      '<div style="font-size:9px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + bot.name + '</div>' +
+      '<div style="font-size:8px;color:var(--mut);margin-top:1px">' + bot.rating + '</div>' +
+      (!available ? '<div style="font-size:8px;color:var(--red);margin-top:2px">🔒</div>' : '');
+    if(available) {
+      card.addEventListener('click', () => {
+        cu.botId = bot.id;
+        cfg.bot = 'on';
+        saveCfg();
+        renderMemeBotGrid();
+      });
+    }
+    cardsWrap.appendChild(card);
+  });
+
+  const arrowR = document.createElement('button');
+  arrowR.innerHTML = '▶';
+  arrowR.style.cssText = 'flex:0 0 28px;height:28px;border:none;border-radius:50%;background:var(--panel2);color:var(--accent);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:' + (_memeBotPage < totalPages - 1 ? '1' : '.25') + ';pointer-events:' + (_memeBotPage < totalPages - 1 ? 'auto' : 'none') + ';transition:.15s';
+  arrowR.onclick = () => { if(_memeBotPage < totalPages - 1) { _memeBotPage++; renderMemeBotGrid(); } };
+
+  const dots = document.createElement('div');
+  dots.style.cssText = 'display:flex;justify-content:center;gap:5px;width:100%;margin-top:6px';
+  for(let i = 0; i < totalPages; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:' + (i === _memeBotPage ? 'var(--accent)' : 'var(--line)') + ';cursor:pointer;transition:.15s';
+    dot.onclick = () => { _memeBotPage = i; renderMemeBotGrid(); };
+    dots.appendChild(dot);
+  }
+
+  wrap.appendChild(arrowL);
+  wrap.appendChild(cardsWrap);
+  wrap.appendChild(arrowR);
+  grid.appendChild(wrap);
+  grid.appendChild(dots);
 }
 
 function startLobbyFromSetup() {
   ensureAuth().then(() => {
+    if(!ChesAuth.user) {
+      toast('❌ Не удалось войти. Проверьте подключение к интернету.');
+      showScreen('scrMulti');
+      return;
+    }
+    if(!firebaseRtdb) {
+      toast('❌ Firebase не инициализирован. Обновите страницу.');
+      showScreen('scrMulti');
+      return;
+    }
     NetUI._lobbySettings = _lobbyCfg;
     NetUI._showLobby('Создание...', 'Создаём лобби...');
+    showScreen('scrLobby');
     ChesMP.createLobby(_lobbyCfg).then(id => {
+      if(!id) {
+        toast('❌ Не удалось создать лобби. Проверьте Firebase правила.');
+        showScreen('scrMulti');
+        return;
+      }
       NetUI._lobbyId = id;
       NetUI._showLobby(id, 'Ожидание соперника...');
       ChesMP.onStart(opponent => { NetUI._startMultiplayerGame(); });
       ChesMP.onMove(move => { NetUI._onOpponentMove(move); });
       ChesMP.onEnd((winner, reason) => {
+        if(winner === 'draw') {
+          NetUI._onMultiplayerEnd('draw', reason);
+          return;
+        }
         const result = winner === ChesMP.myColor ? 'win' : 'loss';
         NetUI._onMultiplayerEnd(result, reason);
       });
-      showScreen('scrLobby');
+      ChesMP._listenGame();
+    }).catch(e => {
+      console.error('createLobby error:', e);
+      toast('❌ Ошибка: ' + (e.message || e));
+      showScreen('scrMulti');
     });
   });
 }
 
 /* --- Меню сетевой игры --- */
+/* --- Экран рейтинговой --- */
+function showRankedScreen() {
+  const cu = ProfilesManager.getCurrent();
+  const elo = cu ? (cu.ratings.ranked || 1000) : 1000;
+  const league = Elo.getLeague(elo);
+
+  // Rating card
+  const leagueIcon = document.getElementById('rankedLeagueIcon');
+  const leagueName = document.getElementById('rankedLeagueName');
+  const eloEl = document.getElementById('rankedElo');
+  if(leagueIcon) leagueIcon.textContent = league.icon;
+  if(leagueName) { leagueName.textContent = league.name; leagueName.style.color = league.color; }
+  if(eloEl) eloEl.textContent = elo;
+
+  // Stats
+  const rankedGames = cu ? (cu.st.games || 0) : 0;
+  const rankedWins = cu ? (cu.st.wins || 0) : 0;
+  const rankedLosses = cu ? (cu.st.losses || 0) : 0;
+  const wr = rankedGames > 0 ? Math.round(rankedWins / rankedGames * 100) : 0;
+  const winsEl = document.getElementById('rankedWins');
+  const lossesEl = document.getElementById('rankedLosses');
+  const wrEl = document.getElementById('rankedWinrate');
+  if(winsEl) winsEl.textContent = rankedWins;
+  if(lossesEl) lossesEl.textContent = rankedLosses;
+  if(wrEl) wrEl.textContent = wr + '%';
+
+  // Recent match history
+  const histBox = document.getElementById('rankedHistory');
+  if(histBox) {
+    histBox.innerHTML = '';
+    const hist = cu && cu.matchHistory ? cu.matchHistory.slice(-10).reverse() : [];
+    if(!hist.length) {
+      histBox.innerHTML = '<div style="color:var(--mut);text-align:center;padding:16px;font-size:13px">Пока нет партий. Сыграйте первую!</div>';
+    } else {
+      hist.forEach(h => {
+        const icon = h.result === 'win' ? '🏆' : h.result === 'loss' ? '😔' : '🤝';
+        const color = h.result === 'win' ? 'var(--green)' : h.result === 'loss' ? 'var(--red)' : 'var(--gold)';
+        const eloChange = h.eloChange != null ? (h.eloChange >= 0 ? '+' + h.eloChange : '' + h.eloChange) : '';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:4px;background:var(--panel2)';
+        row.innerHTML = '<span style="font-size:18px">' + icon + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (h.opponent || 'Соперник') + '</div>' +
+            '<div style="font-size:11px;color:var(--mut)">' + (h.mode || 'Классика') + '</div>' +
+          '</div>' +
+          (eloChange ? '<span style="font-size:13px;font-weight:700;color:' + color + '">' + eloChange + '</span>' : '') +
+          '<span style="font-size:11px;color:var(--mut)">' + (h.date || '') + '</span>';
+        histBox.appendChild(row);
+      });
+    }
+  }
+
+  // Play button
+  const playBtn = document.getElementById('rankedPlayBtn');
+  if(playBtn) {
+    playBtn.onclick = () => {
+      _lobbyCfg.ranked = true;
+      _lobbyCfg.mode = 'classic';
+      showMultiplayerMenu();
+    };
+  }
+
+  showScreen('scrRanked');
+}
+
 function showMultiplayerMenu() {
   showScreen('scrMulti');
   const mpStatus = document.getElementById('mpStatus');
   if(mpStatus) {
-    mpStatus.textContent = ChesAuth.user && !ChesAuth.user.isAnonymous ?
-      'Вы вошли как: ' + (ChesAuth.profile ? ChesAuth.profile.name : ChesAuth.user.email) :
-      'Играйте как гость — авторизация не обязательна';
+    if(!ChesAuth.user) {
+      mpStatus.textContent = 'Вы играете как гость — лобби доступны без регистрации';
+    } else if(ChesAuth.user.isAnonymous) {
+      mpStatus.textContent = 'Анонимный вход · Лобби доступны';
+    } else {
+      mpStatus.textContent = 'Вы вошли как: ' + (ChesAuth.profile ? ChesAuth.profile.name : ChesAuth.user.email);
+    }
   }
 
-  // Listen for incoming invites
-  if(ChesAuth.user) {
+  // Auto-login as anonymous for lobby access
+  if(!ChesAuth.user) {
+    ChesAuth.loginAnon().then(() => {
+      ChesMP.setOnline();
+      if(mpStatus) mpStatus.textContent = 'Анонимный вход · Лобби доступны';
+      if(ChesAuth.user) {
+        ChesMP.listenInvites(inv => {
+          if(confirm(inv.fromName + ' приглашает в игру! Принять?')) {
+            NetUI.acceptInvite(inv);
+          }
+        });
+      }
+    }).catch(e => {
+      console.warn('Auto anon login failed:', e.message);
+    });
+  } else {
+    ChesMP.setOnline();
     ChesMP.listenInvites(inv => {
       if(confirm(inv.fromName + ' приглашает в игру! Принять?')) {
         NetUI.acceptInvite(inv);
@@ -1582,22 +2202,44 @@ function startMultiplayerGame(mpColor, opponentName) {
   cfg.human = mpColor;
   cfg.bot = 'off';
 
+  hideResumeBtn();
+  window._mpReplaySkip = 0;
+
   const ls = NetUI._lobbySettings || ChesMP.lobbySettings || {};
   const mpMode = ls.mode || 'classic';
-  cfg.modeId = mpMode;
+  cfg.modeId = ls.ranked ? 'ranked' : mpMode;
+  cfg.gameMode = ls.ranked ? 'ranked' : 'multiplayer';
   cfg.memes = mpMode === 'meme';
   MemeConfig.set('enabled', mpMode === 'meme');
   cfg.timeSec = ls.timeSec != null ? ls.timeSec : 300;
+  cfg.timeInc = ls.timeInc != null ? ls.timeInc : 0;
 
-  S = new ChessEngine(mpMode === 'fischer' ? 'fischer' : 'classic');
-  S.newGame();
+  if(mpMode === 'fischer') {
+    // Deterministic setup shared by both players via lobbyId seed (round varies on rematch)
+    let seed = 0;
+    if(ChesMP && ChesMP.lobbyId) {
+      const seedStr = ChesMP.lobbyId + ':' + (ChesMP.round || 0);
+      for(let i = 0; i < seedStr.length; i++) {
+        seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+      }
+    }
+    if(!seed) seed = 0x9E3779B9;
+    S = new ChessEngine('fischer960');
+    S.newGameFischer960(seed);
+  } else {
+    S = new ChessEngine('classic');
+    S.newGame();
+  }
+  gameStartFen = S.toFen();
+  gameMoves = [];
   S.humanColor = mpColor;
 
   lastMove = null;
   selected = null;
   legalCache = [];
   hintMove = null;
-  hintCount = 0;
+  hintsLeft = 2;
+  undosLeft = 3;
 
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.clearAll();
   if(cfg.board && BOARDS[cfg.board]) {
@@ -1607,20 +2249,54 @@ function startMultiplayerGame(mpColor, opponentName) {
   }
 
   hideAllScreens();
-  gameBox.style.display = '';
 
   const boardBox = document.getElementById('boardBox');
-  if(boardBox) boardBox.classList.toggle('flipped', mpColor === 'b');
+  if(boardBox) {
+    boardBox.classList.toggle('flipped', mpColor === 'b');
+    boardBox.classList.remove('skin-rajasthani');
+    const skin = SKINS[cfg.skin];
+    if(skin && skin.css) boardBox.classList.add(skin.css);
+  }
 
-  renderPieces();
-  renderStatus();
-  updateClock();
+  buildGrid();
+  fullRender();
+  refreshBars();
+  updateCounters();
+
+  const sl = document.getElementById('statusLine');
+  if(sl) sl.textContent = mpColor === 'w' ? '⚔ Ваш ход (белые)' : '⏳ Ход соперника... (чёрные)';
+
+  if(cfg.timeSec > 0) {
+    S.clockOn = true;
+    S.time = {w: cfg.timeSec, b: cfg.timeSec};
+    // Sync to the authoritative server clock if the lobby already has one
+    const ck = (ChesMP && ChesMP.lobbyClock) || null;
+    if(ck && ck.lastMoveAt) {
+      const elapsed = Math.max(0, (Date.now() - ck.lastMoveAt) / 1000);
+      S.time.w = Math.max(0, ck.w || cfg.timeSec);
+      S.time.b = Math.max(0, ck.b || cfg.timeSec);
+      if(ck.turn === 'w') S.time.w = Math.max(0, S.time.w - elapsed);
+      else if(ck.turn === 'b') S.time.b = Math.max(0, S.time.b - elapsed);
+    }
+    S.mpClock = { w: S.time.w, b: S.time.b, turn: 'w', lastMoveAt: Date.now() };
+    startClock();
+  } else {
+    S.clockOn = false;
+    S.time = null;
+    S.mpClock = null;
+  }
+  updateClockUI();
+
+  const movesEl = document.getElementById('moves');
+  if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
 
   ChesMP.onMove(move => { handleIncomingMove(move); });
-  ChesMP.onEnd((winner) => {
+  ChesMP.onEnd((winner, reason) => {
+    if(winner === 'draw') { endGame('draw', null, 'draw'); return; }
     const result = winner === mpColor ? 'win' : 'loss';
-    endGame('checkmate', winner);
+    endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
   });
+  registerMpDraw();
 
   // Fetch opponent's playerId
   if(ChesMP.opponent && ChesMP.opponent.uid && firebaseDB) {
@@ -1643,10 +2319,58 @@ function applyReal(move, promoType) {
 }
 
 /* --- Восстановление игры --- */
+function showResumeBtn() {
+  const row = document.getElementById('resumeRow');
+  if(row) row.style.display = 'flex';
+}
+
+function hideResumeBtn() {
+  const row = document.getElementById('resumeRow');
+  if(row) row.style.display = 'none';
+}
+
+function syncResumeRow() {
+  const savedGame = ChessEngine.loadFromStorage();
+  const resumeBtn = document.getElementById('mResume');
+  if(savedGame && savedGame.state && !savedGame.state.gameOver && resumeBtn) {
+    showResumeBtn();
+    resumeBtn.disabled = false;
+    const isMp = savedGame.mp && savedGame.mp.lobbyId;
+    const modeId = savedGame.cfg ? savedGame.cfg.modeId : '';
+    const modeIcons = { classic: '♟', meme: '🔫', fischer: '🎲', local: '👥', ranked: '🏆' };
+    const modeIcon = modeIcons[modeId] || '♟';
+    const modeNames2 = { classic: 'Классика', meme: 'Мемасия', fischer: 'Фишер 960', local: 'На одном ПК', ranked: 'Рейтинговая', bot: 'Против бота' };
+    const modeName = modeNames2[modeId] || 'Классика';
+    if(isMp) {
+      const oppName = savedGame.mp.opponent ? savedGame.mp.opponent.name : 'Соперник';
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">⚔ По сети vs ' + oppName + '</small>';
+    } else if(modeId === 'local') {
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">👥 Два игрока</small>';
+    } else if(modeId === 'ranked') {
+      const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏆 За ELO рейтинг' + botLabel + '</small>';
+    } else {
+      const botLabel = savedGame.cfg && savedGame.cfg.bot !== 'off' ? ' vs 🤖 Бот' : '';
+      resumeBtn.innerHTML = '▶ Продолжить · ' + modeIcon + ' ' + modeName + '<br><small style="font-weight:400;opacity:.7;font-size:10px">🏠 Локальная' + botLabel + '</small>';
+    }
+  } else {
+    hideResumeBtn();
+    if(savedGame) ChessEngine.clearStorage();
+  }
+}
+
+let backToGame = false;
+
 function resumeGame() {
   const savedGame = ChessEngine.loadFromStorage();
   if(!savedGame || !savedGame.state) {
     toast('Нет сохранённой игры');
+    return;
+  }
+
+  // Multiplayer: try to reconnect to lobby
+  if(savedGame.mp && savedGame.mp.lobbyId) {
+    resumeMultiplayer(savedGame);
     return;
   }
   
@@ -1657,6 +2381,9 @@ function resumeGame() {
     if(savedGame.cfg.bot) cfg.bot = savedGame.cfg.bot;
     if(savedGame.cfg.skin) cfg.skin = savedGame.cfg.skin;
     if(savedGame.cfg.modeId) cfg.modeId = savedGame.cfg.modeId;
+    if(savedGame.cfg.gameMode) cfg.gameMode = savedGame.cfg.gameMode;
+    if(savedGame.cfg.timeSec != null) cfg.timeSec = savedGame.cfg.timeSec;
+    if(savedGame.cfg.timeInc != null) cfg.timeInc = savedGame.cfg.timeInc;
   }
   
   // Create engine and restore state
@@ -1678,6 +2405,7 @@ function resumeGame() {
   pendingPromo = null;
   takenByW = [];
   takenByB = [];
+  gameMoves = [];
   isBotThinking = false;
   hintsLeft = 2;
   undosLeft = 3;
@@ -1704,6 +2432,143 @@ function resumeGame() {
 
   hideAllScreens();
   toast('Игра восстановлена');
+  refreshModeLabel();
+}
+
+/* --- Восстановление мультиплеерной игры --- */
+async function resumeMultiplayer(savedGame) {
+  const mp = savedGame.mp;
+  if(!mp || !mp.lobbyId) { toast('Нет данных лобби'); return; }
+
+  await ensureAuth();
+  if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
+  if(!firebaseRtdb) { toast('Firebase не подключён'); return; }
+
+  toast('Переподключение к лобби...');
+
+  const ref = firebaseRtdb.ref('lobbies/' + mp.lobbyId);
+  const snap = await ref.once('value');
+  const data = snap.val();
+
+  if(!data || data.status === 'finished' || data.status === 'cancelled') {
+    toast('Игра завершена или лобби удалено');
+    ChessEngine.clearStorage();
+    hideResumeBtn();
+    return;
+  }
+
+  // Restore MP state
+  ChesMP.lobbyId = mp.lobbyId;
+  ChesMP.myColor = mp.myColor;
+  ChesMP.opponent = mp.opponent;
+  ChesMP._isHost = mp.isHost;
+  ChesMP._started = data.status === 'playing';
+
+  // Restore cfg
+  if(savedGame.cfg) {
+    if(savedGame.cfg.skin) cfg.skin = savedGame.cfg.skin;
+    if(savedGame.cfg.gameMode) cfg.gameMode = savedGame.cfg.gameMode;
+    if(savedGame.cfg.timeSec != null) cfg.timeSec = savedGame.cfg.timeSec;
+    if(savedGame.cfg.timeInc != null) cfg.timeInc = savedGame.cfg.timeInc;
+    if(savedGame.cfg.modeId) cfg.modeId = savedGame.cfg.modeId;
+  }
+  cfg.human = mp.myColor;
+  cfg.bot = 'off';
+
+  // Create engine and restore state
+  S = new ChessEngine(savedGame.state.variant || 'classic');
+  S.restoreState(savedGame.state);
+  S.humanColor = mp.myColor;
+
+  if(savedGame.moveHistory) S.moveHistory = savedGame.moveHistory;
+  if(savedGame.positionHistory) S.positionHistory = savedGame.positionHistory;
+
+  lastMove = null;
+  selected = null;
+  legalCache = [];
+  hintMove = null;
+  pendingPromo = null;
+  takenByW = [];
+  takenByB = [];
+  gameMoves = [];
+  isBotThinking = false;
+  hintsLeft = 2;
+  undosLeft = 3;
+
+  // Apply board skin
+  if(cfg.board && BOARDS[cfg.board]) {
+    const b = BOARDS[cfg.board];
+    document.documentElement.style.setProperty('--sq-l', b.light);
+    document.documentElement.style.setProperty('--sq-d', b.dark);
+  }
+
+  hideAllScreens();
+
+  const boardBox = document.getElementById('boardBox');
+  if(boardBox) {
+    boardBox.classList.toggle('flipped', mp.myColor === 'b');
+    boardBox.classList.remove('skin-rajasthani');
+    const skin = SKINS[cfg.skin];
+    if(skin && skin.css) boardBox.classList.add(skin.css);
+  }
+
+  buildGrid();
+  fullRender();
+  refreshBars();
+  updateCounters();
+
+  const movesEl = document.getElementById('moves');
+  if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
+
+  // Status
+  const sl = document.getElementById('statusLine');
+  if(sl) sl.textContent = S.turn === mp.myColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+
+  // Clock — authoritative server clock first, saved state as fallback
+  const ck = data.clock || null;
+  let haveClock = false;
+  if(ck && ck.lastMoveAt) {
+    const elapsed = Math.max(0, (Date.now() - ck.lastMoveAt) / 1000);
+    S.time = {
+      w: Math.max(0, (ck.w != null ? ck.w : cfg.timeSec) - (ck.turn === 'w' ? elapsed : 0)),
+      b: Math.max(0, (ck.b != null ? ck.b : cfg.timeSec) - (ck.turn === 'b' ? elapsed : 0))
+    };
+    haveClock = true;
+  } else if(S.time && (S.time.w > 0 || S.time.b > 0)) {
+    haveClock = true;
+  } else if(cfg.timeSec > 0) {
+    S.time = {w: cfg.timeSec, b: cfg.timeSec};
+    haveClock = true;
+  }
+  if(haveClock) {
+    S.clockOn = true;
+    if(data.clock && data.clock.lastMoveAt) {
+      S.mpClock = { w: data.clock.w || 0, b: data.clock.b || 0, turn: data.clock.turn, lastMoveAt: data.clock.lastMoveAt };
+    } else {
+      S.mpClock = { w: S.time.w, b: S.time.b, turn: S.turn, lastMoveAt: Date.now() };
+    }
+    startClock();
+  } else {
+    S.clockOn = false;
+    S.time = null;
+    S.mpClock = null;
+  }
+  updateClockUI();
+
+  // Re-register listeners
+  ChesMP.onMove(move => { handleIncomingMove(move); });
+  ChesMP.onEnd((winner, reason) => {
+    if(winner === 'draw') { endGame('draw', null, 'draw'); return; }
+    const result = winner === mp.myColor ? 'win' : 'loss';
+    endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
+  });
+  registerMpDraw();
+  // Skip the child_added replay events already reflected in the restored board
+  window._mpReplaySkip = (savedGame.state && savedGame.state.plyCount) || 0;
+  ChesMP._listenGame();
+
+  toast('Сетевая игра: vs ' + (mp.opponent ? mp.opponent.name : 'Соперник'));
+  refreshModeLabel();
 }
 
 /* === ТАБЛИЦА ЛИДЕРОВ === */
@@ -1735,17 +2600,18 @@ function renderLeaderboard(mode) {
   const players = profiles
     .filter(p => p.name && p.name !== 'Гость' && p.name !== 'Guest')
     .map(p => {
-      const ratings = p.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000};
+      const ratings = p.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000,ranked:1000};
+      const rVal = (k) => (ratings[k] && ratings[k] > 0) ? ratings[k] : 1000;
       let rating;
       if(lbMode === 'overall') {
-        rating = Math.round((ratings.classic + ratings.bot + ratings.fischer + ratings.meme) / 4);
+        rating = Math.round((['classic','bot','fischer','meme','ranked'].reduce((s,k) => s + rVal(k), 0)) / 5);
       } else {
-        rating = ratings[lbMode] || 0;
+        rating = rVal(lbMode);
       }
       return {
         id: p.id,
         name: p.name,
-        ava: p.ava || '🐣',
+        ava: p.ava || '👽',
         rating: rating,
         games: (p.st && p.st.games) || 0,
         wins: (p.st && p.st.wins) || 0,
@@ -1856,7 +2722,7 @@ function cheatMaxElo() {
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
   cu.elo = 3000;
-  cu.ratings = {classic:3000, bot:3000, fischer:3000, meme:3000};
+  cu.ratings = {classic:3000, bot:3000, fischer:3000, meme:3000, ranked:3000};
   saveProfiles();
   renderProfBar();
   toast('↑ Эло 3000');
@@ -1865,7 +2731,7 @@ function cheatResetElo() {
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
   cu.elo = 0;
-  cu.ratings = {classic:1000, bot:1000, fischer:1000, meme:1000};
+  cu.ratings = {classic:1000, bot:1000, fischer:1000, meme:1000, ranked:1000};
   saveProfiles();
   renderProfBar();
   toast('↓ Эло 1000');
@@ -1883,6 +2749,21 @@ function cheatTestLose() {
 }
 
 /* === ИНИЦИАЛИЗАЦИЯ === */
+
+function ensureAuth() {
+  if(ChesAuth.user) {
+    ChesMP.setOnline();
+    return Promise.resolve(true);
+  }
+  return ChesAuth.loginAnon().then(() => {
+    ChesMP.setOnline();
+    return true;
+  }).catch(e => {
+    console.error('ensureAuth loginAnon error:', e);
+    return false;
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadCfg();
   if(typeof normalizeSkin === 'function') normalizeSkin();
@@ -1891,18 +2772,8 @@ document.addEventListener('DOMContentLoaded', () => {
   syncThemeUI();
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.init();
 
-  // Check for saved game
-  const savedGame = ChessEngine.loadFromStorage();
-  const resumeBtn = document.getElementById('mResume');
-  if(savedGame && savedGame.state && !savedGame.state.gameOver) {
-    if(resumeBtn) {
-      resumeBtn.style.display = '';
-      resumeBtn.disabled = false;
-    }
-  } else {
-    if(resumeBtn) resumeBtn.style.display = 'none';
-    ChessEngine.clearStorage();
-  }
+  // Generate guest ID immediately
+  if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
 
   // Build board and start
   showScreen('scrMenu');
@@ -1919,6 +2790,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCoins();
   renderStats();
   showRandomTip();
+  loadDevlog().then(() => updateMenuVersion());
 
   // Load saved board theme
   if(cfg.board && BOARDS[cfg.board]) {
@@ -1936,41 +2808,456 @@ document.addEventListener('DOMContentLoaded', () => {
   // Main menu
   bind('mPlay', () => { showMultiplayerMenu(); });
   bind('mResume', () => resumeGame());
+  bind('mResumeClose', () => {
+    const savedGame = ChessEngine.loadFromStorage();
+    const isMp = !!(savedGame && savedGame.mp && savedGame.mp.lobbyId);
+    const msg = isMp
+      ? 'Завершить сетевую партию? Соперник узнает о вашем выходе, рейтинг не изменится.'
+      : 'Завершить партию? Прогресс будет потерян.';
+    if(!confirm(msg)) return;
+    if(isMp && savedGame.mp.lobbyId && typeof ChesMP !== 'undefined' && ChesMP && firebaseRtdb) {
+      try { firebaseRtdb.ref('lobbies/' + savedGame.mp.lobbyId).update({ status: 'cancelled' }); } catch(e) {}
+    }
+    ChessEngine.clearStorage();
+    hideResumeBtn();
+    toast('Партия завершена');
+  });
   bind('mModes', () => { showScreen('scrModes'); showModesList(); });
   bind('mShop', () => showScreen('scrShop'));
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
-  bind('mFriends', () => {
-    if(!ChesAuth.user) { showScreen('scrAuth'); return; }
-    showScreen('scrFriends');
-    NetUI._loadFriends();
+  bind('helpBtn', () => { toast('Раздел помощи скоро будет доступен!'); });
+
+  // Mobile mode toggle
+  const phoneBtn = document.getElementById('phoneBtn');
+  if(phoneBtn) {
+    if(localStorage.getItem('chesher_mobile') === 'on') {
+      document.body.classList.add('mobile-mode');
+      phoneBtn.title = 'Десктопный режим';
+    }
+    phoneBtn.addEventListener('click', () => {
+      document.body.classList.toggle('mobile-mode');
+      const isMobile = document.body.classList.contains('mobile-mode');
+      localStorage.setItem('chesher_mobile', isMobile ? 'on' : 'off');
+      phoneBtn.title = isMobile ? 'Десктопный режим' : 'Мобильный режим';
+      toast(isMobile ? '📱 Мобильный режим' : '🖥 Десктопный режим');
+    });
+  }
+
+  // QR code button
+  const GAME_URL = 'https://dmitriy5885as-design.github.io/Chesher/';
+  function qrTargetUrl() {
+    if(typeof NetUI !== 'undefined' && typeof NetUI._lobbyLink === 'function' &&
+       typeof ChesMP !== 'undefined' && ChesMP.lobbyCode && /^[A-Z2-9]{6}$/.test(ChesMP.lobbyCode)) {
+      return NetUI._lobbyLink(ChesMP.lobbyCode);
+    }
+    return GAME_URL;
+  }
+  bind('qrBtn', () => {
+    const overlay = document.getElementById('qrOverlay');
+    const qrImg = document.getElementById('qrImg');
+    const qrUrl = document.getElementById('qrUrl');
+    if(!overlay) return;
+    const url = qrTargetUrl();
+    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    if(qrUrl) qrUrl.textContent = url;
+    overlay.classList.add('show');
   });
+  bind('qrClose', () => {
+    const overlay = document.getElementById('qrOverlay');
+    if(overlay) overlay.classList.remove('show');
+  });
+  bind('qrBtnMob', () => {
+    const overlay = document.getElementById('qrOverlay');
+    const qrImg = document.getElementById('qrImg');
+    const qrUrl = document.getElementById('qrUrl');
+    if(!overlay) return;
+    const url = qrTargetUrl();
+    if(qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    if(qrUrl) qrUrl.textContent = url;
+    overlay.classList.add('show');
+  });
+  const qrUrlEl = document.getElementById('qrUrl');
+  if(qrUrlEl) qrUrlEl.addEventListener('click', () => {
+    const t = qrUrlEl.textContent || GAME_URL;
+    navigator.clipboard.writeText(t).then(() => toast('📋 Ссылка скопирована!')).catch(() => {});
+  });
+  const qrOverlayEl = document.getElementById('qrOverlay');
+  if(qrOverlayEl) qrOverlayEl.addEventListener('click', (e) => {
+    if(e.target === qrOverlayEl) qrOverlayEl.classList.remove('show');
+  });
+
+  // Daily gift
+  function updateGiftBtn() {
+    const btn = document.getElementById('giftBtn');
+    if(!btn) return;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) {
+      btn.classList.add('disabled');
+      btn.title = 'Войдите, чтобы получать ежедневные подарки';
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const lastClaim = localStorage.getItem('chesher_daily_gift');
+    if(lastClaim === today) {
+      btn.classList.add('claimed');
+      btn.classList.remove('disabled');
+      btn.title = 'Уже получено сегодня!';
+    } else {
+      btn.classList.remove('claimed', 'disabled');
+      btn.title = 'Забрать ежедневный подарок!';
+    }
+  }
+  window.updateGiftBtn = updateGiftBtn;
+  updateGiftBtn();
+
+  bind('giftBtn', () => {
+    const btn = document.getElementById('giftBtn');
+    if(!btn || btn.classList.contains('disabled') || btn.classList.contains('claimed')) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastClaim = localStorage.getItem('chesher_daily_gift');
+    if(lastClaim === today) { toast('Уже получено сегодня!'); return; }
+
+    const coins = 25 + Math.floor(Math.random() * 26);
+    const gems = Math.random() < 0.3 ? 1 : 0;
+
+    localStorage.setItem('chesher_daily_gift', today);
+    const cu = ProfilesManager.getCurrent();
+    if(cu) {
+      cu.coins = (cu.coins || 0) + coins;
+      cu.gems = (cu.gems || 0) + gems;
+      saveProfiles();
+    }
+    renderCoins();
+    updateGiftBtn();
+    toast('🎁 Ежедневный подарок: +' + coins + ' 🪙' + (gems ? ' +1 💎' : ''));
+  });
+
+  // === Friends panel ===
+  let _fpOpen = false;
+  let _fcOpen = false;
+  let _fcChatUid = null;
+  let _fcChatUnsub = null;
+
+  function toggleFriendsPanel() {
+    const panel = document.getElementById('friendsPanel');
+    const chatPanel = document.getElementById('friendChatPanel');
+    if(!panel) return;
+    _fpOpen = !_fpOpen;
+    if(_fpOpen) {
+      if(chatPanel) chatPanel.classList.remove('open');
+      _fcOpen = false;
+      panel.classList.add('open');
+      loadFriendsList();
+      loadFriendRequests();
+    } else {
+      panel.classList.remove('open');
+    }
+  }
+
+  async function loadFriendsList() {
+    const list = document.getElementById('fpList');
+    if(!list) return;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) { list.innerHTML = '<div class="fpEmpty">Войдите, чтобы видеть друзей</div>'; return; }
+
+    list.innerHTML = '<div class="fpEmpty">Загрузка...</div>';
+    try {
+      const friends = await ChesFriends.getFriends();
+      if(!friends.length) { list.innerHTML = '<div class="fpEmpty">Добавьте друзей, чтобы начать общение</div>'; return; }
+      list.innerHTML = friends.map(f => {
+        const chatId = [ChesAuth.getUid(), f.uid].sort().join('_');
+        return '<div class="fpItem" data-uid="' + f.uid + '">' +
+          '<div class="fpAva">' + f.ava + '</div>' +
+          '<div class="fpInfo"><div class="fpNm">' + f.name + '</div>' +
+          '<div class="fpSub">' + f.elo + ' эло</div></div>' +
+          '<div class="fpOnline ' + (f.online ? 'on' : 'off') + '"></div>' +
+          '<div class="fpActions">' +
+            '<button class="fpChatBtn" data-uid="' + f.uid + '" data-name="' + f.name + '" title="Написать">💬</button>' +
+            '<button class="fpRemoveBtn" data-uid="' + f.uid + '" data-name="' + f.name + '" title="Удалить">✕</button>' +
+          '</div></div>';
+      }).join('');
+
+      list.querySelectorAll('.fpChatBtn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          openFriendChat(btn.dataset.uid, btn.dataset.name);
+        });
+      });
+      list.querySelectorAll('.fpRemoveBtn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+          e.stopPropagation();
+          if(confirm('Удалить ' + btn.dataset.name + ' из друзей?')) {
+            await ChesFriends.removeFriend(btn.dataset.uid);
+            loadFriendsList();
+            toast(btn.dataset.name + ' удалён из друзей');
+          }
+        });
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="fpEmpty">Ошибка загрузки</div>';
+    }
+  }
+
+  async function loadFriendRequests() {
+    const el = document.getElementById('fpRequests');
+    if(!el) return;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) { el.innerHTML = ''; return; }
+
+    try {
+      const requests = await ChesFriends.getRequests();
+      if(!requests.length) { el.innerHTML = ''; return; }
+      el.innerHTML = requests.map(r =>
+        '<div class="fpReqItem">' +
+          '<div class="fpAva" style="font-size:20px">' + r.ava + '</div>' +
+          '<div class="fpInfo"><div class="fpNm">' + r.name + '</div></div>' +
+          '<div class="fpReqBtns">' +
+            '<button class="fpAccept" data-uid="' + r.uid + '">✓</button>' +
+            '<button class="fpReject" data-uid="' + r.uid + '">✕</button>' +
+          '</div></div>'
+      ).join('');
+
+      el.querySelectorAll('.fpAccept').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await ChesFriends.acceptRequest(btn.dataset.uid);
+          loadFriendsList();
+          loadFriendRequests();
+          toast('Заявка принята!');
+        });
+      });
+      el.querySelectorAll('.fpReject').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await ChesFriends.rejectRequest(btn.dataset.uid);
+          loadFriendRequests();
+        });
+      });
+    } catch(e) { el.innerHTML = ''; }
+  }
+
+  function openFriendChat(uid, name) {
+    const panel = document.getElementById('friendChatPanel');
+    const fpPanel = document.getElementById('friendsPanel');
+    const nameEl = document.getElementById('fcName');
+    const statusEl = document.getElementById('fcStatus');
+    const msgsEl = document.getElementById('fcMessages');
+    if(!panel) return;
+
+    _fcOpen = true;
+    _fcChatUid = uid;
+    if(fpPanel) fpPanel.classList.remove('open');
+    _fpOpen = false;
+    panel.classList.add('open');
+    if(nameEl) nameEl.textContent = name;
+    if(msgsEl) msgsEl.innerHTML = '<div class="fcEmpty">Загрузка...</div>';
+
+    const chatId = [ChesAuth.getUid(), uid].sort().join('_');
+    const chatRef = firebaseRtdb ? firebaseRtdb.ref('friendChats/' + chatId) : null;
+
+    if(chatRef) {
+      chatRef.limitToLast(50).on('value', snap => {
+        const data = snap.val() || {};
+        const msgs = Object.values(data).sort((a, b) => a.ts - b.ts);
+        if(!msgsEl) return;
+        if(!msgs.length) { msgsEl.innerHTML = '<div class="fcEmpty">Начните переписку!</div>'; return; }
+        const myUid = ChesAuth.getUid();
+        msgsEl.innerHTML = msgs.map(m => {
+          const isMe = m.by === myUid;
+          const t = new Date(m.ts);
+          const time = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+          return '<div class="fcMsg ' + (isMe ? 'me' : 'them') + '">' +
+            m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+            '<div class="fcMsgTime">' + time + '</div></div>';
+        }).join('');
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      });
+      _fcChatUnsub = () => chatRef.off();
+    }
+
+    // Check online status
+    if(firebaseRtdb) {
+      firebaseRtdb.ref('status/' + uid).once('value').then(snap => {
+        const st = snap.val();
+        const online = st && (Date.now() - st.lastSeen < 60000);
+        if(statusEl) {
+          statusEl.textContent = online ? 'В сети' : 'Не в сети';
+          statusEl.className = 'fcStatus ' + (online ? 'on' : '');
+        }
+      });
+    }
+  }
+
+  function closeFriendChat() {
+    const panel = document.getElementById('friendChatPanel');
+    if(panel) panel.classList.remove('open');
+    _fcOpen = false;
+    if(_fcChatUnsub) { _fcChatUnsub(); _fcChatUnsub = null; }
+    _fcChatUid = null;
+  }
+
+  async function sendFriendMessage() {
+    const inp = document.getElementById('fcInput');
+    if(!inp || !inp.value.trim() || !_fcChatUid) return;
+    const txt = inp.value.trim();
+    inp.value = '';
+
+    const chatId = [ChesAuth.getUid(), _fcChatUid].sort().join('_');
+    if(!firebaseRtdb) return;
+    await firebaseRtdb.ref('friendChats/' + chatId).push({
+      by: ChesAuth.getUid(),
+      text: txt,
+      ts: Date.now()
+    });
+  }
+
+  // Bind friends panel
+  bind('friendsFloatBtn', async () => {
+    await ensureAuth();
+    toggleFriendsPanel();
+  });
+  bind('fpClose', () => {
+    const panel = document.getElementById('friendsPanel');
+    if(panel) panel.classList.remove('open');
+    _fpOpen = false;
+  });
+  bind('fpSearchBtn', async () => {
+    const inp = document.getElementById('fpSearchInput');
+    const box = document.getElementById('fpSearchResults');
+    if(!inp || !box) return;
+    const q = inp.value.trim();
+    if(q.length < 2) { box.innerHTML = ''; box.classList.remove('hasItems'); return; }
+
+    const results = await ChesFriends.search(q);
+    const myUid = ChesAuth.getUid();
+    const filtered = results.filter(r => r.uid !== myUid);
+    if(!filtered.length) { box.innerHTML = '<div class="fpEmpty">Ничего не найдено</div>'; box.classList.add('hasItems'); return; }
+
+    box.innerHTML = filtered.map(r =>
+      '<div class="fpItem" data-uid="' + r.uid + '">' +
+        '<div class="fpAva">' + r.ava + '</div>' +
+        '<div class="fpInfo"><div class="fpNm">' + r.name + '</div>' +
+        '<div class="fpSub">' + r.elo + ' эло</div></div>' +
+        '<div class="fpActions"><button class="fpAddBtn" data-uid="' + r.uid + '" data-name="' + r.name + '">+ Друг</button></div>' +
+      '</div>'
+    ).join('');
+    box.classList.add('hasItems');
+
+    box.querySelectorAll('.fpAddBtn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await ChesFriends.sendRequest(btn.dataset.uid);
+        toast('Заявка отправлена ' + btn.dataset.name);
+        btn.textContent = '✓ Отправлено';
+        btn.disabled = true;
+      });
+    });
+  });
+  bind('fcBack', closeFriendChat);
+  bind('fcClose', closeFriendChat);
+  bind('fcSend', sendFriendMessage);
+  const fcInp = document.getElementById('fcInput');
+  if(fcInp) fcInp.addEventListener('keydown', e => { if(e.key === 'Enter') sendFriendMessage(); });
+
+  // Hide friends panel on non-menu screens
+  const _origShowScreen = showScreen;
+  const _friendsPanelHide = () => {
+    const fp = document.getElementById('friendsPanel');
+    const fc = document.getElementById('friendChatPanel');
+    if(fp) fp.classList.remove('open');
+    if(fc) fc.classList.remove('open');
+    _fpOpen = false;
+    _fcOpen = false;
+  };
+
   bind('profBar', () => showScreen('scrProf'));
 
-  // Multiplayer menu
-  async function ensureAuth() {
-    if(!ChesAuth.user) {
-      try { await ChesAuth.loginAnon(); } catch(e) {}
+  // === Deco: random scatter pieces (stable positions) ===
+  (function initDecoScatter() {
+    const deco = document.getElementById('decoBg');
+    if(!deco) return;
+    const isMobile = window.innerWidth < 768 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    if(isMobile) { deco.style.display = 'none'; return; }
+    const spans = deco.querySelectorAll('span');
+    if(!spans.length) return;
+
+    const saved = JSON.parse(localStorage.getItem('chesher_deco_pos') || 'null');
+    const placed = saved || [];
+
+    spans.forEach((el, i) => {
+      const sz = 30 + Math.random() * 50;
+      el.style.fontSize = sz + 'px';
+      el.style.animationDelay = (Math.random() * 8).toFixed(1) + 's';
+      el.style.animationDuration = (6 + Math.random() * 6).toFixed(1) + 's';
+
+      if(saved && saved[i]) {
+        el.style.left = saved[i].x + '%';
+        el.style.top = saved[i].y + '%';
+      } else {
+        let x, y, tries = 0;
+        do {
+          x = Math.random() * 90;
+          y = Math.random() * 90;
+          tries++;
+        } while(tries < 50 && placed.some(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 10));
+        placed[i] = { x, y };
+        el.style.left = x + '%';
+        el.style.top = y + '%';
+      }
+    });
+
+    if(!saved) localStorage.setItem('chesher_deco_pos', JSON.stringify(placed));
+  })();
+
+  // === Deco gun random event ===
+  (function initDecoGuns() {
+    const deco = document.getElementById('decoBg');
+    if(!deco) return;
+    const spans = deco.querySelectorAll('span');
+    if(!spans.length) return;
+
+    function spawnGun() {
+      const piece = spans[Math.floor(Math.random() * spans.length)];
+      if(piece.querySelector('.gunOverlay')) return;
+
+      const dirLeft = Math.random() < 0.5;
+      const el = document.createElement('div');
+      el.className = 'gunOverlay';
+      el.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:1;opacity:0;';
+
+      const img = document.createElement('img');
+      img.src = dirLeft ? 'assets/Guns/guns_left.png' : 'assets/Guns/guns_right.png';
+      img.style.cssText = 'width:60px;height:auto;display:block;';
+      el.appendChild(img);
+
+      piece.style.position = 'relative';
+      piece.appendChild(el);
+
+      requestAnimationFrame(() => {
+        el.style.transition = 'none';
+        el.style.opacity = '1';
+        el.classList.add('decoGunSpin');
+      });
+      setTimeout(() => { el.remove(); }, 1100);
     }
-    ChesMP.setOnline();
-  }
-  bind('mpCreateBtn', () => {
+
+    setInterval(() => {
+      if(Math.random() < 0.75) spawnGun();
+    }, 5000);
+  })();
+
+  // Multiplayer menu
+  bind('mpCreateBtn', async () => {
+    await ensureAuth();
     showScreen('scrLobbySetup');
     renderLobbySetup();
   });
-  bind('lobbyConfirmBtn', () => { startLobbyFromSetup(); });
   bind('mpJoinBtn', async () => {
     const code = prompt('Введите код лобби:');
     if(!code) return;
     await ensureAuth();
     NetUI._joinByCode(code.trim());
   });
-  bind('mpFriendsBtn', () => {
-    if(!ChesAuth.user || ChesAuth.user.isAnonymous) {
-      toast('Войдите в аккаунт чтобы пригласить друзей');
-      showScreen('scrAuth');
-      return;
-    }
+  bind('mpFriendsBtn', async () => {
+    await ensureAuth();
     showScreen('scrFriends');
     NetUI._loadFriends();
   });
@@ -1980,16 +3267,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Game screen
   bind('btnNew', () => { askConfirm('Новая игра?', 'Текущая партия будет потеряна', () => { newGame(); hideAllScreens(); }); });
-  bind('btnGoMenu', () => { showScreen('scrMenu'); });
-  bind('btnSet', () => showScreen('scrSet'));
+  bind('btnGoMenu', () => { backToGame = false; showScreen('scrMenu'); });
+  bind('btnSet', () => { backToGame = !!(typeof S !== 'undefined' && S && !S.gameOver); showScreen('scrSet'); });
   bind('btnHint', () => showHint());
   bind('btnUndo', () => undoMove());
   bind('btnRes', () => resignGame());
   bind('btnDraw', () => offerDraw());
 
+  // Replay viewer
+  bind('rvBack', () => { rvIdx = 0; renderReplayBoard(rvFens[0]); });
+  bind('rvPrev', () => { if(rvIdx > 0) { rvIdx--; renderReplayBoard(rvFens[rvIdx]); } });
+  bind('rvNext', () => { if(rvIdx < rvFens.length - 1) { rvIdx++; renderReplayBoard(rvFens[rvIdx]); } });
+  bind('rvFwd', () => { rvIdx = rvFens.length - 1; renderReplayBoard(rvFens[rvIdx]); });
+
   // Game over overlay
-  bind('overNew', () => { closeAllOverlays(); newGame(); hideAllScreens(); });
-  bind('overMenu', () => { closeAllOverlays(); showScreen('scrMenu'); });
+  bind('overNew', () => { closeAllOverlays(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); newGame(); hideAllScreens(); });
+  bind('overRematch', () => { requestRematchGame(); });
+  bind('overMenu', () => { backToGame = false; closeAllOverlays(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); showScreen('scrMenu'); });
 
   // Settings
   bind('setApply', () => { saveCfg(); newGame(); hideAllScreens(); });
@@ -2022,36 +3316,6 @@ document.addEventListener('DOMContentLoaded', () => {
     hideAllScreens();
   });
 
-  // Profile
-  bind('npCreate', () => {
-    const inp = document.getElementById('npName');
-    const name = inp ? inp.value.trim() : '';
-    if(!name) { toast('Введите имя'); return; }
-    const selectedAva = document.querySelector('#emoGrid .emo.sel');
-    const avaIdx = selectedAva ? parseInt(selectedAva.dataset.idx) : Math.floor(Math.random() * DEFAULT_AVATARS.length);
-    ProfilesManager.newProfile(name, avaIdx);
-    renderProfScr();
-    renderProfBar();
-    if(inp) inp.value = '';
-    toast('Профиль создан');
-  });
-
-  // Avatar grid
-  const emoGrid = document.getElementById('emoGrid');
-  if(emoGrid) {
-    DEFAULT_AVATARS.forEach((ava, i) => {
-      const d = document.createElement('div');
-      d.className = 'emo' + (i === 0 ? ' sel' : '');
-      d.textContent = ava;
-      d.dataset.idx = i;
-      d.addEventListener('click', () => {
-        emoGrid.querySelectorAll('.emo').forEach(e => e.classList.remove('sel'));
-        d.classList.add('sel');
-      });
-      emoGrid.appendChild(d);
-    });
-  }
-
   // Chat
   bind('chatSend', () => { if(window.Chat) Chat.sendChat(); });
   const chatInp = document.getElementById('chatInput');
@@ -2062,6 +3326,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Back buttons
   document.querySelectorAll('[data-back]').forEach(b => {
     b.addEventListener('click', () => {
+      if(backToGame) {
+        backToGame = false;
+        hideAllScreens();
+        return;
+      }
       const currentScreen = document.querySelector('.screen.show');
       if(currentScreen && currentScreen.id === 'scrBots') {
         showScreen('scrModes');
@@ -2074,6 +3343,7 @@ document.addEventListener('DOMContentLoaded', () => {
           showScreen('scrMenu');
         }
       }
+      renderProfBar();
     });
   });
 
@@ -2084,6 +3354,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('version.json?t=' + Date.now());
       DEVLOG = await res.json();
+      if(DEVLOG.length) {
+        updateMenuVersion();
+      }
     } catch(e) {
       DEVLOG = [];
     }
@@ -2094,7 +3367,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!wrap) return;
     if(!DEVLOG.length) {
       wrap.innerHTML = '<div style="text-align:center;color:var(--mut);padding:40px">Загрузка...</div>';
-      loadDevlog().then(() => renderDevblog());
+      loadDevlog().then(() => {
+        renderDevblog();
+        updateMenuVersion();
+      });
       return;
     }
     wrap.innerHTML = '';
@@ -2110,12 +3386,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function updateMenuVersion() {
+    const foot = document.querySelector('#scrMenu .menuFoot');
+    if(foot && DEVLOG.length) {
+      foot.textContent = 'CHESHER ' + DEVLOG[0].ver + ' alpha';
+    }
+  }
+
   const devblogBtn = document.getElementById('devblogBtn');
   if(devblogBtn) {
     devblogBtn.addEventListener('click', () => {
       snd.ui();
       renderDevblog();
       showScreen('scrDevblog');
+    });
+  }
+
+  // Feedback button
+  const feedbackBtn = document.getElementById('feedbackBtn');
+  if(feedbackBtn) {
+    feedbackBtn.addEventListener('click', () => {
+      snd.ui();
+      openOv('ovFeedback');
+      const fbStatus = document.getElementById('feedbackStatus');
+      if(fbStatus) fbStatus.textContent = '';
+      const fbText = document.getElementById('feedbackText');
+      if(fbText) fbText.value = '';
+    });
+  }
+
+  // Mobile settings: devblog + feedback (reuse top button actions)
+  const devblogBtnMob = document.getElementById('devblogBtnMob');
+  if(devblogBtnMob) {
+    devblogBtnMob.addEventListener('click', () => {
+      snd.ui();
+      renderDevblog();
+      showScreen('scrDevblog');
+    });
+  }
+  const feedbackBtnMob = document.getElementById('feedbackBtnMob');
+  if(feedbackBtnMob) {
+    feedbackBtnMob.addEventListener('click', () => {
+      snd.ui();
+      openOv('ovFeedback');
+      const fbStatus = document.getElementById('feedbackStatus');
+      if(fbStatus) fbStatus.textContent = '';
+      const fbText = document.getElementById('feedbackText');
+      if(fbText) fbText.value = '';
+    });
+  }
+  const feedbackSend = document.getElementById('feedbackSend');  if(feedbackSend) {
+    feedbackSend.addEventListener('click', () => {
+      const fbText = document.getElementById('feedbackText');
+      const fbStatus = document.getElementById('feedbackStatus');
+      const text = fbText ? fbText.value.trim() : '';
+      if(!text) { toast('Напишите вашу идею'); return; }
+      if(text.length < 5) { toast('Минимум 5 символов'); return; }
+      const user = ChesAuth && ChesAuth.user ? ChesAuth.user : null;
+      const name = user && !user.isAnonymous ? (ChesAuth.profile ? ChesAuth.profile.name : 'Игрок') : 'Гость';
+      const playerId = user && !user.isAnonymous ? (ChesAuth.profile ? ChesAuth.profile.playerId : '') : (ChesAuth.guestPlayerId || '');
+      if(typeof firebaseRtdb !== 'undefined' && firebaseRtdb) {
+        firebaseRtdb.ref('feedback').push({
+          name: name,
+          playerId: playerId,
+          text: text,
+          ts: Date.now()
+        }).then(() => {
+          if(fbStatus) fbStatus.textContent = 'Спасибо за идею! 🎉';
+          if(fbText) fbText.value = '';
+          setTimeout(() => { closeOv('ovFeedback'); }, 1500);
+        }).catch(e => {
+          console.error('Feedback error:', e);
+          toast('Ошибка отправки');
+        });
+      } else {
+        if(fbStatus) fbStatus.textContent = 'Спасибо за идею! 🎉';
+        if(fbText) fbText.value = '';
+        setTimeout(() => { closeOv('ovFeedback'); }, 1500);
+      }
     });
   }
 
@@ -2159,8 +3507,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if(initFirebase()) {
       ChesAuth.init();
       NetUI.init();
+      ChesAuth.onAuthChange(() => { if(typeof updateGiftBtn === 'function') updateGiftBtn(); });
     }
   }
 
-  console.log('CHESHER v0.18.0 alpha — инициализация завершена');
+  // Show auth screen on first visit
+  const hasVisited = localStorage.getItem('chesher_visited');
+  if(!hasVisited && ChesAuth && !ChesAuth.user) {
+    localStorage.setItem('chesher_visited', '1');
+    showScreen('scrAuth');
+  }
+
+  console.log('CHESHER ' + (DEVLOG.length ? DEVLOG[0].ver : 'init') + ' alpha — инициализация завершена');
 });

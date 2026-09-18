@@ -264,7 +264,7 @@ const STICKERS = {
 
 /* --- Аватарки --- */
 const AVATARS = {
-  default: {name: 'Стандарт', price: 0, emoji: '🐣'},
+  default: {name: 'Стандарт', price: 0, emoji: '👽'},
   cat: {name: 'Кот', price: 80, emoji: '🐱'},
   dog: {name: 'Собака', price: 80, emoji: '🐶'},
   lion: {name: 'Лев', price: 120, emoji: '🦁'},
@@ -358,6 +358,29 @@ const Store = {
     const profile = Store.getCurrentProfile();
     const owned = profile ? profile.owned : ['classic'];
     grid.innerHTML = '';
+    const note = document.querySelector('#scrShop .note');
+
+    if(cfg.shopTab === 'videos') {
+      if(note) note.textContent = 'Все видео-мемы: не проигрываются автоматически. Нажми на видео, чтобы открыть его крупнее и со звуком. Клик за границами видео — вернуть как было.';
+      if(typeof AVAILABLE_VIDEOS !== 'undefined') {
+        AVAILABLE_VIDEOS.forEach(v => {
+          const card = document.createElement('div');
+          card.className = 'shopItem memVidItem';
+          card.dataset.id = v.file;
+          card.innerHTML =
+            '<div class="shopItemPreview vidPrev">' +
+              '<video loop muted playsinline preload="metadata" src="' + v.file + '#t=0.001"></video>' +
+              '<span class="vidPlayBadge">▶</span>' +
+            '</div>' +
+            '<div class="shopItemName">' + v.name + '</div>';
+          grid.appendChild(card);
+        });
+      }
+      Store.initShopClicks();
+      return;
+    }
+
+    if(note) note.textContent = 'Скины меняют вид фигур на доске. Монеты 🪙 дают победы (+10), ничьи (+3), серии и ежедневный вход (+25). Кристаллы 💎 — премиальная валюта, даётся за каждую 3-ю победу.';
 
     if(cfg.shopTab === 'skins') {
       Object.keys(SKINS).forEach(id => {
@@ -448,11 +471,19 @@ const Store = {
         const tab = e.target.closest('.shopTab');
         if(!tab) return;
         snd.ui();
+        if(Store.videoOverlay) Store.closeVideoPreview();
         Store.renderShop(tab.dataset.tab);
       };
     }
     
     grid.onclick = function(e) {
+      const vidItem = e.target.closest('.memVidItem');
+      if(vidItem) {
+        const video = vidItem.querySelector('video');
+        if(video) Store.openVideoPreview(vidItem, video);
+        return;
+      }
+
       const btn = e.target.closest('.buyBtn');
       if(!btn) return;
       
@@ -553,6 +584,61 @@ const Store = {
     };
   },
 
+  /* --- Превью видео-мема (открыть крупно со звуком) --- */
+  videoOverlay: null,
+  videoOrigin: null,
+
+  openVideoPreview(card, video) {
+    if(Store.videoOverlay) Store.closeVideoPreview();
+    Store.videoOrigin = card;
+
+    const dim = document.createElement('div');
+    dim.className = 'vidExpandedDim';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'vidExpandedWrap';
+    wrap.appendChild(video);
+    dim.appendChild(wrap);
+
+    document.body.appendChild(dim);
+    Store.videoOverlay = dim;
+    video.muted = false;
+    video.play().catch(() => {});
+
+    wrap.addEventListener('click', e => {
+      e.stopPropagation();
+      if(video.paused) {
+        video.play().catch(() => {});
+        wrap.classList.remove('paused');
+      } else {
+        video.pause();
+        wrap.classList.add('paused');
+      }
+    });
+
+    dim.addEventListener('click', e => {
+      if(e.target === dim) Store.closeVideoPreview();
+    });
+  },
+
+  closeVideoPreview() {
+    const dim = Store.videoOverlay;
+    if(!dim) return;
+    const video = dim.querySelector('video');
+    if(video) {
+      video.pause();
+      video.muted = true;
+      video.currentTime = 0;
+      if(Store.videoOrigin && document.contains(Store.videoOrigin)) {
+        const prev = Store.videoOrigin.querySelector('.vidPrev');
+        if(prev) prev.appendChild(video);
+      }
+    }
+    dim.remove();
+    Store.videoOverlay = null;
+    Store.videoOrigin = null;
+  },
+
   /* --- Проверка достижений --- */
   checkAchievements() {
     const profile = Store.getCurrentProfile();
@@ -576,6 +662,9 @@ const Store = {
   dailyBonus() {
     const profile = Store.getCurrentProfile();
     if(!profile) return false;
+    
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    if(isGuest) return false;
     
     const today = new Date().toISOString().split('T')[0];
     if(profile.lastBonus === today) return false;

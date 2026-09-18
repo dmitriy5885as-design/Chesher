@@ -3,6 +3,10 @@ const { test, expect } = require('@playwright/test');
 test.describe('CHESHER — Критические пути', () => {
 
   test.beforeEach(async ({ page }) => {
+    // Имитируем «возвращающегося» игрока — минуем экран авторизации при первом визите
+    await page.addInitScript(() => {
+      try { localStorage.setItem('chesher_visited', '1'); } catch(e) {}
+    });
     await page.goto('/');
     await page.waitForTimeout(1500);
   });
@@ -14,7 +18,7 @@ test.describe('CHESHER — Критические пути', () => {
     await expect(page.locator('#mPlay')).toBeVisible();
     await expect(page.locator('#mModes')).toBeVisible();
     await expect(page.locator('#mShop')).toBeVisible();
-    await expect(page.locator('#mFriends')).toBeVisible();
+    await expect(page.locator('#friendsFloatBtn')).toBeVisible();
   });
 
   // ===================== 2. Режимы =====================
@@ -34,8 +38,8 @@ test.describe('CHESHER — Критические пути', () => {
     await page.click('#mModes');
     await page.waitForTimeout(500);
 
-    // Кликаем «Против бота»
-    await page.click('.modeCard:has-text("Против бота")');
+    // Кликаем «Против бота» (точное совпадение, чтобы не задеть «Классику»)
+    await page.locator('.modeCard').filter({ has: page.locator('.nm', { hasText: /^Против бота$/ }) }).click();
     await page.waitForTimeout(1000);
 
     // Должен появиться экран выбора бота
@@ -59,7 +63,7 @@ test.describe('CHESHER — Критические пути', () => {
     const tabs = page.locator('#shopTabs .shopTab');
     await expect(tabs.first()).toBeVisible();
     const tabCount = await tabs.count();
-    expect(tabCount).toBe(5);
+    expect(tabCount).toBe(6);
 
     // Кликаем «Доски»
     await page.click('#shopTabs .shopTab[data-tab="boards"]');
@@ -81,7 +85,7 @@ test.describe('CHESHER — Критические пути', () => {
     const profTabs = page.locator('#profTabs .shopTab');
     await expect(profTabs.first()).toBeVisible();
     const count = await profTabs.count();
-    expect(count).toBe(3);
+    expect(count).toBe(4);
 
     // Кликаем «История»
     await page.click('#profTabs .shopTab[data-tab="history"]');
@@ -143,6 +147,33 @@ test.describe('CHESHER — Критические пути', () => {
     await page.click('#scrModes .backBtn');
     await page.waitForTimeout(300);
     await expect(page.locator('#scrMenu')).toBeVisible();
+  });
+
+  // ===================== 10. Оверлей конца партии =====================
+  test('Оверлей конца партии: кнопки включая скрытый реванш', async ({ page }) => {
+    await expect(page.locator('#ovOver')).toBeAttached();
+    // Кнопка «Новая партия» и меню всегда в DOM
+    await expect(page.locator('#overNew')).toBeAttached();
+    await expect(page.locator('#overMenu')).toBeAttached();
+    // Реванш доступен только для сетевых игр — по умолчанию скрыт
+    await expect(page.locator('#overRematch')).toBeHidden();
+  });
+
+  // ===================== 11. QR-код лобби =====================
+  test('Лобби: отображаются QR-код и короткий код', async ({ page }) => {
+    await page.evaluate(() => {
+      ChesMP.lobbyCode = 'ABC234';
+      showScreen('scrLobby');
+      NetUI._showLobby('ABC234', 'Ожидание соперника...');
+    });
+
+    await expect(page.locator('#scrLobby')).toBeVisible();
+    await expect(page.locator('#lobbyQr')).toBeVisible();
+    await expect(page.locator('#lobbyIdText')).toHaveText('ABC234');
+    await expect(page.locator('#lobbyCopyLink')).toBeVisible();
+
+    const src = await page.locator('#lobbyQrImg').getAttribute('src');
+    expect(src).toContain('lobby%3DABC234');
   });
 
 });

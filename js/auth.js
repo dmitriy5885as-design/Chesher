@@ -8,12 +8,21 @@ const ChesAuth = {
   user: null,
   profile: null,
   listeners: [],
+  guestPlayerId: null,
 
   /* --- Генерация уникального ID игрока --- */
   _genPlayerId() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let id = 'CHS-';
     for(let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+    return id;
+  },
+
+  /* --- Генерация гостевого ID --- */
+  _genGuestPlayerId() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let id = 'CHSg-';
+    for(let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
     return id;
   },
 
@@ -56,6 +65,7 @@ const ChesAuth = {
   async register(email, password, name) {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.createUserWithEmailAndPassword(email, password);
+    this.user = cred.user;
     await cred.user.updateProfile({ displayName: name });
     await this._createProfile(cred.user.uid, name);
     return cred.user;
@@ -65,7 +75,14 @@ const ChesAuth = {
   async login(email, password) {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.signInWithEmailAndPassword(email, password);
+    this.user = cred.user;
     return cred.user;
+  },
+
+  /* --- Сброс пароля (письмо на email) --- */
+  async resetPassword(email) {
+    if(!firebaseAuth) throw new Error('Firebase not initialized');
+    await firebaseAuth.sendPasswordResetEmail(email.trim());
   },
 
   /* --- Вход через Google --- */
@@ -73,6 +90,7 @@ const ChesAuth = {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const provider = new firebase.auth.GoogleAuthProvider();
     const cred = await firebaseAuth.signInWithPopup(provider);
+    this.user = cred.user;
     if(cred.additionalUserInfo && cred.additionalUserInfo.isNewUser) {
       const allUsers = await firebaseDB.collection('users').limit(1).get();
       const isFirst = allUsers.empty;
@@ -88,11 +106,16 @@ const ChesAuth = {
   async loginAnon() {
     if(!firebaseAuth) throw new Error('Firebase not initialized');
     const cred = await firebaseAuth.signInAnonymously();
-    const allUsers = await firebaseDB.collection('users').limit(1).get();
-    const isFirst = allUsers.empty;
-    await this._createProfile(cred.user.uid, 'Аноним #' + Math.floor(Math.random() * 9999));
-    if(isFirst) {
-      await firebaseDB.collection('users').doc(cred.user.uid).update({ admin: true });
+    this.user = cred.user;
+    try {
+      const allUsers = await firebaseDB.collection('users').limit(1).get();
+      const isFirst = allUsers.empty;
+      await this._createProfile(cred.user.uid, 'Аноним #' + Math.floor(Math.random() * 9999));
+      if(isFirst) {
+        await firebaseDB.collection('users').doc(cred.user.uid).update({ admin: true });
+      }
+    } catch(e) {
+      console.warn('Firestore profile create skipped:', e.message);
     }
     return cred.user;
   },
@@ -101,6 +124,8 @@ const ChesAuth = {
   async logout() {
     if(!firebaseAuth) return;
     await firebaseAuth.signOut();
+    this.user = null;
+    this.profile = null;
   },
 
   /* --- Получить UID --- */
@@ -121,11 +146,11 @@ const ChesAuth = {
       const playerId = isAnon ? null : await this._createUniquePlayerId();
       const data = {
         name: name,
-        ava: '🐣',
+        ava: '👽',
         coins: 50,
         gems: 0,
         elo: 0,
-        ratings: { classic: 0, bot: 0, fischer: 0, meme: 0 },
+        ratings: { classic: 0, bot: 0, fischer: 0, meme: 0, ranked: 0 },
         friends: [],
         friendRequests: [],
         owned: ['classic', 'board_classic'],
@@ -180,7 +205,7 @@ const ChesAuth = {
       coins: localProfile.coins || 0,
       gems: localProfile.gems || 0,
       elo: localProfile.elo || 0,
-      ratings: localProfile.ratings || { classic: 0, bot: 0, fischer: 0, meme: 0 },
+      ratings: localProfile.ratings || { classic: 0, bot: 0, fischer: 0, meme: 0, ranked: 0 },
       friends: localProfile.friends || [],
       friendRequests: localProfile.friendRequests || [],
       owned: localProfile.owned || ['classic'],

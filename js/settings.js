@@ -7,6 +7,7 @@
 /* --- Объект настроек --- */
 const cfg = {
   timeSec: 0,
+  timeInc: 0,
   bot: 'medium',
   variant: 'classic',
   human: 'w',
@@ -18,17 +19,19 @@ const cfg = {
   skin: 'classic',
   board: 'classic',
   shopTab: 'skins',
-  gameMode: 'classic' // classic | bot | fischer | meme
+  gameMode: 'classic' // classic | bot | fischer | meme | local | ranked | multiplayer
 };
 
 /* --- Режимы игры --- */
 const MODES = [
-  {id: 'meme', icon: '🔫', name: 'Мемасия', desc: 'Шахматы, но есть нюансы...'},
-  {id: 'classic', icon: '♟', name: 'Классика', desc: 'Стандартные шахматы против игрока'},
-  {id: 'bot', icon: '🤖', name: 'Против бота', desc: 'Игра против ИИ'},
-  {id: 'fischer', icon: '🎲', name: 'Фишер 960', desc: 'Случайная расстановка фигур'},
+  {id: 'classic', icon: '♟', name: 'Классика', desc: 'Стандартные шахматы против бота'},
+  {id: 'ranked', icon: '🏆', name: 'Рейтинговая', desc: 'Игра за ELO рейтинг'},
   {id: 'multiplayer', icon: '🌐', name: 'По сети', desc: 'Игра с другом онлайн'},
-  {id: 'tournament', icon: '🏆', name: 'Турнир', desc: 'Скоро...', soon: true}
+  {id: 'meme', icon: '🔫', name: 'Мемасия', desc: 'Шахматы, но есть нюансы... «ВАМ ПОНРАВИТСЯ»'},
+  {id: 'bot', icon: '🤖', name: 'Против бота', desc: 'Классическая игра против компьютера'},
+  {id: 'local', icon: '👥', name: 'На одном ПК', desc: 'Два игрока за одним компьютером'},
+  {id: 'fischer', icon: '🎲', name: 'Фишер 960', desc: 'Случайная расстановка фигур'},
+  {id: 'tournament', icon: '🏅', name: 'Турнир', desc: 'Скоро...', soon: true}
 ];
 
 /* --- Звук через Web Audio API --- */
@@ -174,6 +177,7 @@ function buildSndSliders() {
     lbl.textContent = label;
     const sw = document.createElement('label');
     sw.className = 'toggle';
+    sw.style.marginLeft = 'auto';
     const inp = document.createElement('input');
     inp.type = 'checkbox';
     inp.checked = cfg[key];
@@ -620,22 +624,27 @@ function buildMemeSegInner(box, group) {
 function buildMemeSeg() {
   var box = document.getElementById('memeOpts');
   var group = document.getElementById('memeCfgGroup');
+  var title = document.getElementById('modeSetTitle');
   if(!box || !group) return function() {};
 
   var isMeme = cfg.gameMode === 'meme' || cfg.modeId === 'meme';
   if(!isMeme) {
     group.style.display = 'none';
+    if(title) title.style.display = 'none';
     return function() {};
   }
   group.style.display = '';
+  if(title) title.style.display = '';
   buildMemeSegInner(box, group);
 
   return function() {
     var isMeme = cfg.gameMode === 'meme' || cfg.modeId === 'meme';
     if(!isMeme) {
       group.style.display = 'none';
+      if(title) title.style.display = 'none';
     } else {
       group.style.display = '';
+      if(title) title.style.display = '';
     }
   };
 }
@@ -646,36 +655,6 @@ function buildMemeModesSeg() {
   if(!box || !group) return;
   group.style.display = '';
   buildMemeSegInner(box, group);
-}
-
-/* --- Информация о текущем боте --- */
-function buildBotInfo() {
-  const el = document.getElementById('setBotInfo');
-  if(!el) return;
-  
-  const cu = ProfilesManager.getCurrent();
-  const botId = cu ? (cu.botId || 1) : 1;
-  const bot = BOT_LIST.find(b => b.id === botId);
-  
-  if(cfg.bot === 'off') {
-    el.innerHTML = '<div class="setBotRow">' +
-      '<span class="setBotEmoji">👥</span>' +
-      '<div class="setBotText"><b>Игра на двоих</b><br><small>Без компьютерного соперника</small></div>' +
-    '</div>';
-  } else if(bot) {
-    const leagueColors = {'Начинающие':'#4caf50','Любители':'#2196f3','Опытные':'#ff9800','Мастера':'#f44336'};
-    const lColor = leagueColors[bot.league] || '#888';
-    el.innerHTML = '<div class="setBotRow">' +
-      '<span class="setBotEmoji">' + bot.emoji + '</span>' +
-      '<div class="setBotText"><b>' + bot.name + '</b><br>' +
-      '<small style="color:' + lColor + '">' + bot.league + ' · ' + bot.rating + ' Эло</small></div>' +
-    '</div>';
-  } else {
-    el.innerHTML = '<div class="setBotRow">' +
-      '<span class="setBotEmoji">🤖</span>' +
-      '<div class="setBotText"><b>Бот</b><br><small>Выберите соперника</small></div>' +
-    '</div>';
-  }
 }
 
 /* --- Секция скина фигур --- */
@@ -750,22 +729,8 @@ function repaintAllSegs() {
 
 /* --- Построение всего экрана настроек --- */
 function buildSettings() {
-  buildBotInfo();
   buildSndSliders();
-  buildThemeSeg();
-  repaintSkin = buildSkinSeg();
   repaintMeme = buildMemeSeg();
-  
-  // Кнопка выбора бота
-  const btnBot = document.getElementById('btnChangeBot');
-  if(btnBot) {
-    btnBot.onclick = () => {
-      const cu = ProfilesManager.getCurrent();
-      const elo = cu ? (cu.elo || 0) : 0;
-      showScreen('scrBots');
-      try { renderBotsScreen(elo); } catch(e) {}
-    };
-  }
 }
 
 /* --- Сохранение конфига --- */
@@ -773,6 +738,7 @@ function saveCfg() {
   try {
     localStorage.setItem('chesher_cfg', JSON.stringify({
       timeSec: cfg.timeSec,
+      timeInc: cfg.timeInc,
       bot: cfg.bot,
       variant: cfg.variant,
       human: cfg.human,
@@ -803,7 +769,12 @@ function resetAllData() {
     localStorage.removeItem('chesher_profiles');
     localStorage.removeItem('chesher_cfg');
     localStorage.removeItem('chesher_save');
-    location.reload();
+    localStorage.removeItem('chesher_guest_id');
+    if(ChesAuth && typeof ChesAuth.logout === 'function') {
+      ChesAuth.logout().then(() => location.reload());
+    } else {
+      location.reload();
+    }
   }
 }
 

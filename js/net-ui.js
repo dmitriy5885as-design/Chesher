@@ -12,6 +12,7 @@ const NetUI = {
     this._initFriends();
     this._initLobby();
     this._checkAuth();
+    this._handleJoinLink();
   },
 
   /* ==================== АВТОРИЗАЦИЯ ==================== */
@@ -20,7 +21,17 @@ const NetUI = {
     const loginBtn = document.getElementById('authLoginBtn');
     const googleBtn = document.getElementById('authGoogleBtn');
     const anonBtn = document.getElementById('authAnonBtn');
+    const resetBtn = document.getElementById('authResetBtn');
     const skipBtn = document.getElementById('authSkipBtn');
+
+    if(resetBtn) resetBtn.onclick = async () => {
+      const email = document.getElementById('authEmail').value.trim();
+      if(!email) { toast('Введите email в поле выше'); return; }
+      try {
+        await ChesAuth.resetPassword(email);
+        toast('Ссылка для сброса отправлена на ' + email);
+      } catch(e) { toast('Ошибка: ' + e.message); }
+    };
 
     if(regBtn) regBtn.onclick = async () => {
       const name = document.getElementById('authName').value.trim();
@@ -113,9 +124,17 @@ const NetUI = {
     if(ChesAuth.profile.playerId) {
       cu.playerId = ChesAuth.profile.playerId;
     } else if(!cu.playerId && ChesAuth.user && !ChesAuth.user.isAnonymous) {
-      // Generate playerId for existing users who don't have one
       cu.playerId = ChesAuth._genPlayerId();
       ChesAuth.updateProfile({ playerId: cu.playerId });
+    }
+    if(ChesAuth.profile.admin) {
+      cu.admin = true;
+    }
+    if(ChesAuth.profile.wins) {
+      cu.st.wins = ChesAuth.profile.wins;
+    }
+    if(ChesAuth.profile.games) {
+      cu.st.games = ChesAuth.profile.games;
     }
     saveProfiles();
     renderProfBar();
@@ -134,12 +153,17 @@ const NetUI = {
         if(cu.customAva) {
           pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
         } else {
-          pbAva.textContent = cu.ava || '🐣';
+          pbAva.textContent = cu.ava || '👽';
         }
       }
       if(pbSub) pbSub.textContent = 'Онлайн';
       if(mAuthBtn) mAuthBtn.style.display = 'none';
     } else {
+      const cu = ProfilesManager.getCurrent();
+      const gName = (cu && cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
+      if(pbName) pbName.textContent = gName;
+      if(pbAva) pbAva.textContent = (cu && cu.ava) ? cu.ava : '👽';
+      if(pbSub) pbSub.textContent = '';
       if(mAuthBtn) mAuthBtn.style.display = '';
     }
   },
@@ -257,7 +281,10 @@ const NetUI = {
   },
 
   async _inviteAndCreate(friendUid) {
-    if(!ChesAuth.user) { showScreen('scrAuth'); return; }
+    if(!ChesAuth.user) {
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('inviteAndCreate auth error:', e); }
+    }
+    if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
     const lobbyId = await ChesMP.createLobby();
     if(!lobbyId) { toast('Ошибка создания лобби'); return; }
 
@@ -280,23 +307,30 @@ const NetUI = {
 
     // Listen for game end
     ChesMP.onEnd((winner, reason) => {
+      if(winner === 'draw') {
+        this._onMultiplayerEnd('draw', reason);
+        return;
+      }
       const result = winner === ChesMP.myColor ? 'win' : 'loss';
       this._onMultiplayerEnd(result, reason);
     });
+    ChesMP._listenGame();
 
     // Send invite
-    await ChesFriends.inviteFriend(friendUid);
+    await ChesMP.inviteFriend(friendUid, lobbyId);
     showScreen('scrLobby');
     toast('Приглашение отправлено!');
   },
 
-  async _joinByCode(code) {
-    if(!ChesAuth.user) { showScreen('scrAuth'); return; }
-    const ok = await ChesMP.joinLobby(code);
-    if(!ok) { toast('Лобби не найдено или уже занято'); return; }
+  /* --- Принять приглашение друга --- */
+  async acceptInvite(inv) {
+    if(!inv || !inv.lobbyId) { toast('Приглашение без лобби'); return; }
+    if(!ChesAuth.user) {
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('acceptInvite auth error:', e); }
+    }
+    if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
 
-    this._showLobby(code, 'Игра началась!');
-
+    // Register handlers BEFORE listening, so start/move/end events can't be missed
     ChesMP.onStart(opponent => {
       this._startMultiplayerGame();
     });
@@ -304,11 +338,95 @@ const NetUI = {
       this._onOpponentMove(move);
     });
     ChesMP.onEnd((winner, reason) => {
+      if(winner === 'draw') {
+        this._onMultiplayerEnd('draw', reason);
+        return;
+      }
       const result = winner === ChesMP.myColor ? 'win' : 'loss';
       this._onMultiplayerEnd(result, reason);
     });
 
+    const ok = await ChesMP.acceptInvite(inv);
+    if(!ok) { toast('Лобби не найдено или уже занято'); return; }
+
+    this._showLobby(inv.lobbyId, 'Подключено! Готовьтесь...');
+
     showScreen('scrLobby');
+  },
+
+  /* --- Присоединиться по коду/ссылке --- */
+  async _joinByCode(code) {
+    const c = String(code || '').trim().toUpperCase();
+    if(!c) return;
+    if(!ChesAuth.user) {
+      try { await ChesAuth.loginAnon(); } catch(e) { console.error('joinByCode auth error:', e); }
+    }
+    if(!ChesAuth.user) { toast('Нужна авторизация'); return; }
+
+    // Register handlers BEFORE listening, so start/move/end events can't be missed
+    ChesMP.onStart(opponent => {
+      this._startMultiplayerGame();
+    });
+    ChesMP.onMove(move => {
+      this._onOpponentMove(move);
+    });
+    ChesMP.onEnd((winner, reason) => {
+      if(winner === 'draw') {
+        this._onMultiplayerEnd('draw', reason);
+        return;
+      }
+      const result = winner === ChesMP.myColor ? 'win' : 'loss';
+      this._onMultiplayerEnd(result, reason);
+    });
+
+    const ok = await ChesMP.joinLobby(c);
+    if(!ok) { toast('Лобби не найдено или уже занято'); return; }
+
+    this._showLobby(c, 'Подключено! Готовьтесь...');
+
+    showScreen('scrLobby');
+  },
+
+  /* --- Ссылка для подключения к лобби по QR --- */
+  _lobbyLink(code) {
+    return 'https://dmitriy5885as-design.github.io/Chesher/#lobby=' + encodeURIComponent(String(code || '').toUpperCase());
+  },
+
+  /* --- Подождать восстановления сессии перед авто-подключением --- */
+  async _awaitAuth(maxMs) {
+    if(ChesAuth.user) return ChesAuth.user;
+    const deadline = Date.now() + (maxMs || 2000);
+    while(Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 150));
+      if(ChesAuth.user) return ChesAuth.user;
+    }
+    return ChesAuth.user;
+  },
+
+  /* --- Автоподключение по QR-ссылке (#lobby=КОД) --- */
+  async _handleJoinLink() {
+    const m = location.hash.match(/(?:#|&)lobby=([A-Za-z0-9]+)/i);
+    if(!m || !m[1]) return;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
+    await this._awaitAuth(2000);
+    await this._joinByCode(m[1]);
+  },
+
+  /* --- Показать QR-код лобби (по коду) --- */
+  _renderLobbyQR(code) {
+    const box = document.getElementById('lobbyQr');
+    if(!box) return;
+    if(!code || !/^[A-Z2-9]{6}$/.test(code)) { box.style.display = 'none'; return; }
+    const link = this._lobbyLink(code);
+    const img = document.getElementById('lobbyQrImg');
+    if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' + encodeURIComponent(link);
+    const copyBtn = document.getElementById('lobbyCopyLink');
+    if(copyBtn) {
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(link).then(() => toast('Ссылка на лобби скопирована!')).catch(() => {});
+      };
+    }
+    box.style.display = '';
   },
 
   _showLobby(lobbyId, status) {
@@ -318,33 +436,111 @@ const NetUI = {
     const actionsEl = document.getElementById('lobbyActions');
     const playersEl = document.getElementById('lobbyPlayers');
 
-    const modeNames = {classic:'♟ Классика',fischer:'🎲 Фишер 960',meme:'🔫 Мемасия'};
-    const timeNames = {120:'⚡ 2 мин',300:'🔥 5 мин',600:'🎯 10 мин',1800:'♔ 30 мин',0:'∞ Без лимита'};
-    const _ls = this._lobbySettings;
-    const modeLabel = _ls && _ls.mode ? (modeNames[_ls.mode] || _ls.mode) : '';
-    const timeLabel = _ls && _ls.timeSec != null ? (timeNames[_ls.timeSec] || _ls.timeSec + ' сек') : '';
-    const settingsInfo = (modeLabel || timeLabel) ?
-      '<div style="color:var(--mut);font-size:12px;margin-top:4px">' + modeLabel + (modeLabel && timeLabel ? ' · ' : '') + timeLabel + '</div>' : '';
+    const hasCode = !!(ChesMP.lobbyCode && /^[A-Z2-9]{6}$/.test(ChesMP.lobbyCode));
+    const code = hasCode ? ChesMP.lobbyCode : lobbyId;
 
     if(statusEl) statusEl.textContent = status;
-    if(codeEl) codeEl.style.display = '';
+    if(codeEl) codeEl.style.display = hasCode ? '' : 'none';
     if(idText) {
-      idText.textContent = lobbyId;
+      idText.textContent = code;
       idText.onclick = () => {
-        navigator.clipboard.writeText(lobbyId).then(() => toast('Код скопирован!'));
+        navigator.clipboard.writeText(code).then(() => toast('Код скопирован!')).catch(() => {});
       };
     }
+    this._renderLobbyQR(hasCode ? ChesMP.lobbyCode : null);
+
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
+    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
+    const myPid = isGuest ?
+      (ChesAuth.guestPlayerId ? '#' + ChesAuth.guestPlayerId : '') :
+      ((ChesAuth.profile && ChesAuth.profile.playerId) ? '#' + ChesAuth.profile.playerId : '');
+
     if(playersEl) {
-      const myPid = (ChesAuth.profile && ChesAuth.profile.playerId) ? '  #' + ChesAuth.profile.playerId : '';
       playersEl.innerHTML =
-        '<div style="text-align:center"><div style="font-size:32px">' + (ChesAuth.profile ? ChesAuth.profile.ava : '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + (ChesAuth.profile ? ChesAuth.profile.name : 'Вы') + myPid + '</div></div>' +
-        settingsInfo +
+        '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + myPid + '</div>' : '') + '</div>' +
         '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
         '<div style="text-align:center;color:var(--mut)"><div style="font-size:32px">❓</div><div style="font-size:12px">Ожидание...</div></div>';
     }
     if(actionsEl) {
       actionsEl.innerHTML =
+        '<div style="color:var(--mut);font-size:13px;text-align:center;margin-bottom:8px">Поделитесь кодом с другом</div>' +
         '<button class="mBtn" onclick="NetUI._showJoinInput()" style="width:100%">Ввести код лобби</button>';
+    }
+
+    // Listen for lobby updates (guest joining, ready status)
+    const self = this;
+    ChesMP.onLobbyUpdate(data => { self._onLobbyUpdate(data); });
+  },
+
+  _onLobbyUpdate(data) {
+    const statusEl = document.getElementById('lobbyStatus');
+    const playersEl = document.getElementById('lobbyPlayers');
+    const actionsEl = document.getElementById('lobbyActions');
+    if(!playersEl || !actionsEl) return;
+
+    const uid = ChesAuth.getUid();
+    const isHost = data.host === uid;
+    const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+
+    // Game aborted while in lobby/game — kick back to the multiplayer screen
+    if(data.status === 'cancelled') {
+      toast((S && !S.gameOver) ? 'Соперник отменил игру' : 'Игра отменена');
+      if(S && !S.gameOver) {
+        S.gameOver = true;
+        if(typeof stopClock === 'function') stopClock();
+      }
+      if(typeof ChessEngine !== 'undefined' && typeof ChessEngine.clearStorage === 'function') ChessEngine.clearStorage();
+      if(typeof hideResumeBtn === 'function') hideResumeBtn();
+      ChesMP.cleanup();
+      hideAllScreens();
+      showScreen('scrMulti');
+      return;
+    }
+
+    if(data.status === 'playing') {
+      if(statusEl) statusEl.textContent = 'Игра началась!';
+      actionsEl.innerHTML = '<div style="color:var(--green);text-align:center;font-size:14px">⚔ Загрузка...</div>';
+      return;
+    }
+
+    const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
+    const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
+    const myPid = isGuest ?
+      (ChesAuth.guestPlayerId ? '#' + ChesAuth.guestPlayerId : '') :
+      ((ChesAuth.profile && ChesAuth.profile.playerId) ? '#' + ChesAuth.profile.playerId : '');
+    const myReady = isHost ? data.hostReady : data.guestReady;
+
+    // If guest joined — show both players
+    if(data.guest) {
+      const oppName = data.guestName || 'Игрок';
+      const oppAva = data.guestAva || '👽';
+      const oppReady = data.guestReady;
+      const hostReady = data.hostReady;
+
+      if(statusEl) statusEl.textContent = data.status === 'playing' ? 'Игра началась!' : 'Игроки найдены';
+
+      playersEl.innerHTML =
+        '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + myPid + '</div>' : '') + '<div style="font-size:11px;margin-top:4px;color:' + (myReady ? 'var(--green)' : 'var(--mut)') + '">' + (myReady ? '✓ Готов' : '○ Не готов') + '</div></div>' +
+        '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
+        '<div style="text-align:center"><div style="font-size:32px">' + (isHost ? oppAva : data.hostAva || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + (isHost ? oppName : (data.hostName || 'Хост')) + '</div>' + '<div style="font-size:11px;margin-top:4px;color:' + ((isHost ? oppReady : hostReady) ? 'var(--green)' : 'var(--mut)') + '">' + ((isHost ? oppReady : hostReady) ? '✓ Готов' : '○ Не готов') + '</div></div>';
+
+      // Action buttons
+      let btns = '';
+      btns += '<button class="mBtn' + (myReady ? ' primary' : '') + '" id="lobbyReadyBtn" style="width:100%">' + (myReady ? '✓ Готов' : 'Готов') + '</button>';
+      if(isHost) {
+        const bothReady = hostReady && oppReady;
+        btns += '<button class="mBtn primary" id="lobbyStartBtn" style="width:100%;margin-top:6px;opacity:' + (bothReady ? '1' : '.4') + ';pointer-events:' + (bothReady ? 'auto' : 'none') + '">🚀 Начать партию</button>';
+      }
+      actionsEl.innerHTML = btns;
+
+      const readyBtn = document.getElementById('lobbyReadyBtn');
+      if(readyBtn) readyBtn.onclick = () => { ChesMP.toggleReady(); };
+
+      if(isHost) {
+        const startBtn = document.getElementById('lobbyStartBtn');
+        if(startBtn) startBtn.onclick = () => { ChesMP.startGame(); };
+      }
     }
   },
 
@@ -357,12 +553,15 @@ const NetUI = {
     // Start a local game with the MP state
     const opponent = ChesMP.opponent;
     if(opponent) {
+      const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+      const myAva = isGuest ? '👽' : (ChesAuth.profile ? ChesAuth.profile.ava : '👽');
+      const myName = isGuest ? 'Гость' : (ChesAuth.profile ? ChesAuth.profile.name : 'Вы');
       const playersEl = document.getElementById('lobbyPlayers');
       if(playersEl) {
         playersEl.innerHTML =
-          '<div style="text-align:center"><div style="font-size:32px">' + (ChesAuth.profile ? ChesAuth.profile.ava : '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + (ChesAuth.profile ? ChesAuth.profile.name : 'Вы') + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
+          '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
           '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
-          '<div style="text-align:center"><div style="font-size:32px">' + (opponent.ava || '🐣') + '</div><div style="font-size:12px;color:var(--mut)">' + opponent.name + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
+          '<div style="text-align:center"><div style="font-size:32px">' + (opponent.ava || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + opponent.name + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
       }
 
       const actionsEl = document.getElementById('lobbyActions');
@@ -385,6 +584,9 @@ const NetUI = {
     if(result === 'win') {
       toast('🏆 Победа!');
       snd.win();
+    } else if(result === 'draw') {
+      toast('🤝 Ничья');
+      snd.draw();
     } else {
       toast('😔 Поражение');
       snd.lose();

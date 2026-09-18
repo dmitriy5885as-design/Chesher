@@ -2,6 +2,146 @@
 
 > Автоматически сгенерирован из git-коммитов и version.json
 
+## v0.23.14 (18.09.2026)
+
+- MP: короткий код лобби (6 символов, без 0/O/1/I) — хост создаёт, гость вводит код или открывает ссылку
+- MP: QR-код прямо в лобби — ссылка #lobby=КОД для мгновенного подключения с телефона, кнопка «Скопировать ссылку»
+- MP: автоподключение при открытии ссылки с QR (с ожиданием восстановления сессии)
+- Cache-bust: v=0.38.2 → 0.38.3
+
+## v0.23.13 (18.09.2026)
+
+- MP: реванш после партии — кнопка в оверлее, запрос/ответ, хост пересобирает лобби, счётчик раунда
+- MP: серверный авторитетный таймер — снапшот часов с каждым ходом, детерминированный таймаут на обеих сторонах
+- MP: очередь отправки ходов с ретраями и идемпотентностью по move id + flush при возврате онлайн
+- MP: гарантия единственной записи результата в лобби; одиночный listener .info/connected без дублей
+- MP Fischer-960: сид расстановки включает раунд — реванш даёт новую позицию
+
+## v0.23.12 (17.09.2026)
+
+- MP secondary bugs — resume board sync, guest-slot transaction, host-cancel kick, draw modal timeout, invite flow, fischer960 seeded share, lobby onDisconnect
+- Cache-bust: v=0.38.0 → 0.38.1
+
+## v0.23.11 (17.09.2026)
+
+- ToFen() missing + MP critical bugs (color, ranked moves, server result, listener leak, timeout, promo, undo guard)
+
+## v0.23.10 (13.09.2026)
+
+- Leaderboard enabled; Fischer increment (local+meme+classic+MP); draw offer MP; match replay; password reset; roadmap update
+
+## v0.23.9 (10.09.2026)
+
+- Shop videos: no autoplay, static preview + name, play on click
+
+## v0.23.8 (10.09.2026)
+
+- Threat video defaults+backfill; capture collection inside bottom bar; status+title centered over board
+
+## v0.23.7 (10.09.2026)
+
+- UI rework: left cards = avatar+name only, bottom bar = nick+#id, capture collection strip, status under header, fix mode label
+
+## v0.23.6 (10.09.2026)
+
+- Fix meme mode: bot greeting at game start, preload gun/video assets, back-from-settings returns to game
+
+## v0.23.5 (10.09.2026)
+
+- Menu: add exit-game button (✕) next to resume — confirm + clear storage + notify MP lobby
+- Video preview: click video toggles pause/play, pause indicator
+
+## v0.23.4 (10.09.2026)
+
+- Shop: new tab Видео мемы with auto-playing muted videos and click-to-expand preview with sound
+- Sound: unify volume sliders with meme slider style (green accent)
+- Sound settings: align toggle to right like value column
+- Sound slider track invisible (undefined --border var)
+
+## v0.23.3 (10.09.2026)
+
+- Settings: split into Общие настройки and Настройки режима sections
+
+## v0.23.2 (10.09.2026)
+
+- Devblog: version always synced with latest entry, console log dynamic
+- Settings: remove opponent block from general settings
+
+## v0.23.1 (09.09.2026)
+
+- Meme bots: cards shrink to fit, no clipping
+- Meme bots: paginated with ◀▶ arrows and dots instead of scroll
+- Meme mode: color buttons back to ⚪Белые ⚫Чёрные 🎲Случайно
+- Meme bot grid: horizontal scrollable row sorted by ELO
+- Meme mode: slider timer like online, color buttons 'ход первым/ответный ход', all bots grid
+- Shop: fix both coin chips aligned right together
+
+## v0.23.0 (09.09.2026)
+
+- QR-код (📲) перенесён в настройки в мобильном режиме.
+- Скрыты карточки игроков (pTop/pBot) в мобильном режиме в игре.
+- Скрыты элементы above/below чата в мобильном режиме.
+
+## v0.22.0 (09.09.2026)
+
+- Мобильный режим: пожелания и девблог перенесены в настройки (вниз).
+- Скрытие чата (chatBox) в мобильном режиме во время игры.
+- Упрощены кнопки: Ход → 💡, Назад → ↩️, Настройки → ⚙ (только иконки в мобильном).
+- Кнопка 📱 (тогл мобильного режима) скрыта на экранах кроме главного меню.
+
+## v0.21.0 (09.09.2026)
+
+- Исправлены перепутанные полоски takTop/takBot (фигуры срубленные отображались наоборот).
+- Исправлен баг: бот не ходил в Мемасии (незакрытая скобка в executeMove).
+- QR-код (📲) кнопка на главном экране — ссылка для входа с телефона.
+- Cache-buster добавлен для CSS-файлов.
+
+## v0.20.0 (09.09.2026)
+
+- Локальный 2P и рейтинговый режимы полностью интегрированы.
+- Порядок режимов: Классика, Рейтинг, По сети, Мемасия, Против бота, На одном ПК, Фишер 960.
+- Firebase Auth + Firestore + Realtime Database полностью работают.
+- Система друзей: поиск, приглашения, чат, готовность в лобби.
+- Уникальный ID игрока (#CHSg-XXXXXX) для гостей.
+- Ежедневный подарок, профили, кастомные аватарки.
+
+## v0.19.1 (07.09.2026)
+
+- 21 декоративная фигура на фоне главного меню (вместо 6), расположение хаотичное.
+- Позиции фигур сохраняются в localStorage — не сбрасываются при перезагрузке.
+- Фигуры плавают на месте без перемещения по экрану.
+- Пушка на фигурах использует реальную картинку из Мемасии (guns_left/guns_right.png).
+- Кувырок пушки 360° + выстрел влево/вправо, 75% шанс каждые 5 секунд.
+- Аватар по умолчанию изменён с 🐣 на 👽 (инопланетянин) во всех файлах.
+- Кнопка «Друзья» убрана из главного меню — доступ через панель в левом нижнем углу.
+- Подсказки на главном экране кликабельны — клик меняет на следующую.
+- Кнопка 📱 (телефон) добавлена в правый верхний угол — заглушка на будущее.
+- Firebase SDK перенесён в конец <body> для ускорения загрузки.
+- Монеты и кристаллы вынесены из profBar в cornerFloat.
+
+## v0.19.0 (07.09.2026)
+
+- Панель друзей в левом нижнем углу: список, онлайн-статус, удаление, поиск.
+- Чат между друзьями в реальном времени (Firebase RTDB).
+- Кнопка девблога перенесена в левый верхний угол.
+- Ежедневный подарок 🎁: +25-50 монет, 30% шанс на 💎. Серый для гостей.
+- 18 декоративных фигур на фоне главного меню (вместо 6).
+- Случайная 🔫 пушка на фигурах: кувырок 360° + выстрел влево/вправо.
+
+## v0.18.1 (07.09.2026)
+
+- Исправлена область видимости ensureAuth — кнопка «Запуск» лобби теперь работает.
+- Система готовности в лобби: кнопка «Готов» для обоих, «Начать партию» для хоста.
+- Хост слушает изменения лобби (RTDB) — видит когда гость присоединился.
+- subTop/subBot в игре показывают срубленные фигуры вместо «0% · 0».
+- Исправлены перепутанные полоски takTop/takBot (фигуры отображались наоборот).
+- Гость: имя отображается корректно, ID#CHSg-XXXX на отдельной строке.
+- Бот отвечает на сообщения в чате с учётом ключевых слов (привет, пока, гг и др.).
+- Бот пишет приветствие при начале партии.
+- joinLobby больше не ставит статус «playing» сразу — ждёт хоста.
+- Firebase SDK перенесён в конец <body> для ускорения загрузки.
+- Вынос монет/кристаллов из profBar в cornerFloat.
+
 ## v0.18.0 (06.09.2026)
 
 - Уникальный ID игрока (#CHS-XXXX) для зарегистрированных аккаунтов.

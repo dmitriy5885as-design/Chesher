@@ -140,7 +140,7 @@ function paintMarks() {
 
 /* --- Обновление панелей --- */
 function refreshBars() {
-  const humanCol = S ? S.humanColor : cfg.human;
+  const humanCol = cfg.gameMode === 'local' && S ? S.turn : (S ? S.humanColor : cfg.human);
   const topCol = humanCol === 'w' ? 'b' : 'w';
   const elNameTop = document.getElementById('nameTop');
   const elNameBot = document.getElementById('nameBot');
@@ -151,12 +151,22 @@ function refreshBars() {
   const botId = cu ? (cu.botId || 1) : 1;
   const bot = BOT_LIST.find(b => b.id === botId);
 
-  if(cfg.bot !== 'off' && bot) {
+  if(cfg.gameMode === 'local' && S) {
+    const myLabel = humanCol === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+    const oppLabel = topCol === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
+    if(elNameTop) elNameTop.textContent = oppLabel;
+    if(elAvaTop) elAvaTop.textContent = topCol === 'w' ? '⚪' : '⚫';
+    if(elNmTop) elNmTop.textContent = oppLabel;
+  } else if(cfg.bot !== 'off' && bot) {
     if(elNameTop) elNameTop.textContent = bot.emoji + ' ' + bot.name;
     if(elAvaTop) elAvaTop.textContent = bot.emoji;
     if(elNmTop) elNmTop.textContent = bot.name;
+  } else if(cfg.gameMode === 'multiplayer' && typeof ChesMP !== 'undefined' && ChesMP.opponent) {
+    const opp = ChesMP.opponent;
+    if(elNameTop) elNameTop.textContent = (opp.ava || '❓') + ' ' + (opp.name || 'Соперник');
+    if(elAvaTop) elAvaTop.textContent = opp.ava || '❓';
+    if(elNmTop) elNmTop.textContent = opp.name || 'Соперник';
   } else {
-    // Multiplayer: show opponent name + playerId
     const oppName = (topCol === 'w' ? 'Белые' : 'Чёрные') + ' · Соперник';
     const oppId = (typeof S !== 'undefined' && S && S.opponentPlayerId) ? '  #' + S.opponentPlayerId : '';
     if(elNameTop) elNameTop.textContent = oppName + oppId;
@@ -164,36 +174,64 @@ function refreshBars() {
     if(elNmTop) elNmTop.textContent = 'Соперник';
   }
 
-  if(elNameBot) elNameBot.textContent = (cu.ava || '') + ' ' + (cu.name || 'Игрок') + ' · ' + (humanCol === 'w' ? 'Белые' : 'Чёрные') + (cu.playerId ? '  #' + cu.playerId : '');
+  // subTop/subBot (captured pieces in left cards) removed — cards show avatar + name only
+
+  const tW = (takenByW || []).map(t => getSkinGlyph('w', t)).join('');
+  const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
+
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  let myName, myAva;
+  if(cfg.gameMode === 'local' && S) {
+    myName = humanCol === 'w' ? 'Игрок 1' : 'Игрок 2';
+    myAva = humanCol === 'w' ? '⚪' : '⚫';
+  } else {
+    myName = isGuest ? ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') : (cu.name || 'Игрок');
+    myAva = cu.ava || '👽';
+  }
+  const playerPid = isGuest ? ChesAuth.guestPlayerId : cu.playerId;
+  if(elNameBot) elNameBot.textContent = myName + (playerPid ? '  #' + playerPid : '');
 
   // Update avatar in player card
   const elAvaBot = document.getElementById('avaBot');
   const elNmBot = document.getElementById('nmBot');
   if(elAvaBot) {
-    if(cu.customAva) {
+    if(!isGuest && cu.customAva) {
       elAvaBot.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      elAvaBot.textContent = cu.ava || '🐣';
+      elAvaBot.textContent = myAva;
     }
   }
-  if(elNmBot) elNmBot.textContent = cu.name || 'Игрок';
+  if(elNmBot) elNmBot.textContent = myName;
 
-  // Taken pieces
-  const tW = (takenByW || []).map(t => getSkinGlyph('w', t)).join('');
-  const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
+  // Taken pieces in pbar (opponent bar shows what opponent captured)
   const elTakTop = document.getElementById('takTop');
-  const elTakBot = document.getElementById('takBot');
-  if(elTakTop) elTakTop.textContent = humanCol === 'w' ? tW : tB;
-  if(elTakBot) elTakBot.textContent = topCol === 'w' ? tW : tB;
+  if(elTakTop) elTakTop.textContent = topCol === 'w' ? tB : tW;
 
   // Material advantage
   const mat = (takenByW || []).reduce((s, t) => s + (VAL[t]||0), 0) -
               (takenByB || []).reduce((s, t) => s + (VAL[t]||0), 0);
   const advTop = topCol === 'w' ? mat : -mat;
   const elAdvTop = document.getElementById('advTop');
-  const elAdvBot = document.getElementById('advBot');
   if(elAdvTop) elAdvTop.textContent = advTop > 0 ? '+' + advTop : '';
-  if(elAdvBot) elAdvBot.textContent = (-advTop > 0) ? '+' + (-advTop) : '';
+
+  // Collection of captured pieces (my side) inside the bottom player bar
+  const capPieces = humanCol === 'w' ? tB : tW;
+  const capScore = (humanCol === 'w' ? (takenByB || []) : (takenByW || [])).reduce((s, t) => s + (VAL[t]||0), 0);
+  const capCol = document.getElementById('capCol');
+  const pEl = document.getElementById('capColPieces');
+  const sEl = document.getElementById('capColScore');
+  if(capCol && pEl && sEl) {
+    if(capPieces) {
+      pEl.textContent = capPieces;
+      const n = Math.abs(capScore) % 100;
+      const d = n % 10;
+      const word = (n > 10 && n < 20) ? 'очков' : (d === 1 ? 'очко' : (d >= 2 && d <= 4 ? 'очка' : 'очков'));
+      sEl.textContent = '· ' + capScore + ' ' + word;
+      capCol.style.display = '';
+    } else {
+      capCol.style.display = 'none';
+    }
+  }
 
   updateClockUI();
 }
@@ -234,8 +272,9 @@ function refreshModeLabel() {
 /* --- Монеты --- */
 function renderCoins() {
   const cu = ProfilesManager.getCurrent();
-  const c = cu ? (cu.coins || 0) : 0;
-  const g = cu ? (cu.gems || 0) : 0;
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const c = isGuest ? 0 : (cu ? (cu.coins || 0) : 0);
+  const g = isGuest ? 0 : (cu ? (cu.gems || 0) : 0);
   const a = document.getElementById('pbCoins');
   const b = document.getElementById('shopCoins');
   const ag = document.getElementById('pbGems');
@@ -268,28 +307,22 @@ function renderProfBar() {
   const pbAva = document.getElementById('pbAva');
   const pbName = document.getElementById('pbName');
   const pbSub = document.getElementById('pbSub');
-  const pbCoins = document.getElementById('pbCoins');
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   if(pbAva) {
-    if(cu.customAva) {
+    if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
-      pbAva.textContent = cu.ava || '🐣';
+      pbAva.textContent = cu.ava || '👽';
     }
   }
-  if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '') + (cu.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span>' : '');
-  
-  // Show current mode rating
-  const ratings = cu.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000};
-  const modeId = (typeof cfg !== 'undefined' && cfg.modeId) ? cfg.modeId : 'classic';
-  const currentRating = ratings[modeId] || ratings.classic || 0;
-  const league = Elo.getLeague(currentRating);
-  
-  if(pbSub) {
-    pbSub.innerHTML = '<span class="league-tag" style="color:' + league.color + '">' + 
-      league.emoji + ' ' + currentRating + '</span> ' +
-      league.name + ' · ' + (cu.winrate || 0) + '% · ' + (cu.st.games || 0) + ' партий';
+  if(isGuest) {
+    if(!ChesAuth.guestPlayerId) ChesAuth.guestPlayerId = ChesAuth._genGuestPlayerId();
+    if(pbName) pbName.textContent = (cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
+    if(pbSub) pbSub.innerHTML = '<span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span>';
+  } else {
+    if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
+    if(pbSub) pbSub.innerHTML = (cu.playerId ? '<span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span> · ' : '') + (cu.winrate || 0) + '% winrate · ' + (cu.st.games || 0) + ' партий';
   }
-  if(pbCoins) pbCoins.textContent = '🪙 ' + (cu.coins || 0);
 }
 
 /* --- Экран профилей --- */
@@ -306,8 +339,10 @@ function renderProfScr() {
       const t = tab.dataset.tab;
       profTabs.querySelectorAll('.shopTab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
       document.getElementById('profTabMain').style.display = t === 'main' ? '' : 'none';
+      document.getElementById('profTabStyle').style.display = t === 'style' ? '' : 'none';
       document.getElementById('profTabHistory').style.display = t === 'history' ? '' : 'none';
       document.getElementById('profTabSettings').style.display = t === 'settings' ? '' : 'none';
+      if(t === 'style') renderProfStyleTab();
       if(t === 'history') renderMatchHistory(cu);
       if(t === 'settings') renderProfSettings(cu);
     };
@@ -316,22 +351,62 @@ function renderProfScr() {
   // Reset to main tab
   if(profTabs) profTabs.querySelectorAll('.shopTab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'main'));
   const pm = document.getElementById('profTabMain'); if(pm) pm.style.display = '';
+  const pStyle = document.getElementById('profTabStyle'); if(pStyle) pStyle.style.display = 'none';
   const ph = document.getElementById('profTabHistory'); if(ph) ph.style.display = 'none';
   const ps = document.getElementById('profTabSettings'); if(ps) ps.style.display = 'none';
 
-  // Hide "new profile" if logged in
-  const profNewGroup = document.getElementById('profNewGroup');
-  const isAuth = ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous;
-  if(profNewGroup) profNewGroup.style.display = isAuth ? 'none' : '';
+  // Guest: show nick (1-time) + avatar; Authenticated: show nick + avatar normally
+  const nickGroup = document.getElementById('nickGroup');
+  const avaGroup = document.getElementById('customAvaGroup');
+  const isGuestProf = !ChesAuth.user || ChesAuth.user.isAnonymous;
+
+  if(isGuestProf) {
+    // Guest nick: 1-time only
+    if(nickGroup) nickGroup.style.display = '';
+    const guestNameChanged = localStorage.getItem('chesher_guest_name_changed');
+    const nickTitle = nickGroup ? nickGroup.querySelector('h3') : null;
+    if(guestNameChanged) {
+      if(nickTitle) nickTitle.textContent = '✏️ Имя (уже использовано)';
+      const nickInputEl = document.getElementById('nickInput');
+      const nickBtnEl = document.getElementById('nickChangeBtn');
+      if(nickInputEl) { nickInputEl.disabled = true; nickInputEl.placeholder = 'Имя уже задано'; }
+      if(nickBtnEl) { nickBtnEl.disabled = true; nickBtnEl.textContent = '✓ Задано'; }
+    } else {
+      if(nickTitle) nickTitle.textContent = '✏️ Имя (только 1 раз!)';
+      const nickWarn = document.getElementById('nickCooldown');
+      if(nickWarn) nickWarn.innerHTML = '<span style="color:var(--gold)">⚠ Сменить имя можно только один раз. Выбирайте с умом!</span>';
+    }
+    // Guest: hide file upload, show only suggested avatars
+    if(avaGroup) {
+      const fileLabel = avaGroup.querySelector('label[for]');
+      const fileInput = document.getElementById('customAvaInput');
+      const fileHint = avaGroup.querySelector('div[style*="font-size:11px"]');
+      if(fileLabel && fileLabel.querySelector('input[type="file"]')) fileLabel.style.display = 'none';
+      if(fileInput) fileInput.closest('label') ? fileInput.closest('label').style.display = 'none' : null;
+      // Hide the file size hint text
+      if(fileHint) fileHint.style.display = 'none';
+      // Also hide the save button area for file uploads (keep clear for suggested)
+      const saveBtn = document.getElementById('customAvaSave');
+      if(saveBtn) saveBtn.style.display = 'none';
+      // Update title
+      const avaTitle = avaGroup.querySelector('h3');
+      if(avaTitle) avaTitle.textContent = '🖼 Аватарка';
+    }
+  } else {
+    if(nickGroup) nickGroup.style.display = '';
+    if(avaGroup) avaGroup.style.display = '';
+  }
 
   // Show playerId in profile header
   const profHeader = document.getElementById('profHeader');
   if(profHeader) {
-    if(cu && cu.playerId) {
+    const isGuestProf = !ChesAuth.user || ChesAuth.user.isAnonymous;
+    const displayId = isGuestProf ? ChesAuth.guestPlayerId : (cu && cu.playerId);
+    if(displayId) {
       profHeader.innerHTML = '<div style="text-align:center;padding:8px;margin-bottom:8px;background:var(--panel2);border-radius:10px;border:1px solid var(--line)">' +
-        '<div style="color:var(--mut);font-size:11px;margin-bottom:2px">Ваш ID</div>' +
-        '<div style="font-size:18px;font-weight:700;color:var(--accent);letter-spacing:1px">#' + cu.playerId + '</div>' +
-        '<div style="color:var(--mut);font-size:10px;margin-top:2px">Используйте для добавления в друзья</div>' +
+        '<div style="color:var(--mut);font-size:11px;margin-bottom:2px">' + (isGuestProf ? 'Гостевой ID' : 'Ваш ID') + '</div>' +
+        '<div style="font-size:18px;font-weight:700;color:var(--accent);letter-spacing:1px">#' + displayId + '</div>' +
+        '<div style="color:var(--mut);font-size:10px;margin-top:2px">' + (isGuestProf ? 'Сменяется при обновлении' : 'Используйте для добавления в друзья') + '</div>' +
         '</div>';
     } else {
       profHeader.innerHTML = '';
@@ -342,29 +417,44 @@ function renderProfScr() {
   const nickInput = document.getElementById('nickInput');
   const nickBtn = document.getElementById('nickChangeBtn');
   const nickCd = document.getElementById('nickCooldown');
+  const isGuestProfile = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const guestNameUsed = isGuestProfile && localStorage.getItem('chesher_guest_name_changed');
   if(cu && nickBtn) {
-    const cooldown = cu.getNickChangeCooldown();
-    if(cooldown) {
+    if(guestNameUsed) {
       nickBtn.disabled = true;
-      nickBtn.textContent = '⏳';
-      if(nickCd) nickCd.textContent = 'Следующая смена через: ' + cooldown;
+      nickBtn.textContent = '✓ Задано';
+      nickInput.disabled = true;
+      nickInput.value = cu.name || '';
+      if(nickCd) nickCd.innerHTML = '<span style="color:var(--mut)">Имя уже задано</span>';
     } else {
-      nickBtn.disabled = false;
-      nickBtn.textContent = 'Изменить';
-      if(nickCd) nickCd.textContent = '';
+      const cooldown = cu.getNickChangeCooldown();
+      if(!isGuestProfile && cooldown) {
+        nickBtn.disabled = true;
+        nickBtn.textContent = '⏳';
+        if(nickCd) nickCd.textContent = 'Следующая смена через: ' + cooldown;
+      } else {
+        nickBtn.disabled = false;
+        nickBtn.textContent = isGuestProfile ? 'Задать имя' : 'Изменить';
+        if(nickCd && !isGuestProfile) nickCd.textContent = '';
+      }
     }
     nickBtn.onclick = () => {
+      if(guestNameUsed) { toast('Имя уже задано — его нельзя изменить'); return; }
       const name = nickInput.value.trim();
       if(!name) { toast('Введите ник'); return; }
       if(name.length < 2) { toast('Минимум 2 символа'); return; }
+      if(isGuestProfile && !confirm('Вы уверены? Имя можно задать только ОДИН раз!')) return;
       if(cu.changeNick(name)) {
+        if(isGuestProfile) {
+          localStorage.setItem('chesher_guest_name_changed', '1');
+        }
         saveProfiles();
         if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
           ChesAuth.updateProfile({ name: name });
         }
         renderProfScr();
         renderProfBar();
-        toast('Ник изменён на "' + name + '"');
+        toast('Имя задано: "' + name + '"');
         nickInput.value = '';
       }
     };
@@ -383,13 +473,13 @@ function renderProfScr() {
       avaPreview.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover">';
       avaClear.style.display = '';
     } else {
-      avaPreview.innerHTML = cu.ava || '🐣';
+      avaPreview.innerHTML = cu.ava || '👽';
       avaClear.style.display = 'none';
     }
     avaSave.style.display = 'none';
 
     // Suggested avatars
-    const suggested = ['🐣','🦊','🐸','🐼','🦁','🐺','🦉','🐙','🦄','🐲','👽','🤖','💀','🎃','♔','♞','🐶','🐱','🐵','🦅','🐬','🦋','🌸','🔥','💎','🎯','🚀','⚡','🌈','🍕','🎸','👑','🏆','♟'];
+    const suggested = ['👽','👽','🦊','🐸','🐼','🦁','🐺','🦉','🐙','🦄','🐲','🤖','💀','🎃','♔','♞','🐶','🐱','🐵','🦅','🐬','🦋','🌸','🔥','💎','🎯','🚀','⚡','🌈','🍕','🎸','👑','🏆','♟'];
     if(avaSuggested) {
       avaSuggested.innerHTML = '';
       suggested.forEach(em => {
@@ -469,13 +559,13 @@ function renderProfScr() {
     if(avaClear) {
       avaClear.onclick = () => {
         cu.customAva = null;
-        cu.ava = '🐣';
+        cu.ava = '👽';
         pendingAva = null;
         saveProfiles();
         if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
-          ChesAuth.updateProfile({ customAva: null, ava: '🐣' });
+          ChesAuth.updateProfile({ customAva: null, ava: '👽' });
         }
-        avaPreview.innerHTML = '🐣';
+        avaPreview.innerHTML = '👽';
         avaClear.style.display = 'none';
         avaSave.style.display = 'none';
         renderProfScr();
@@ -573,6 +663,76 @@ window.initDOMrefs = initDOMrefs;
 window.refreshBars = refreshBars;
 window.refreshModeLabel = refreshModeLabel;
 window.renderCoins = renderCoins;
+
+/* --- Вкладка: Стилизация --- */
+function applyBoardTheme(id) {
+  if(!BOARDS[id]) return;
+  const b = BOARDS[id];
+  document.documentElement.style.setProperty('--sq-l', b.light);
+  document.documentElement.style.setProperty('--sq-d', b.dark);
+}
+function renderProfStyleTab() {
+  const cu = ProfilesManager.getCurrent();
+  const owned = cu ? cu.owned || [] : [];
+
+  // Board themes
+  const themeRow = document.getElementById('themeRow');
+  if(themeRow) {
+    themeRow.innerHTML = '';
+    Object.keys(BOARDS).forEach(id => {
+      const b = BOARDS[id];
+      const isOwned = owned.includes('board_' + id) || b.price === 0;
+      const isActive = cfg.board === id || (!cfg.board && id === 'classic');
+      const w = document.createElement('button');
+      w.className = 'swatch' + (isActive ? ' sel' : '');
+      w.type = 'button';
+      w.style.setProperty('--swL', b.light);
+      w.style.setProperty('--swD', b.dark);
+      w.style.opacity = isOwned ? '1' : '0.4';
+      w.innerHTML = '<i></i><i></i><i></i><i></i><span class="swName">' + b.name + '</span>';
+      if(!isOwned) w.innerHTML += '<span style="font-size:10px;color:var(--gold)">🪙 ' + b.price + '</span>';
+      w.addEventListener('click', () => {
+        if(!isOwned) { toast('Купите доску в магазине'); return; }
+        cfg.board = id;
+        saveCfg();
+        applyBoardTheme(id);
+        snd.ui();
+        renderProfStyleTab();
+      });
+      themeRow.appendChild(w);
+    });
+  }
+
+  // Piece skins
+  const segSkinProf = document.getElementById('segSkinProf');
+  if(segSkinProf && typeof SKINS !== 'undefined') {
+    segSkinProf.innerHTML = '';
+    const skinRow = document.createElement('div');
+    skinRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px';
+    Object.keys(SKINS).forEach(id => {
+      const s = SKINS[id];
+      const isOwned = owned.includes('skin_' + id) || s.price === 0;
+      const isActive = cfg.skin === id || (!cfg.skin && id === 'classic');
+      const btn = document.createElement('button');
+      btn.className = 'mBtn' + (isActive ? ' primary' : '');
+      btn.style.cssText = 'flex:0 0 auto;padding:10px 14px;font-size:18px;opacity:' + (isOwned ? '1' : '0.4');
+      const preview = s.glyph ? (s.glyph.w.k + ' ' + s.glyph.b.k) : '♟';
+      btn.innerHTML = preview + '<div style="font-size:11px;margin-top:4px">' + s.name + '</div>';
+      if(!isOwned) btn.innerHTML += '<div style="font-size:10px;color:var(--gold)">🪙 ' + s.price + '</div>';
+      btn.addEventListener('click', () => {
+        if(!isOwned) { toast('Купите скин в магазине'); return; }
+        cfg.skin = id;
+        saveCfg();
+        snd.ui();
+        renderProfStyleTab();
+        fullRender();
+      });
+      skinRow.appendChild(btn);
+    });
+    segSkinProf.appendChild(skinRow);
+  }
+}
+
 /* --- Вкладка: История матчей --- */
 function renderMatchHistory(cu) {
   const histBox = document.getElementById('matchHistory');
@@ -583,43 +743,140 @@ function renderMatchHistory(cu) {
     histBox.innerHTML = '<div style="color:var(--mut);text-align:center;padding:20px;font-size:13px">Пока нет сыгранных матчей</div>';
     return;
   }
-  histBox.innerHTML = history.slice(-30).reverse().map(h => {
+  histBox.innerHTML = history.slice(-30).reverse().map((h, i) => {
     const icon = h.result === 'win' ? '🏆' : h.result === 'loss' ? '😔' : '🤝';
     const color = h.result === 'win' ? '#4caf50' : h.result === 'loss' ? '#f44336' : '#ff9800';
     const time = h.time ? new Date(h.time).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const hasReplay = h.moves && h.moves.length > 0;
+    const idx = history.length - 1 - i;
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--line)">' +
       '<span style="font-size:20px">' + icon + '</span>' +
       '<div style="flex:1">' +
         '<div style="font-size:14px;font-weight:600;color:' + color + '">' + (h.opponent || '—') + '</div>' +
         '<div style="font-size:12px;color:var(--mut)">' + (h.mode || 'Классика') + (h.reason ? ' · ' + h.reason : '') + '</div>' +
       '</div>' +
+      (hasReplay ? '<button class="btn" onclick="openReplay(' + idx + ')" title="Просмотр партии">▶</button>' : '') +
       '<div style="font-size:11px;color:var(--mut);white-space:nowrap">' + time + '</div>' +
     '</div>';
   }).join('');
+}
+
+/* --- Просмотр партии --- */
+let rvFens = [];
+let rvNotes = [];
+let rvIdx = 0;
+
+function fenToBoard(fen) {
+  const board = [];
+  const rows = fen.split(' ')[0].split('/');
+  for(const row of rows) {
+    const br = [];
+    for(const ch of row) {
+      if(ch >= '1' && ch <= '8') {
+        const n = parseInt(ch, 10);
+        for(let i = 0; i < n; i++) br.push(null);
+      } else {
+        br.push(ch);
+      }
+    }
+    board.push(br);
+  }
+  return board;
+}
+
+function renderReplayBoard(fen) {
+  const box = document.getElementById('rvBoard');
+  const info = document.getElementById('rvInfo');
+  if(!box) return;
+  const board = fenToBoard(fen);
+  box.innerHTML = '';
+  for(let r = 0; r < 8; r++) {
+    for(let c = 0; c < 8; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'sq ' + ((r + c) % 2 === 0 ? 'l' : 'd');
+      cell.style.cssText = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,7vw,26px);cursor:default';
+      const p = board[r][c];
+      if(p) {
+        const color = p === p.toUpperCase() ? 'w' : 'b';
+        const type = p.toLowerCase();
+        cell.textContent = getSkinGlyph(color, type);
+      }
+      box.appendChild(cell);
+    }
+  }
+  if(info) {
+    info.textContent = (rvIdx === 0 ? 'Стартовая позиция' : 'Ход ' + rvIdx) + ' из ' + rvFens.length;
+  }
+  const ml = document.getElementById('rvMoveList');
+  if(ml) {
+    ml.innerHTML = rvNotes.map((n, i) =>
+      '<div style="' + (rvIdx === i + 1 ? 'background:var(--accent);color:#111;' : '') + 'padding:1px 4px;border-radius:4px">' + Math.ceil((i + 1) / 2) + '.' + (i % 2 === 0 ? ' ' : ' ') + n + '</div>'
+    ).join('');
+    ml.scrollTop = ml.scrollHeight;
+  }
+}
+
+function openReplay(matchIdx) {
+  const cu = ProfilesManager.getCurrent();
+  if(!cu) return;
+  const h = (cu.matchHistory || [])[matchIdx];
+  if(!h || !h.moves || !h.moves.length) {
+    toast('Для этой партии нет записи ходов');
+    return;
+  }
+  rvFens = [h.startFen ? h.startFen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'];
+  rvNotes = [];
+  for(const m of h.moves) {
+    rvFens.push(m.fen);
+    rvNotes.push(m.notation || '');
+  }
+  rvIdx = 0;
+  renderReplayBoard(rvFens[0]);
+  openOv('ovReplay');
 }
 
 /* --- Вкладка: Настройки профиля --- */
 function renderProfSettings(cu) {
   if(!cu) return;
   const infoBox = document.getElementById('profSettingsInfo');
+  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   if(infoBox) {
-    const st = cu.st || {};
-    const league = Elo.getLeague(cu.elo || 0);
-    infoBox.innerHTML =
-      '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + (cu.name || 'Игрок') + '</b></div>' +
-        (cu.playerId ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + cu.playerId + '</b></div>' : '') +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">' + (cu.elo || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">' + league.name + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">' + (st.games || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">' + (st.wins || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">' + (st.losses || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">' + (cu.winrate || 0) + '%</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">' + (st.streak || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 ' + (cu.coins || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 ' + (cu.gems || 0) + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">' + (cu.owned ? cu.owned.length : 0) + '</b></div>' +
-      '</div>';
+    if(isGuest) {
+      const gId = ChesAuth.guestPlayerId || '—';
+      infoBox.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + gId + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">—</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">0%</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 0</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">0</b></div>' +
+        '</div>';
+    } else {
+      const st = cu.st || {};
+      const league = Elo.getLeague(cu.elo || 0);
+      infoBox.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + (cu.name || 'Игрок') + '</b></div>' +
+          (cu.playerId ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + cu.playerId + '</b></div>' : '') +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">' + (cu.elo || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">' + league.name + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">' + (st.games || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">' + (st.wins || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">' + (st.losses || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">' + (cu.winrate || 0) + '%</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">' + (st.streak || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 ' + (cu.coins || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 ' + (cu.gems || 0) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">' + (cu.owned ? cu.owned.length : 0) + '</b></div>' +
+        '</div>';
+    }
   }
 
   const logoutBtn2 = document.getElementById('profLogoutBtn2');
@@ -629,6 +886,7 @@ function renderProfSettings(cu) {
         await ChesAuth.logout();
         renderProfBar();
         renderProfScr();
+        showScreen('scrMenu');
         toast('Вы вышли из аккаунта');
       }
     };
@@ -645,3 +903,4 @@ window.openPromoModal = openPromoModal;
 window.askConfirm = askConfirm;
 window.spawnPiece = spawnPiece;
 window.updateClockUI = updateClockUI;
+window.openReplay = openReplay;

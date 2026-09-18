@@ -21,7 +21,7 @@ const MemeConfig = (() => {
     return {
       check:      { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
       capture:    { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      threat:     { w: [], b: [] },
+      threat:     { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
       defense:    { w: [], b: [] },
       promotion:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
       sacrifice:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
@@ -37,8 +37,23 @@ const MemeConfig = (() => {
     });
   }
 
+  function backfillDefaults(vp) {
+    ['threat'].forEach(function(k) {
+      if(!vp[k]) return;
+      if(!Array.isArray(vp[k].w) || !vp[k].w.length) vp[k].w = [DEFAULT_VIDEO];
+      if(!Array.isArray(vp[k].b) || !vp[k].b.length) vp[k].b = [DEFAULT_VIDEO];
+      PIECE_KEYS.forEach(function(pk) {
+        if(vp[k][pk]) {
+          if(!Array.isArray(vp[k][pk].w) || !vp[k][pk].w.length) vp[k][pk].w = [DEFAULT_VIDEO];
+          if(!Array.isArray(vp[k][pk].b) || !vp[k][pk].b.length) vp[k][pk].b = [DEFAULT_VIDEO];
+        }
+      });
+    });
+    return vp;
+  }
+
   function migratePresets(vp) {
-    if(!vp) return defaultPresets();
+    if(!vp) return backfillDefaults(defaultPresets());
 
     if(vp.check && typeof vp.check === 'object' && !Array.isArray(vp.check)) {
       var hasPieceKeys = PIECE_KEYS.some(function(pk) { return vp.check[pk]; });
@@ -49,7 +64,7 @@ const MemeConfig = (() => {
           if(vp[k] && vp[k].b) newP[k].b = Array.isArray(vp[k].b) ? vp[k].b : [vp[k].b];
         });
         MEME_EVENT_TYPES.forEach(function(k) { ensureArrays(newP[k]); });
-        return newP;
+        return backfillDefaults(newP);
       } else {
         MEME_EVENT_TYPES.forEach(function(k) {
           if(!vp[k]) vp[k] = { w: [], b: [] };
@@ -61,7 +76,7 @@ const MemeConfig = (() => {
           if(!Array.isArray(vp[k].w)) vp[k].w = [];
           if(!Array.isArray(vp[k].b)) vp[k].b = [];
         });
-        return vp;
+        return backfillDefaults(vp);
       }
     }
 
@@ -69,7 +84,7 @@ const MemeConfig = (() => {
       if(!vp[k]) vp[k] = { w: [], b: [] };
       ensureArrays(vp[k]);
     });
-    return vp;
+    return backfillDefaults(vp);
   }
 
   const DEFAULTS = {
@@ -226,18 +241,18 @@ const AVAILABLE_VIDEOS = [
   { file: 'video/why-are-you-running.mp4', name: 'Why are you running' },
   { file: 'video/this-is-sparta.mp4', name: 'This is Sparta' },
   { file: 'video/daaaammmmm.mp4', name: 'Даааааммм' },
-  { file: 'video/МЫ В ДЕРЬМЕ.mp4', name: 'Мы в дерьме' },
-  { file: 'video/НУ НАХЕР. НУ ТЫ.mp4', name: 'Ну нахер. Ну ты' },
-  { file: 'video/Вот это поворот!.mp4', name: 'Вот это поворот!' },
-  { file: 'video/А ЧЕ ТАК МОЖНО.mp4', name: 'А че так можно?' },
+  { file: 'video/my-v-derme.mp4', name: 'Мы в дерьме' },
+  { file: 'video/nu-nakher-nu-ty.mp4', name: 'Ну нахер. Ну ты' },
+  { file: 'video/vot-eto-povorot.mp4', name: 'Вот это поворот!' },
+  { file: 'video/a-che-tak-mozhno.mp4', name: 'А че так можно?' },
   { file: 'video/sho-opyat.mp4', name: 'Шо опять' },
   { file: 'video/oh-my-god-wowww.mp4', name: 'Oh my God wow' },
   { file: 'video/net.mp4', name: 'Нет!' },
   { file: 'video/gendalf-vlastelin.mp4', name: 'Гэндальф' },
   { file: 'video/chuvaaak-scary-movie.mp4', name: 'Чувак' },
   { file: 'video/a-lovko-ty-eto-pridumal.mp4', name: 'Ловко придумал' },
-  { file: 'video/ЧТО ЗА УЖАС.mp4', name: 'Что за ужас' },
-  { file: 'video/ТИТРЫ РОБЕРТ.mp4', name: 'Титры Роберт' },
+  { file: 'video/chto-za-ujas.mp4', name: 'Что за ужас' },
+  { file: 'video/titry-robert.mp4', name: 'Титры Роберт' },
   { file: 'video/zoolander-meme.mp4', name: 'Zoolander' },
   { file: 'video/polskaya-korova.mp4', name: 'Польская корова' },
   { file: 'video/uz-multa-idut.mp4', name: 'Уж мульта идут' },

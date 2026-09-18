@@ -7,24 +7,24 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/main.css?v=0.38.3">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.3">
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
 </head>
 <body>
   
   <!-- ================= ЭКРАН: ГЛАВНОЕ МЕНЮ ================= -->
   <div class="screen show" id="scrMenu">
-    <div class="deco">
-      <span class="d1">♞</span><span class="d2">♜</span><span class="d3">♝</span><span class="d4">♛</span>
-      <span class="d5">♟</span><span class="d6">♕</span>
+    <div class="deco" id="decoBg">
+      <span>♞</span><span>♜</span><span>♝</span><span>♛</span>
+      <span>♟</span><span>♕</span><span>♙</span>
+      <span>♖</span><span>♘</span><span>♚</span>
+      <span>♝</span><span>♟</span><span>♔</span>
+      <span>♕</span><span>♖</span><span>♞</span>
+      <span>♟</span><span>♛</span><span>♙</span>
+      <span>♖</span><span>♘</span>
     </div>
     <div class="logoBig">
       <h1>CHESHER</h1>
@@ -36,16 +36,16 @@
         <div class="pbName" id="pbName">Гость</div>
         <div class="pbSub" id="pbSub">0% winrate · 0 партий</div>
       </div>
-      <span class="coinChip" id="pbCoins">🪙 0</span>
-      <span class="coinChip gemChip" id="pbGems" style="margin-left:4px">💎 0</span>
-      <button class="mBtn" id="mAuth" style="padding:4px 10px;font-size:11px;margin-left:4px;display:none" onclick="showScreen('scrAuth')">Войти</button>
+      <button class="mBtn mAuthBtn" id="mAuth" style="display:none" onclick="event.stopPropagation();showScreen('scrAuth')">Войти</button>
       <div class="pbArrow">›</div>
     </div>
     <div class="menuCol">
       <button class="mBtn primary" id="mPlay">♟ Играть<br><small style="font-weight:400;opacity:.7;font-size:10px">по сети с другими игроками</small></button>
-      <button class="mBtn" id="mResume" style="display:none">▶ Продолжить партию</button>
+      <div style="display:none;gap:8px;align-items:stretch" id="resumeRow">
+        <button class="mBtn" id="mResume" style="flex:1">▶ Продолжить</button>
+        <button class="resumeX" id="mResumeClose" title="Завершить партию">✕</button>
+      </div>
       <button class="mBtn" id="mModes">☰ Режимы</button>
-      <button class="mBtn" id="mFriends">👥 Друзья</button>
       <button class="mBtn" id="mShop">🛍 Магазин</button>
       <div class="row2m">
         <button class="mBtn half" id="mLeaderboard">🏆 Таблица лидеров</button>
@@ -53,7 +53,7 @@
       </div>
     </div>
     <div class="tipBox" id="tipBox"></div>
-    <div class="menuFoot">CHESHER v0.18.0 alpha</div>
+    <div class="menuFoot">CHESHER v0.23.14 alpha</div>
   </div>
   
   <!-- ================= ЭКРАН: ПРОФИЛЬ ================= -->
@@ -65,7 +65,8 @@
 
     <!-- Вкладки профиля -->
     <div class="shopTabs" id="profTabs">
-      <button class="shopTab active" data-tab="main">🏠 Главная</button>
+      <button class="shopTab active" data-tab="main">ℹ️ Информация</button>
+      <button class="shopTab" data-tab="style">🎨 Стилизация</button>
       <button class="shopTab" data-tab="history">📜 История</button>
       <button class="shopTab" data-tab="settings">⚙ Настройки</button>
     </div>
@@ -81,7 +82,7 @@
         </div>
         <div id="nickCooldown" style="color:var(--mut);font-size:12px;margin-top:6px"></div>
       </div>
-      <div class="setGroup" style="width:min(400px,94vw);margin:0 auto 14px">
+      <div class="setGroup" id="customAvaGroup" style="width:min(400px,94vw);margin:0 auto 14px">
         <h3>🖼 Своя аватарка</h3>
         <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
           <div id="customAvaPreview" style="width:120px;height:120px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:48px;border:2px solid var(--line);overflow:hidden;flex-shrink:0"></div>
@@ -99,13 +100,15 @@
         <div style="color:var(--mut);font-size:12px;margin-bottom:6px">Или выбери из предложенных:</div>
         <div class="avaGrid" id="avaSuggested" style="display:flex;gap:8px;flex-wrap:wrap"></div>
       </div>
-      <div class="setGroup" id="profNewGroup" style="margin-top:14px">
-        <h3>＋ Новый профиль</h3>
-        <input id="npName" class="inputTxt" maxlength="14" placeholder="Имя игрока" autocomplete="off">
-        <div class="emojiGrid" id="emoGrid"></div>
-        <div class="applyBar">
-          <button class="mBtn primary" id="npCreate">Создать профиль</button>
-        </div>
+    </div>
+
+    <!-- Вкладка: Стилизация -->
+    <div id="profTabStyle" style="display:none;width:100%;max-width:520px;margin:0 auto">
+      <div class="setGroup"><h3>🎨 Тема доски</h3>
+        <div id="themeRow"></div>
+      </div>
+      <div class="setGroup"><h3>♟ Скин фигур</h3>
+        <div id="segSkinProf"></div>
       </div>
     </div>
 
@@ -144,6 +147,7 @@
         <button class="mBtn" id="authLoginBtn" style="width:100%">Войти</button>
         <button class="mBtn" id="authGoogleBtn" style="width:100%">🔵 Войти через Google</button>
         <button class="mBtn" id="authAnonBtn" style="width:100%;opacity:.6">Анонимно</button>
+        <button class="mBtn" id="authResetBtn" style="width:100%;opacity:.6">🔑 Забыли пароль?</button>
       </div>
       <div style="text-align:center;margin-top:16px">
         <button class="mBtn" id="authSkipBtn" style="opacity:.5">Пропустить</button>
@@ -185,11 +189,15 @@
         <div id="lobbyTimeSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="setGroup">
+        <h3>⏱ Прирост (Фишер)</h3>
+        <div id="lobbyIncSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div class="setGroup">
         <h3>🎨 Ваш цвет</h3>
         <div id="lobbyColorSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="applyBar" style="margin-top:20px">
-        <button class="mBtn primary" id="lobbyConfirmBtn" style="width:100%;font-size:18px">🏠 Создать лобби</button>
+        <button class="mBtn primary" id="lobbyConfirmBtn" style="width:100%;font-size:18px" onclick="startLobbyFromSetup()">🚀 Запуск</button>
       </div>
     </div>
   </div>
@@ -206,6 +214,11 @@
       <div id="lobbyCode" style="margin-bottom:20px;display:none">
         <p style="color:var(--mut);font-size:12px;margin-bottom:4px">Код лобби:</p>
         <div id="lobbyIdText" style="font-size:18px;font-weight:700;color:var(--gold);font-family:monospace;cursor:pointer" title="Нажмите чтобы скопировать"></div>
+      </div>
+      <div id="lobbyQr" style="margin-bottom:20px;display:none">
+        <p style="color:var(--mut);font-size:12px;margin-bottom:8px">📲 Отсканируйте QR, чтобы подключиться:</p>
+        <img id="lobbyQrImg" style="display:block;margin:0 auto;border-radius:12px;background:#fff;padding:8px" width="180" height="180" alt="QR-код лобби">
+        <button class="mBtn" id="lobbyCopyLink" style="width:100%;margin-top:8px">🔗 Скопировать ссылку</button>
       </div>
       <div id="lobbyActions" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
@@ -240,6 +253,50 @@
     </div>
   </div>
 
+  <!-- ================= ЭКРАН: РЕЙТИНГОВАЯ ================= -->
+  <div class="screen" id="scrRanked">
+    <div class="scrHead">
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Рейтинговая</span>
+    </div>
+    <div style="max-width:420px;margin:0 auto;padding:20px;text-align:center">
+      <!-- Rating card -->
+      <div id="rankedRatingCard" style="background:var(--panel);border:2px solid var(--gold);border-radius:16px;padding:24px 20px;margin-bottom:16px">
+        <div id="rankedLeagueIcon" style="font-size:48px;margin-bottom:8px">🏆</div>
+        <div id="rankedLeagueName" style="color:var(--gold);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Лига</div>
+        <div id="rankedElo" style="font-size:clamp(40px,10vw,64px);font-weight:900;color:var(--txt);line-height:1">1000</div>
+        <div style="color:var(--mut);font-size:12px;margin-top:4px">ELO рейтинг</div>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
+          <div id="rankedWins" style="font-size:22px;font-weight:800;color:var(--green)">0</div>
+          <div style="color:var(--mut);font-size:11px">Побед</div>
+        </div>
+        <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
+          <div id="rankedLosses" style="font-size:22px;font-weight:800;color:var(--red)">0</div>
+          <div style="color:var(--mut);font-size:11px">Поражений</div>
+        </div>
+        <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
+          <div id="rankedWinrate" style="font-size:22px;font-weight:800;color:var(--gold)">0%</div>
+          <div style="color:var(--mut);font-size:11px">Винрейт</div>
+        </div>
+      </div>
+
+      <!-- Recent matches -->
+      <div style="text-align:left;margin-bottom:16px">
+        <div style="color:var(--mut);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">Последние партии</div>
+        <div id="rankedHistory" style="max-height:180px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Play button -->
+      <button class="mBtn primary" id="rankedPlayBtn" style="width:100%;padding:18px;font-size:18px">
+        ⚔ Найти соперника
+      </button>
+    </div>
+  </div>
+
   <!-- ================= ЭКРАН: БЫСТРЫЙ СТАРТ ================= -->
   <div class="screen" id="scrPlay">
     <div class="scrHead">
@@ -255,9 +312,9 @@
       <button class="backBtn" data-back>← Назад</button>
       <span class="scrTitle">Магазин</span>
     </div>
-    <div style="display:flex;justify-content:center;gap:8px;width:min(760px,94vw);margin-bottom:12px">
-      <span class="coinChip" id="shopCoins">🪙 0</span>
-      <span class="coinChip gemChip" id="shopGems">💎 0</span>
+    <div style="display:flex;justify-content:flex-end;gap:8px;width:min(760px,94vw);margin-bottom:12px">
+      <span class="coinChip" id="shopCoins" style="margin-left:0">🪙 0</span>
+      <span class="coinChip gemChip" id="shopGems" style="margin-left:0">💎 0</span>
     </div>
     <div class="shopTabs" id="shopTabs">
       <button class="shopTab active" data-tab="skins">🎨 Скины фигур</button>
@@ -265,6 +322,7 @@
       <button class="shopTab" data-tab="boards">♟ Доски</button>
       <button class="shopTab" data-tab="stickers">📦 Стикеры</button>
       <button class="shopTab" data-tab="avatars">👤 Аватарки</button>
+      <button class="shopTab" data-tab="videos">🎬 Видео мемы</button>
     </div>
     <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center">
       <p class="note" style="width:min(760px,94vw);text-align:left;margin-bottom:12px;color:var(--mut);font-size:12px">
@@ -308,6 +366,9 @@
           <p style="color:var(--mut);font-size:11px;margin-top:4px">Введите время в минутах (1-60)</p>
         </div>
       </div>
+      <div class="setGroup" id="timeIncGroup" style="display:none"><h3>⏱ Прирост (Фишер)</h3><small style="color:var(--mut);font-size:11px">Секунды добавляются после каждого хода</small>
+        <div id="segTimeInc"></div>
+      </div>
       <div class="setGroup" id="memeModesGroup" style="display:none"><h3>🔫 Мемасия</h3>
         <div id="memeModesOpts"></div>
       </div>
@@ -326,8 +387,8 @@
     <div class="shopTabs" id="lbTabs">
       <button class="shopTab active" data-mode="classic">♟ Классика</button>
       <button class="shopTab" data-mode="bot">🤖 Боты</button>
+      <button class="shopTab" data-mode="ranked">🏆 Рейтинг</button>
       <button class="shopTab" data-mode="fischer">🎲 Фишер</button>
-      <button class="shopTab" data-mode="daily">📅 Дневная</button>
       <button class="shopTab" data-mode="overall">🏆 Общий</button>
     </div>
     <div id="lbTop"></div>
@@ -364,23 +425,13 @@
       <span class="scrTitle">Настройки</span>
     </div>
     
-    <div class="setGroup"><h3>🤖 Соперник</h3>
-      <div id="setBotInfo" class="setBotInfo"></div>
-      <button class="mBtn" id="btnChangeBot" style="margin-top:8px">Выбрать бота</button>
-    </div>
+    <div class="setSectionTitle">📦 Общие настройки</div>
     
     <div class="setGroup"><h3>🎵 Звук</h3>
       <div id="sndSliders"></div>
     </div>
     
-    <div class="setGroup"><h3>🎨 Тема доски</h3>
-      <div id="themeRow"></div>
-    </div>
-    
-    <div class="setGroup"><h3>♟ Скин фигур</h3>
-      <div id="segSkin"></div>
-    </div>
-    
+    <div class="setSectionTitle" id="modeSetTitle" style="display:none">🎮 Настройки режима</div>
     <div class="setGroup" id="memeCfgGroup" style="display:none"><h3>🔫 Мемасия</h3>
       <div id="memeOpts"></div>
     </div>
@@ -388,15 +439,21 @@
     <div class="applyBar">
       <button class="mBtn primary" id="setApply">Применить и начать заново</button>
     </div>
-    <p class="applyNote">Тема и скин применяются сразу.<br>Остальные настройки — с новой партии.</p>
+    <p class="applyNote">Настройки применяются с новой партии.</p>
     
     <div class="setGroup" style="margin-top:20px">
       <button class="mBtn" id="btnReset" style="background:var(--red);color:#fff">🗑 Сбросить все данные</button>
     </div>
+
+    <div class="setGroup mobileOnlyLinks" style="margin-top:20px">
+      <button class="mBtn" id="qrBtnMob">📲 QR-код для телефона</button>
+      <button class="mBtn" id="feedbackBtnMob">💬 Пожелания и идеи</button>
+      <button class="mBtn" id="devblogBtnMob">📝 Девблог</button>
+    </div>
   </div>
   
   <!-- ИГРА -->
-  <header><h1>CHESHER</h1></header>
+  <header><h1>CHESHER</h1><div id="statusLine">Загрузка…</div></header>
   
   <div id="wrap">
     <div class="pbar pbarTop">
@@ -408,7 +465,6 @@
       <div class="pCard" id="pTop" title="Профиль соперника">
         <div class="ava" id="avaTop">🤖</div>
         <div class="nm" id="nmTop">Соперник</div>
-        <div class="sub" id="subTop">0% · 0</div>
         <button class="muteBtn" id="muteBtn" title="Заглушить соперника">🔊</button>
       </div>
       <div class="chatBox" id="chatBox">
@@ -421,7 +477,6 @@
       <div class="pCard clickable" id="pBot" title="Ваш профиль — нажмите для эмоций">
         <div class="ava" id="avaBot">🐣</div>
         <div class="nm" id="nmBot">Вы</div>
-        <div class="sub" id="subBot">0% · 0</div>
       </div>
       <div class="emPop" id="emoPopBot"></div>
     </div>
@@ -433,20 +488,21 @@
       </div>
     </div>
     <div class="pbar pbarBot">
-      <div class="who"><div class="name" id="nameBot">Вы</div>
-        <div class="taken"><span id="takBot"></span><span class="adv" id="advBot"></span></div></div>
-        <div class="clock" id="clkBot">∞</div>
+      <div class="who">
+        <div class="name" id="nameBot">Вы</div>
+        <div class="taken" id="capCol" style="display:none"><span id="capColPieces"></span><span class="adv" id="capColScore"></span></div>
+      </div>
+      <div class="clock" id="clkBot">∞</div>
     </div>
-    <div id="statusLine">Загрузка…</div>
     
     <aside id="side">
       <div id="modeLabel"></div>
       <button class="btn primary" id="btnNew">Новая партия</button>
       <button class="btn" id="btnGoMenu">🏠 Главное меню</button>
-      <button class="btn" id="btnSet">⚙ Настройки</button>
+      <button class="btn" id="btnSet">⚙ <span class="btnText">Настройки</span></button>
       <div class="row2">
-        <button class="btn" id="btnHint">💡 Ход <span id="hintN">(2)</span></button>
-        <button class="btn" id="btnUndo">↩️ Назад <span id="undoN">(3)</span></button>
+        <button class="btn" id="btnHint">💡 <span class="btnText">Ход</span> <span id="hintN">(2)</span></button>
+        <button class="btn" id="btnUndo">↩️ <span class="btnText">Назад</span> <span id="undoN">(3)</span></button>
       </div>
       <div class="row2">
         <button class="btn warn" id="btnRes">Сдаться</button>
@@ -472,6 +528,21 @@
     </div>
   </div></div>
   
+  <!-- ПРОСМОТР ПАРТИИ -->
+  <div class="overlay" id="ovReplay"><div class="modal" style="width:min(92vw,360px)">
+    <h2>↩️ Просмотр партии</h2>
+    <div style="display:flex;justify-content:center;margin:10px 0 6px"><div style="width:min(78vw,268px)"><div style="display:grid;grid-template-columns:repeat(8,1fr);border:2px solid #6b5b3f;border-radius:4px;overflow:hidden" id="rvBoard"></div></div></div>
+    <div style="text-align:center;color:var(--mut);font-size:12px;margin:4px 0 10px" id="rvInfo">0</div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px">
+      <button class="btn" id="rvBack" title="К началу">⏮</button>
+      <button class="btn" id="rvPrev" title="Назад">◀</button>
+      <button class="btn" id="rvNext" title="Вперёд">▶</button>
+      <button class="btn" id="rvFwd" title="К концу">⏭</button>
+    </div>
+    <div id="rvMoveList" style="max-height:150px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;line-height:1.5;margin-bottom:10px"></div>
+    <div class="modalBtns"><button class="btn" data-close="ovReplay">Закрыть</button></div>
+  </div></div>
+
   <!-- ПРЕВРАЩЕНИЕ -->
   <div class="overlay" id="ovPr"><div class="modal">
     <h2>Превращение пешки</h2>
@@ -489,28 +560,47 @@
     <div id="goS"></div>
     <div class="modalBtns">
       <button class="btn primary" id="overNew">Новая партия</button>
+      <button class="btn primary" id="overRematch" style="display:none">🔁 Реванш</button>
       <button class="btn" id="overMenu">В главное меню</button>
       <button class="btn" data-close="ovOver">Посмотреть доску</button>
     </div>
   </div></div>
+
+  <!-- Оверлей: Пожелания -->
+  <div class="overlay" id="ovFeedback"><div class="modal" style="max-width:460px">
+    <h2 style="margin:0 0 6px">💬 Пожелания и идеи</h2>
+    <p style="color:var(--mut);font-size:13px;margin:0 0 14px">Расскажите, что бы вы хотели увидеть в игре: новые режимы, видеомемы, функции...</p>
+    <textarea id="feedbackText" class="inputTxt" rows="4" maxlength="500" placeholder="Ваша идея..." style="width:100%;resize:vertical;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" data-close="ovFeedback" style="flex:1">Отмена</button>
+      <button class="btn primary" id="feedbackSend" style="flex:1">Отправить</button>
+    </div>
+    <div id="feedbackStatus" style="color:var(--green);font-size:12px;margin-top:8px;text-align:center"></div>
+  </div></div>
   
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+
   <!-- Подключение JS файлов в правильном порядке -->
-  <script src="js/chess-logic.js?v=0.14.1"></script>
-  <script src="js/bot.js?v=0.14.1"></script>
-  <script src="js/elo.js?v=0.14.1"></script>
-  <script src="js/profile.js?v=0.14.1"></script>
-  <script src="js/ui.js?v=0.14.1"></script>
-  <script src="js/chat.js?v=0.14.1"></script>
-  <script src="js/store.js?v=0.14.1"></script>
-  <script src="js/settings.js?v=0.14.1"></script>
-  <script src="js/meme/MemeEventBus.js?v=0.14.1"></script>
-  <script src="js/meme/MemeConfig.js?v=0.14.1"></script>
-  <script src="js/meme/MemeThreatHandler.js?v=0.14.1"></script>
-  <script src="js/firebase-config.js?v=0.18.0"></script>
-  <script src="js/auth.js?v=0.18.0"></script>
-  <script src="js/friends.js?v=0.18.0"></script>
-  <script src="js/multiplayer.js?v=0.18.0"></script>
-  <script src="js/net-ui.js?v=0.18.0"></script>
+  <script src="js/chess-logic.js?v=0.38.3"></script>
+  <script src="js/bot.js?v=0.38.3"></script>
+  <script src="js/elo.js?v=0.38.3"></script>
+  <script src="js/profile.js?v=0.38.3"></script>
+  <script src="js/ui.js?v=0.38.3"></script>
+  <script src="js/chat.js?v=0.38.3"></script>
+  <script src="js/store.js?v=0.38.3"></script>
+  <script src="js/settings.js?v=0.38.3"></script>
+  <script src="js/meme/MemeEventBus.js?v=0.38.3"></script>
+  <script src="js/meme/MemeConfig.js?v=0.38.3"></script>
+  <script src="js/meme/MemeThreatHandler.js?v=0.38.3"></script>
+  <script src="js/firebase-config.js?v=0.38.3"></script>
+  <script src="js/auth.js?v=0.38.3"></script>
+  <script src="js/friends.js?v=0.38.3"></script>
+  <script src="js/multiplayer.js?v=0.38.3"></script>
+  <script src="js/net-ui.js?v=0.38.3"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -520,9 +610,67 @@
     <div class="dbWrap" id="dbWrap"></div>
   </div>
   
-  <!-- Кнопка дев-блога -->
-  <button class="devblogBtn" id="devblogBtn" title="Dev Blog">📝</button>
+  <!-- Кнопка помощи + Ежедневный подарок + Телефон -->
+  <button class="helpBtn" id="helpBtn" title="Помощь новым игрокам">?</button>
+  <button class="giftBtn" id="giftBtn" title="Ежедневный подарок">🎁</button>
+  <button class="phoneBtn" id="phoneBtn" title="Мобильный режим">📱</button>
+
+  <!-- Девблог — левый верх -->
+  <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">📝</button>
+  <button class="devblogBtn feedbackBtn" id="feedbackBtn" title="Пожелания и идеи">💬</button>
+  <button class="qrBtn" id="qrBtn" title="QR-код для мобильного">📲</button>
+
+  <!-- QR Overlay -->
+  <div class="qrOverlay" id="qrOverlay">
+    <div class="qrModal">
+      <h3>📲 QR-КОД</h3>
+      <img id="qrImg" style="display:block;margin:0 auto 16px;border-radius:8px;background:#fff;padding:8px" width="200" height="200" alt="QR">
+      <div class="qrUrl" id="qrUrl" title="Нажмите чтобы скопировать"></div>
+      <button class="qrClose" id="qrClose">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Валюта — правый ниж -->
+  <div class="cornerFloat" id="cornerFloat">
+    <span class="coinChip" id="pbCoins" style="margin:0">🪙 0</span>
+    <span class="coinChip gemChip" id="pbGems" style="margin:0">💎 0</span>
+  </div>
+
+  <!-- Друзья — левый низ -->
+  <button class="friendsFloatBtn" id="friendsFloatBtn" title="Друзья">👥</button>
   <button class="devblogBtn cheatBtn" id="cheatBtn" title="Dev Tools" style="display:none">🔧</button>
+  
+  <!-- Панель друзей -->
+  <div class="friendsPanel" id="friendsPanel">
+    <div class="fpHeader">
+      <span class="fpTitle">👥 Друзья</span>
+      <button class="fpClose" id="fpClose">✕</button>
+    </div>
+    <div class="fpSearch">
+      <input type="text" id="fpSearchInput" placeholder="Найти друга..." maxlength="30">
+      <button class="fpSearchBtn" id="fpSearchBtn">🔍</button>
+    </div>
+    <div class="fpSearchResults" id="fpSearchResults"></div>
+    <div class="fpRequests" id="fpRequests"></div>
+    <div class="fpList" id="fpList">
+      <div class="fpEmpty">Добавьте друзей, чтобы начать общение</div>
+    </div>
+  </div>
+
+  <!-- Чат с другом -->
+  <div class="friendChatPanel" id="friendChatPanel">
+    <div class="fcHeader">
+      <button class="fcBack" id="fcBack">←</button>
+      <span class="fcName" id="fcName">Друг</span>
+      <div class="fcStatus" id="fcStatus"></div>
+      <button class="fpClose" id="fcClose">✕</button>
+    </div>
+    <div class="fcMessages" id="fcMessages"></div>
+    <div class="fcInput">
+      <input type="text" id="fcInput" placeholder="Сообщение..." maxlength="200">
+      <button class="fcSend" id="fcSend">➤</button>
+    </div>
+  </div>
   
   <!-- Cheat panel -->
   <div class="cheatPanel" id="cheatPanel">
@@ -562,7 +710,7 @@
     </div>
   </div>
   
-  <script src="js/main.js?v=0.14.1"></script>
+  <script src="js/main.js?v=0.38.3"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>

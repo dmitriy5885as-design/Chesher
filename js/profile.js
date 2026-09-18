@@ -17,8 +17,8 @@
 
 /* --- Константы --- */
 const DEFAULT_AVATARS = [
-  '🐣','🦊','🐸','🐼','🦁','🐺','🦉','🐙',
-  '🦄','🐲','👽','🤖','💀','🎃','♔','♞'
+  '👽','🐣','🦊','🐸','🐼','🦁','🐺','🦉','🐙',
+  '🦄','🐲','🤖','💀','🎃','♔','♞'
 ];
 
 const DEFAULT_START_STATS = {
@@ -56,13 +56,14 @@ class Profile {
     }
     // Per-mode ratings
     this.ratings = data.ratings || {
-      classic: 0,
-      bot: 0,
-      fischer: 0,
-      meme: 0
+      classic: 1000,
+      bot: 1000,
+      fischer: 1000,
+      meme: 1000,
+      ranked: 1000
     };
     // Ensure all modes exist
-    ['classic','bot','fischer','meme'].forEach(m => {
+    ['classic','bot','fischer','meme','ranked'].forEach(m => {
       if(typeof this.ratings[m] !== 'number') this.ratings[m] = 0;
     });
   }
@@ -258,7 +259,7 @@ const ProfilesManager = {
     const firstId = 'p' + Date.now().toString(36);
     const firstProfile = new Profile(firstId, {
       name: 'Гость',
-      ava: '🐣',
+      ava: '👽',
       coins: 50
     });
     this.profiles = [firstProfile];
