@@ -136,6 +136,8 @@ const ChesMP = {
     this.lobbyId = lobbyId;
     this.myColor = isWhite ? 'w' : 'b';
     this._isHost = true;
+    // Authoritative settings of THIS lobby (host side) — used when the game starts
+    this.lobbySettings = { mode: mode, ranked: !!cfg.ranked, timeSec: timeSec, timeInc: timeInc };
     // If the host closes the tab without leaving, mark the lobby cancelled
     lobbyRef.onDisconnect().update({ status: 'cancelled' });
     return lobbyId;
@@ -344,10 +346,12 @@ const ChesMP = {
       while(this._sendQueue.length) {
         const m = this._sendQueue[0];
         const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
-        const upd = { fen: m.fen, turn: m.fen.split(' ')[1] };
-        if(m.clock) upd.clock = m.clock;
-        await ref.update(upd);
-        await ref.child('moves').child(m.mid).set({
+        // Single atomic write: position + clock + move record in one round-trip
+        const upd = {};
+        upd['fen'] = m.fen;
+        upd['turn'] = m.fen.split(' ')[1];
+        if(m.clock) upd['clock'] = m.clock;
+        upd['moves/' + m.mid] = {
           mid: m.mid,
           by: m.by,
           from: m.from,
@@ -357,7 +361,8 @@ const ChesMP = {
           promo: m.promo,
           clock: m.clock || null,
           timestamp: m.timestamp
-        });
+        };
+        await ref.update(upd);
         this._sendQueue.shift();
       }
     } catch(e) {

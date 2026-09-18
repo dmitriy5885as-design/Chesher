@@ -1562,7 +1562,7 @@ function executeMove(move) {
   if(sl) {
     if(S.inCheck(S.turn)) { sl.textContent = '⚠ Шах!'; snd.check(); }
     else if(cfg.gameMode === 'multiplayer') {
-      sl.textContent = S.turn === S.humanColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+      sl.textContent = _mpTurnText(S.turn, S.humanColor);
     }
     else if(cfg.gameMode === 'local') {
       sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
@@ -1982,6 +1982,12 @@ function _formatTime(sec) {
   return m + ' мин';
 }
 
+/* --- Текст статуса хода в сетевой игре (цвет = цвет стороны, чей ход) --- */
+function _mpTurnText(turn, myColor) {
+  const c = turn === 'w' ? 'белые' : 'чёрные';
+  return turn === myColor ? '⚔ Ваш ход (' + c + ')' : '⏳ Ход соперника... (' + c + ')';
+}
+
 let _memeBotPage = 0;
 function renderMemeBotGrid() {
   const grid = document.getElementById('segBot');
@@ -2205,7 +2211,7 @@ function startMultiplayerGame(mpColor, opponentName) {
   hideResumeBtn();
   window._mpReplaySkip = 0;
 
-  const ls = NetUI._lobbySettings || ChesMP.lobbySettings || {};
+  const ls = ChesMP.lobbySettings || NetUI._lobbySettings || {};
   const mpMode = ls.mode || 'classic';
   cfg.modeId = ls.ranked ? 'ranked' : mpMode;
   cfg.gameMode = ls.ranked ? 'ranked' : 'multiplayer';
@@ -2264,7 +2270,7 @@ function startMultiplayerGame(mpColor, opponentName) {
   updateCounters();
 
   const sl = document.getElementById('statusLine');
-  if(sl) sl.textContent = mpColor === 'w' ? '⚔ Ваш ход (белые)' : '⏳ Ход соперника... (чёрные)';
+  if(sl) sl.textContent = _mpTurnText(S.turn, mpColor);
 
   if(cfg.timeSec > 0) {
     S.clockOn = true;
@@ -2522,7 +2528,7 @@ async function resumeMultiplayer(savedGame) {
 
   // Status
   const sl = document.getElementById('statusLine');
-  if(sl) sl.textContent = S.turn === mp.myColor ? '⚔ Ваш ход' : '⏳ Ход соперника...';
+  if(sl) sl.textContent = _mpTurnText(S.turn, mp.myColor);
 
   // Clock — authoritative server clock first, saved state as fallback
   const ck = data.clock || null;
