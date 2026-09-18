@@ -1,0 +1,21 @@
+{
+  "name": "CHESHER — Чешир · шахматы",
+  "short_name": "CHESHER",
+  "description": "Шахматы с ботами, друзьями и по сети. Рейтинги, задачки и турниры.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f0f1a",
+  "theme_color": "#0f0f1a",
+  "lang": "ru",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

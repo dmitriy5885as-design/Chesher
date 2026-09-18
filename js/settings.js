@@ -31,7 +31,8 @@ const MODES = [
   {id: 'bot', icon: '🤖', name: 'Против бота', desc: 'Классическая игра против компьютера'},
   {id: 'local', icon: '👥', name: 'На одном ПК', desc: 'Два игрока за одним компьютером'},
   {id: 'fischer', icon: '🎲', name: 'Фишер 960', desc: 'Случайная расстановка фигур'},
-  {id: 'tournament', icon: '🏅', name: 'Турнир', desc: 'Скоро...', soon: true}
+  {id: 'puzzle', icon: '🧩', name: 'Задачка дня', desc: 'Реши тактику и получи награду'},
+  {id: 'tournament', icon: '🏅', name: 'Турнир', desc: 'Выбей всех из сетки против ботов'}
 ];
 
 /* --- Звук через Web Audio API --- */
@@ -76,7 +77,8 @@ const snd = (() => {
     win()   { play(523, 0.15, 'sine', 0.15); setTimeout(() => play(659, 0.15, 'sine', 0.15), 150); setTimeout(() => play(784, 0.3, 'sine', 0.15), 300); },
     lose()  { play(400, 0.3, 'sawtooth', 0.1); setTimeout(() => play(300, 0.4, 'sawtooth', 0.1), 200); },
     draw()  { play(440, 0.2, 'triangle', 0.1); setTimeout(() => play(440, 0.2, 'triangle', 0.1), 250); },
-    promo() { play(660, 0.1, 'sine', 0.12); setTimeout(() => play(880, 0.2, 'sine', 0.12), 100); }
+    promo() { play(660, 0.1, 'sine', 0.12); setTimeout(() => play(880, 0.2, 'sine', 0.12), 100); },
+    notify() { play(1100, 0.1, 'sine', 0.1); setTimeout(() => play(1500, 0.16, 'sine', 0.1), 110); }
   };
 })();
 

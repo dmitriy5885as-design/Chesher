@@ -103,7 +103,7 @@ function paintMarks() {
   for(let r = 0; r < 8; r++) {
     for(let c = 0; c < 8; c++) {
       const sq = elements.sqEls[r][c];
-      if(sq) sq.classList.remove('last','sel','dot','cap-dot','chk','hintF','hintT');
+      if(sq) sq.classList.remove('last','sel','dot','cap-dot','chk','hintF','hintT','preF','preT');
     }
   }
 
@@ -138,6 +138,17 @@ function paintMarks() {
     elements.sqEls[hintMove.fr][hintMove.fc].classList.add('hintF');
     elements.sqEls[hintMove.tr][hintMove.tc].classList.add('hintT');
   }
+
+  // Премув
+  if(typeof premove !== 'undefined' && premove &&
+     elements.sqEls[premove.fr] && elements.sqEls[premove.fr][premove.fc]) {
+    elements.sqEls[premove.fr][premove.fc].classList.add('preF');
+    const tSq = elements.sqEls[premove.tr] && elements.sqEls[premove.tr][premove.tc];
+    if(tSq) tSq.classList.add('preT');
+  } else if(typeof preSel !== 'undefined' && preSel &&
+            elements.sqEls[preSel.r] && elements.sqEls[preSel.r][preSel.c]) {
+    elements.sqEls[preSel.r][preSel.c].classList.add('preF');
+  }
 }
 
 /* --- Обновление панелей --- */
@@ -150,8 +161,9 @@ function refreshBars() {
   const elNmTop = document.getElementById('nmTop');
 
   const cu = ProfilesManager.getCurrent();
-  const botId = cu ? (cu.botId || 1) : 1;
-  const bot = BOT_LIST.find(b => b.id === botId);
+  const bot = (typeof _activeBotOverride !== 'undefined' && _activeBotOverride)
+    ? (BOT_LIST.find(b => b.id === _activeBotOverride) || null)
+    : BOT_LIST.find(b => b.id === (cu ? (cu.botId || 1) : 1));
 
   if(cfg.gameMode === 'local' && S) {
     const myLabel = humanCol === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
@@ -759,6 +771,7 @@ function renderMatchHistory(cu) {
         '<div style="font-size:12px;color:var(--mut)">' + (h.mode || 'Классика') + (h.reason ? ' · ' + h.reason : '') + '</div>' +
       '</div>' +
       (hasReplay ? '<button class="btn" onclick="openReplay(' + idx + ')" title="Просмотр партии">▶</button>' : '') +
+      (hasReplay ? '<button class="btn" onclick="copyMatchPGN(' + idx + ')" title="Скопировать PGN">📋</button>' : '') +
       '<div style="font-size:11px;color:var(--mut);white-space:nowrap">' + time + '</div>' +
     '</div>';
   }).join('');
@@ -838,6 +851,56 @@ function openReplay(matchIdx) {
   openOv('ovReplay');
 }
 
+/* --- PGN: собрать из записи матча --- */
+function buildMatchPGN(h) {
+  if(!h) return '';
+  const resultTag = h.result === 'win' ? '1-0' : h.result === 'loss' ? '0-1' : '1/2-1/2';
+  const d = h.time ? new Date(h.time) : new Date();
+  const dateStr = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+  let pgn = '[Event "ЧЕШЕР"]\n[Site "Chesher"]\n[Date "' + dateStr + '"]\n[Round "1"]\n' +
+    '[White "Игрок"]\n[Black "' + (h.opponent || 'Соперник') + '"]\n[Result "' + resultTag + '"]\n';
+  if(h.startFen && h.startFen.indexOf('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR') !== 0) {
+    pgn += '[SetUp "1"]\n[FEN "' + h.startFen + '"]\n';
+  }
+  pgn += '\n';
+  const moves = h.moves || [];
+  let line = '';
+  for(let i = 0; i < moves.length; i++) {
+    const n = moves[i].notation || '';
+    if(i % 2 === 0) line += (Math.floor(i / 2) + 1) + '. ';
+    line += n + ' ';
+  }
+  pgn += line.trim() + ' ' + resultTag;
+  return pgn;
+}
+
+function copyMatchPGN(matchIdx) {
+  const cu = ProfilesManager.getCurrent();
+  if(!cu) return;
+  const h = (cu.matchHistory || [])[matchIdx];
+  const pgn = buildMatchPGN(h);
+  if(!pgn) { toast('PGN недоступен'); return; }
+  const done = () => toast('📋 PGN скопирован');
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(pgn).then(done).catch(() => _fallbackCopy(pgn, done));
+  } else {
+    _fallbackCopy(pgn, done);
+  }
+}
+
+function _fallbackCopy(text, done) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    if(done) done();
+  } catch(e) {}
+}
+
 /* --- Вкладка: Настройки профиля --- */
 function renderProfSettings(cu) {
   if(!cu) return;
@@ -907,3 +970,4 @@ window.askConfirm = askConfirm;
 window.spawnPiece = spawnPiece;
 window.updateClockUI = updateClockUI;
 window.openReplay = openReplay;
+window.copyMatchPGN = copyMatchPGN;

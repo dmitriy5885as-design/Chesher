@@ -29,6 +29,8 @@ function showScreen(id) {
   const el = document.getElementById(id);
   if(el) el.classList.add('show');
 
+  if(id === 'scrMenu') exitFullscreenMobile();
+
   // Devblog button only on main menu
   const cornerFloat = document.getElementById('cornerFloat');
   if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
@@ -105,7 +107,7 @@ function renderModeList() {
     d.addEventListener('click', () => {
       selectedModeId = m.id;
       cfg.modeId = m.id;
-      cfg.gameMode = m.id === 'bot' ? 'bot' : m.id === 'fischer' ? 'fischer' : m.id;
+      cfg.gameMode = m.id === 'bot' ? 'bot' : m.id === 'fischer' ? 'fischer' : m.id === 'puzzle' ? 'puzzle' : m.id;
       if(m.id === 'bot' || m.id === 'fischer') {
         modesBox.style.display = 'none';
         showBotSelection();
@@ -117,6 +119,12 @@ function renderModeList() {
         modesBox.style.display = 'none';
         _lobbyCfg.ranked = false;
         showMultiplayerMenu();
+      } else if(m.id === 'puzzle') {
+        modesBox.style.display = 'none';
+        startPuzzle();
+      } else if(m.id === 'tournament') {
+        modesBox.style.display = 'none';
+        showTournamentScreen();
       } else {
         modesBox.style.display = 'none';
         if(modesCfg) {
@@ -287,10 +295,9 @@ function buildModesCfg(modeId) {
   const modeNames = {classic:'Классика',bot:'Против бота',fischer:'Фишер 960',meme:'Мемасия',tournament:'Турнир',local:'На одном ПК',ranked:'Рейтинговая'};
   if(cfgTitle) cfgTitle.textContent = 'Настройки: ' + (modeNames[modeId] || modeId);
   
-  // Tournament placeholder
+  // Tournament
   if(modeId === 'tournament') {
-    toast('🏆 Турнир будет доступен в следующем обновлении!');
-    showModesList();
+    showTournamentScreen();
     return;
   }
   
@@ -973,6 +980,7 @@ function newGame() {
   legalCache = [];
   hintMove = null;
   pendingPromo = null;
+  _clearPremove();
   takenByW = [];
   takenByB = [];
   gameMoves = [];
@@ -986,9 +994,7 @@ function newGame() {
 
   // Bot greeting
   if(cfg.gameMode === 'bot' || cfg.gameMode === 'meme') {
-    const cu = ProfilesManager.getCurrent();
-    const botId = cu ? (cu.botId || 1) : 1;
-    const bot = BOT_LIST.find(b => b.id === botId);
+    const bot = _currentBotObj();
     if(bot) {
       const greetings = {
         cheerful: ['Привет! Давай играть!','Приветствую! Начинаем!','Хо-хо! Поехали!'],
@@ -1048,6 +1054,7 @@ function newGame() {
     S.time = null;
   }
   updateClockUI();
+  fullscreenOnMobile();
 
   // If human plays black, bot moves first
   if(humanColor === 'b' && (cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off') {
@@ -1149,6 +1156,12 @@ function endGame(reason, winnerColor, drawReason) {
     result = 'draw';
   }
 
+  // Турнир — свой поток завершения (без эло/меню)
+  if(_tournamentActive && _tournament) {
+    _tournamentOnEnd(result);
+    return;
+  }
+
   // Sound
   if(result === 'win') snd.win();
   else if(result === 'loss') snd.lose();
@@ -1157,8 +1170,7 @@ function endGame(reason, winnerColor, drawReason) {
   // Get opponent rating for display
   let opponentRating = 1000;
   if(cfg.bot !== 'off') {
-    const botId = cu.botId || 1;
-    const bot = BOT_LIST.find(b => b.id === botId);
+    const bot = _currentBotObj();
     if(bot) opponentRating = bot.rating;
   }
 
@@ -1208,8 +1220,7 @@ function endGame(reason, winnerColor, drawReason) {
   if(!cu.matchHistory) cu.matchHistory = [];
   let opponentName = 'Локальная игра';
   if(cfg.gameMode === 'bot') {
-    const botId = cu.botId || 1;
-    const bot = BOT_LIST.find(b => b.id === botId);
+    const bot = _currentBotObj();
     opponentName = bot ? '🤖 ' + bot.name : '🤖 Бот';
   } else if(cfg.gameMode === 'local') {
     opponentName = winnerColor === 'w' ? 'Игрок 1 (⚪)' : 'Игрок 2 (⚫)';
@@ -1259,12 +1270,15 @@ function endGame(reason, winnerColor, drawReason) {
 /* --- Клик по клетке --- */
 function onSquareClick(e) {
   if(_suppressClickTs && Date.now() - _suppressClickTs < 500) return;
-  if(!S || S.gameOver || isBotThinking) return;
-  if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
-  if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return;
-  if(cfg.gameMode === 'bot' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
-  if(cfg.gameMode === 'meme' && cfg.bot !== 'off' && S.turn !== S.humanColor) return;
+  if(!S || S.gameOver) return;
   if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return;
+  if(S.turn !== S.humanColor) {
+    if(cfg.gameMode !== 'local' && ((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') || cfg.bot !== 'off')) {
+      _premoveClick(e);
+    }
+    return;
+  }
+  if(isBotThinking) return;
 
   const sq = e.currentTarget;
   const r = parseInt(sq.dataset.r);
@@ -1321,6 +1335,465 @@ function onSquareClick(e) {
   }
 }
 
+/* --- Premove (заготовленный ход, когда ход соперника/бота) --- */
+let premove = null;   // {fr, fc, tr, tc, promo}
+let preSel = null;    // {r, c} — выбранная «откуда» фигура в режиме премува
+
+function _canPremove() {
+  if(!S || S.gameOver) return false;
+  if(cfg.gameMode === 'local') return false;
+  if(S.turn === S.humanColor) return false;
+  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return false;
+  return true;
+}
+
+function _uciName(r, c) {
+  const files = 'abcdefgh';
+  return files[c] + (8 - r);
+}
+
+function _premoveClick(e) {
+  const sq = e.currentTarget;
+  const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
+  const piece = S.board[r][c];
+
+  // Тап по уже заготовленному премуву — снять
+  if(premove && ((premove.fr === r && premove.fc === c) || (premove.tr === r && premove.tc === c))) {
+    premove = null;
+    preSel = null;
+    paintMarks();
+    return;
+  }
+
+  // Тап по своей фигуре — выбрать её как «откуда»
+  if(piece && pieceColorStatic(piece) === S.humanColor) {
+    preSel = {r, c};
+    premove = null;
+    snd.ui();
+    paintMarks();
+    return;
+  }
+
+  // Тап по клетке — поставить премув
+  if(preSel) {
+    premove = { fr: preSel.r, fc: preSel.c, tr: r, tc: c, promo: null };
+    preSel = null;
+    snd.ui();
+    paintMarks();
+    toast('⏱ Премув: ' + _uciName(premove.fr, premove.fc) + ' → ' + _uciName(premove.tr, premove.tc));
+  }
+}
+
+function _tryPremove() {
+  if(!premove) return;
+  if(!S || S.gameOver) { premove = null; preSel = null; paintMarks(); return; }
+  if(S.turn !== S.humanColor) return;
+  const p = premove;
+  premove = null;
+  preSel = null;
+  const legal = S.getLegalMoves(p.fr, p.fc);
+  const mv = legal.find(m => m.tr === p.tr && m.tc === p.tc);
+  if(!mv) {
+    paintMarks();
+    toast('Премув не прошёл — позиция изменилась');
+    return;
+  }
+  if(mv.promo) mv.promo = 'q';
+  executeMove(mv);
+}
+
+function _clearPremove() {
+  premove = null;
+  preSel = null;
+  if(typeof paintMarks === 'function') paintMarks();
+}
+
+/* --- Вибро-отклик / полноэкранный режим на мобильном --- */
+function _isMobile() {
+  return typeof document !== 'undefined' && document.body && document.body.classList.contains('mobile-mode');
+}
+
+function _haptic(pattern) {
+  try {
+    if(_isMobile() && navigator.vibrate) navigator.vibrate(pattern);
+  } catch(e) {}
+}
+
+function fullscreenOnMobile() {
+  try {
+    if(!_isMobile()) return;
+    const el = document.documentElement;
+    if(el.requestFullscreen && !document.fullscreenElement) {
+      el.requestFullscreen().catch(() => {});
+    }
+  } catch(e) {}
+}
+
+function exitFullscreenMobile() {
+  try {
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  } catch(e) {}
+}
+
+/* --- Уведомление «Ваш ход» (мигание тайтла + звук) --- */
+let _titleBlink = null;
+function notifyYourTurn() {
+  const orig = document.title;
+  let i = 0;
+  if(_titleBlink) clearInterval(_titleBlink);
+  _titleBlink = setInterval(() => {
+    i++;
+    const turn = i % 2;
+    document.title = turn ? '⏳ Ваш ход!' : orig;
+    if(i >= 8) {
+      clearInterval(_titleBlink);
+      _titleBlink = null;
+      document.title = orig;
+    }
+  }, 650);
+  if(cfg.sound) { try { snd.notify(); } catch(e) {} }
+}
+
+/* --- Задачка дня (M1, движок валидирует решение) --- */
+let _puzzle = null;
+
+const PUZZLE_LINES = [
+  { line: ['e2e4','e7e5','d1h5','b8c6','f1c4','g8f6'], answer: 'h5f7', title: 'Мат в 1 ход', hint: 'Ферзь вторгается на f7', reward: 5 },
+  { line: ['f2f3','e7e5','g2g4'], answer: 'd8h4', title: 'Мат в 1 ход', hint: 'Ферзь занимает h4', reward: 5 },
+  { line: ['e2e4','e7e5','g1f3','d7d6','d2d4','c8g4','d4e5','g4f3','d1f3','d6e5','f1c4','b8c6'], answer: 'f3f7', title: 'Мат в 1 ход', hint: 'Ферзь забирает f7', reward: 5 }
+];
+
+function _puzzleDayKey() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function _uciPiece(eng, uci) {
+  const fr = 8 - parseInt(uci[1]), fc = uci.charCodeAt(0) - 97;
+  const tr = 8 - parseInt(uci[3]), tc = uci.charCodeAt(2) - 97;
+  return eng.getLegalMoves(fr, fc).find(x => x.tr === tr && x.tc === tc) || null;
+}
+
+function _replayLine(line) {
+  const eng = new ChessEngine('classic');
+  eng.newGame();
+  for(const uci of line) {
+    const m = _uciPiece(eng, uci);
+    if(!m || eng.plyCount >= 300) return null;
+    eng.makeMove(m);
+  }
+  return eng;
+}
+
+function _validatePuzzle(pz) {
+  try {
+    const eng = _replayLine(pz.line);
+    if(!eng) return false;
+    const m = _uciPiece(eng, pz.answer);
+    if(!m) return false;
+    const saved = eng.saveState();
+    eng.applyMove(m);
+    const isMate = eng.isCheckmate(eng.turn);
+    eng.restoreState(saved);
+    return isMate;
+  } catch(e) { return false; }
+}
+
+function buildDailyPuzzle() {
+  const day = _puzzleDayKey();
+  const off = day % PUZZLE_LINES.length;
+  for(let i = 0; i < PUZZLE_LINES.length; i++) {
+    const idx = (off + i) % PUZZLE_LINES.length;
+    const pz = PUZZLE_LINES[idx];
+    if(_validatePuzzle(pz)) {
+      const eng = _replayLine(pz.line);
+      if(eng) return Object.assign({}, pz, { fen: eng.toFen(), turn: eng.turn });
+    }
+  }
+  return null;
+}
+
+function startPuzzle() {
+  const pz = buildDailyPuzzle();
+  if(!pz) { toast('Задачка дня пока недоступна'); return; }
+  _puzzle = pz;
+  cfg.gameMode = 'puzzle';
+  cfg.human = pz.turn;
+  cfg.bot = 'off';
+  MemeConfig.set('enabled', false);
+  S = new ChessEngine('classic');
+  S.loadFen(pz.fen);
+  S.humanColor = pz.turn;
+  gameStartFen = pz.fen;
+  gameMoves = [];
+  window._mpReplaySkip = 0;
+  lastMove = null; selected = null; legalCache = []; hintMove = null; pendingPromo = null;
+  hintsLeft = 2; undosLeft = 3;
+  _clearPremove();
+  takenByW = []; takenByB = [];
+  isBotThinking = false;
+  cfg.timeSec = 0;
+  S.clockOn = false; S.time = null; S.mpClock = null;
+
+  if(cfg.board && BOARDS[cfg.board]) {
+    const b = BOARDS[cfg.board];
+    document.documentElement.style.setProperty('--sq-l', b.light);
+    document.documentElement.style.setProperty('--sq-d', b.dark);
+  }
+
+  hideAllScreens();
+  const boardBox = document.getElementById('boardBox');
+  if(boardBox) {
+    boardBox.classList.toggle('flipped', pz.turn === 'b');
+    boardBox.classList.remove('skin-rajasthani');
+    const skin = SKINS[cfg.skin];
+    if(skin && skin.css) boardBox.classList.add(skin.css);
+  }
+
+  buildGrid();
+  fullRender();
+  refreshBars();
+  updateCounters();
+  updateClockUI();
+
+  const movesEl = document.getElementById('moves');
+  if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
+  const sl = document.getElementById('statusLine');
+  if(sl) sl.textContent = '🧩 ' + pz.title + ' · ' + (pz.hint || '');
+  toast('🧩 Задачка дня! Награда ' + pz.reward + ' 🪙');
+}
+
+function _handlePuzzleMove() {
+  if(!_puzzle) return;
+  const isMate = S.isCheckmate(S.turn);
+  if(isMate) {
+    _puzzleSolveDone();
+  } else {
+    _puzzleReload();
+  }
+}
+
+function _puzzleReload() {
+  const fen = buildDailyPuzzle();
+  if(!fen) return;
+  if(S) S.loadFen(fen.fen);
+  gameMoves = [];
+  lastMove = null; selected = null; legalCache = []; hintMove = null;
+  _clearPremove();
+  const movesEl = document.getElementById('moves');
+  if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
+  fullRender();
+  const sl = document.getElementById('statusLine');
+  if(sl) sl.textContent = '🧩 Не тот ход — попробуй ещё';
+  toast('Это не решение. Думай!');
+}
+
+function _puzzleSolveDone() {
+  snd.win();
+  _haptic(40);
+  const reward = _puzzle.reward || 5;
+  const key = 'chesher_puzzle_' + _puzzleDayKey();
+  const claimed = localStorage.getItem(key);
+  let gained = 0;
+  const cu = ProfilesManager.getCurrent();
+  if(!claimed) {
+    gained = reward;
+    if(cu) {
+      if(typeof cu.addCoins === 'function') cu.addCoins(reward);
+      else cu.coins = (cu.coins || 0) + reward;
+    }
+    saveProfiles();
+    renderCoins();
+    localStorage.setItem(key, String(reward));
+  }
+
+  const old = document.getElementById('ovPuzzle');
+  if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'overlay show';
+  ov.id = 'ovPuzzle';
+  ov.innerHTML = '<div class="modal"><h2>🧩 Решено!</h2>' +
+    '<div style="text-align:center;color:var(--mut);line-height:1.6;margin:10px 0">' +
+    (gained > 0 ? 'Награда дня: <b>+' + gained + ' 🪙</b>' : 'Награда уже получена сегодня') +
+    '</div><div class="modalBtns"><button class="btn primary" id="pzAgain">Ещё раз</button><button class="btn" id="pzMenu">В меню</button></div></div>';
+  document.body.appendChild(ov);
+  S.gameOver = true;
+  stopClock();
+  ov.querySelector('#pzAgain').addEventListener('click', () => { ov.remove(); startPuzzle(); });
+  ov.querySelector('#pzMenu').addEventListener('click', () => { ov.remove(); exitFullscreenMobile(); showScreen('scrMenu'); });
+}
+
+/* --- Турнир на выбывание против ботов --- */
+let _tournament = null;
+let _tournamentActive = false;
+let _activeBotOverride = null;
+
+function _currentBotObj() {
+  if(_activeBotOverride) {
+    const b = BOT_LIST.find(x => x.id === _activeBotOverride);
+    if(b) return b;
+  }
+  const cu = ProfilesManager.getCurrent();
+  const id = cu ? (cu.botId || 1) : 1;
+  return BOT_LIST.find(b => b.id === id) || null;
+}
+
+function _roundLabel(r, total) {
+  const denom = 1 << (total - r);
+  if(denom <= 1) return 'Финал';
+  if(denom === 2) return 'Полуфинал';
+  return '1/' + denom + ' финала';
+}
+
+function showTournamentScreen() {
+  const old = document.getElementById('ovTour');
+  if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'overlay show';
+  ov.id = 'ovTour';
+  ov.innerHTML = '<div class="modal"><h2>🏆 Турнир</h2>' +
+    '<p style="text-align:center;color:var(--mut);line-height:1.6">Сыграй против ботов на выбывание.<br>Каждый раунд — новый соперник, за финал — большой приз 🪙</p>' +
+    '<div class="modalBtns" style="flex-wrap:wrap">' +
+    '<button class="btn primary" data-sz="4">4 участника</button>' +
+    '<button class="btn" data-sz="8">8 участников</button>' +
+    '<button class="btn" data-sz="16">16 участников</button>' +
+    '</div>' +
+    '<div class="modalBtns"><button class="btn" id="tClose">Отмена</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelectorAll('[data-sz]').forEach(b => b.addEventListener('click', () => { ov.remove(); startTournament(parseInt(b.dataset.sz)); }));
+  ov.querySelector('#tClose').addEventListener('click', () => ov.remove());
+}
+
+function startTournament(size) {
+  if(size !== 4 && size !== 8 && size !== 16) size = 8;
+  const pool = BOT_LIST.slice();
+  for(let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  if(pool.length < size - 1) { toast('Недостаточно ботов для турнира'); return; }
+  const players = [{ id: 0, name: 'Вы', emoji: '🙋', rating: 1200, isYou: true }];
+  for(let i = 0; i < size - 1; i++) {
+    const b = pool[i];
+    players.push({ id: b.id, name: b.name, emoji: b.emoji, rating: b.rating, isYou: false });
+  }
+  _tournament = {
+    size: size,
+    cur: players,
+    round: 1,
+    totalRounds: Math.log2(size),
+    timeSec: 300,
+    timeInc: 0,
+    stats: { wins: 0, draws: 0, losses: 0 }
+  };
+  _tournamentActive = true;
+  _activeBotOverride = null;
+  _tournamentPlayMatch();
+}
+
+function _tournamentPlayMatch() {
+  const t = _tournament;
+  if(!t || !t.cur) return;
+  const cur = t.cur;
+  if(cur.length <= 1) {
+    t.winner = cur[0];
+    _tournamentWinFinal();
+    return;
+  }
+  const opp = cur[1];
+  _activeBotOverride = opp.id;
+  const myCol = t.round % 2 === 1 ? 'w' : 'b';
+
+  cfg.gameMode = 'bot';
+  cfg.modeId = 'bot';
+  cfg.bot = 'medium';
+  cfg.human = myCol;
+  cfg.memes = false;
+  MemeConfig.set('enabled', false);
+  cfg.timeSec = t.timeSec;
+  cfg.timeInc = t.timeInc;
+  const now = Date.now();
+  newGame();
+  hideAllScreens();
+  const sl = document.getElementById('statusLine');
+  const label = _roundLabel(t.round, t.totalRounds);
+  if(sl) sl.textContent = '🏆 ' + label + ' · vs ' + opp.name + ' (' + opp.rating + ')';
+  toast('🏆 Раунд ' + t.round + ': ' + label + ' против ' + opp.emoji + ' ' + opp.name);
+  fullscreenOnMobile();
+}
+
+function _tournamentOnEnd(result) {
+  const t = _tournament;
+  if(!t) return;
+  if(result === 'win') t.stats.wins++;
+  else if(result === 'loss') t.stats.losses++;
+  else t.stats.draws++;
+
+  if(result === 'loss') {
+    const reward = Math.pow(2, Math.max(0, t.round - 1));
+    _tournamentActive = false;
+    _activeBotOverride = null;
+    _tournamentShowEnd('loss', reward, _roundLabel(t.round, t.totalRounds));
+    return;
+  }
+
+  if(result === 'draw') {
+    toast('🤝 Ничья — переиграем раунд!');
+    setTimeout(_tournamentPlayMatch, 900);
+    return;
+  }
+
+  // Победа — строим следующий круг
+  const cur = t.cur;
+  const next = [];
+  for(let i = 0; i < cur.length; i += 2) {
+    const a = cur[i], b = cur[i + 1];
+    const adv = (i === 0) ? a : (Math.random() < 0.5 ? a : b);
+    if(adv) next.push(adv);
+  }
+  t.cur = next;
+  t.round++;
+  if(next.length === 1) {
+    t.winner = next[0];
+    _tournamentWinFinal();
+    return;
+  }
+  setTimeout(_tournamentPlayMatch, 700);
+}
+
+function _tournamentWinFinal() {
+  _tournamentActive = false;
+  _activeBotOverride = null;
+  _tournamentShowEnd('win', 25, 'Финал');
+}
+
+function _tournamentShowEnd(kind, reward, label) {
+  const cu = ProfilesManager.getCurrent();
+  let gained = 0;
+  if(cu && reward > 0) {
+    gained = reward;
+    if(typeof cu.addCoins === 'function') cu.addCoins(reward);
+    else cu.coins = (cu.coins || 0) + reward;
+    saveProfiles();
+    renderCoins();
+  }
+  const old = document.getElementById('ovTourEnd');
+  if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'overlay show';
+  ov.id = 'ovTourEnd';
+  const title = kind === 'win' ? '🏆 Чемпион турнира!' : (label === 'Финал' ? '🥈 Финалист!' : '😔 Выбыл: ' + label);
+  ov.innerHTML = '<div class="modal"><h2>' + title + '</h2>' +
+    '<div style="text-align:center;color:var(--mut);line-height:1.7;margin:10px 0">' +
+    'Побед: ' + (_tournament ? _tournament.stats.wins : 0) + ' · Ничьих: ' + (_tournament ? _tournament.stats.draws : 0) +
+    '<br>' + (gained > 0 ? 'Приз: <b>+' + gained + ' 🪙</b>' : '') +
+    '</div><div class="modalBtns"><button class="btn primary" id="tEndAgain">Ещё турнир</button><button class="btn" id="tEndMenu">В меню</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#tEndAgain').addEventListener('click', () => { ov.remove(); showTournamentScreen(); });
+  ov.querySelector('#tEndMenu').addEventListener('click', () => { ov.remove(); exitFullscreenMobile(); showScreen('scrMenu'); });
+  if(kind === 'win') snd.win(); else snd.lose();
+}
+
 /* --- Drag-and-drop фигур (мышь/тач) --- */
 let _drag = null;
 let _suppressClickTs = 0;
@@ -1357,13 +1830,15 @@ function initBoardPointer() {
   grid.dataset.mdrag = '1';
 
   grid.addEventListener('pointerdown', e => {
-    if(!_canTouchBoard()) return;
+    if(!_canTouchBoard() && !_canPremove()) return;
     const sq = e.target.closest('.sq');
     if(!sq) return;
     const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
     const piece = S.board[r][c];
-    if(!piece || pieceColorStatic(piece) !== S.turn) return;
-    _drag = { r, c, x: e.clientX, y: e.clientY, moved: false, srcEl: _findPieceEl(r, c), ghost: null };
+    const myCol = S.turn === S.humanColor ? S.turn : S.humanColor;
+    if(!piece || pieceColorStatic(piece) !== myCol) return;
+    const pm = S.turn !== S.humanColor;
+    _drag = { r, c, x: e.clientX, y: e.clientY, moved: false, srcEl: _findPieceEl(r, c), ghost: null, pmove: pm };
     try { grid.setPointerCapture(e.pointerId); } catch(err) {}
   });
 
@@ -1413,6 +1888,7 @@ function initBoardPointer() {
     if(!_drag) return;
     const drag = _drag;
     const moved = drag.moved;
+    const wasPmove = drag.pmove;
     _dragCleanup();
     try { grid.releasePointerCapture(e.pointerId); } catch(err) {}
     if(!moved) return; // тап — обработку оставляет клику (onSquareClick)
@@ -1423,6 +1899,17 @@ function initBoardPointer() {
     const sq = el ? el.closest('.sq') : null;
     if(!sq) return;
     const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
+
+    // Премув драгом (не наш ход) — заготовить ход, не ходить
+    if(wasPmove) {
+      premove = { fr: drag.r, fc: drag.c, tr: r, tc: c, promo: null };
+      preSel = null;
+      snd.ui();
+      paintMarks();
+      toast('⏱ Премув: ' + _uciName(premove.fr, premove.fc) + ' → ' + _uciName(premove.tr, premove.tc));
+      return;
+    }
+
     const move = legalCache.find(m => m.fr === drag.r && m.fc === drag.c && m.tr === r && m.tc === c);
     if(!move) return;
     if(move.promo) {
@@ -1485,6 +1972,7 @@ function executeMove(move) {
   legalCache = [];
   hintMove = null;
   if(move.capture) snd.capture(); else snd.move();
+  _haptic(move.capture ? 30 : 12);
 
   // Multiplayer: send move to server
   if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && typeof ChesMP !== 'undefined' && ChesMP.lobbyId && isHumanMove) {
@@ -1673,7 +2161,10 @@ function executeMove(move) {
   }
 
   fullRender();
-  
+
+  // Premove: авто-ход сразу после хода соперника/бота
+  _tryPremove();
+
   // Save game state
   if(S && !S.gameOver) S.saveToStorage();
 
@@ -1696,6 +2187,12 @@ function executeMove(move) {
       sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
     }
     else sl.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
+  }
+
+  // Задачка дня — проверка решения
+  if(cfg.gameMode === 'puzzle' && isHumanMove) {
+    _handlePuzzleMove(move);
+    return;
   }
 
   // Check game state
@@ -1756,8 +2253,8 @@ function botMove() {
   }
 
   let move = null;
-  const cu = ProfilesManager.getCurrent();
-  const botId = cu ? (cu.botId || 1) : 1;
+  const botObj = _currentBotObj();
+  const botId = botObj ? botObj.id : 1;
   try {
     move = Bot.makeMoveById(botId, S.turn, S);
   } catch(e) {
@@ -1814,6 +2311,7 @@ function undoMove() {
   selected = null;
   legalCache = [];
   hintMove = null;
+  if(typeof _clearPremove === 'function') _clearPremove();
   const movesEl = document.getElementById('moves');
   if(movesEl) {
     const toRemove = hadBot ? 3 : 1;
@@ -1992,7 +2490,7 @@ function handleIncomingMove(move) {
 
   executeMove(moveObj);
 
-  // Recalibrate local clock from the mover's authoritative snapshot (server clock)
+  if(!S.gameOver && S.turn === S.humanColor) notifyYourTurn();
   if(move.clock && move.clock.lastMoveAt) {
     S.mpClock = { w: move.clock.w || 0, b: move.clock.b || 0, turn: move.clock.turn, lastMoveAt: move.clock.lastMoveAt };
     if(S.time) {
@@ -2381,8 +2879,7 @@ function startMultiplayerGame(mpColor, opponentName) {
     document.documentElement.style.setProperty('--sq-l', b.light);
     document.documentElement.style.setProperty('--sq-d', b.dark);
   }
-
-  hideAllScreens();
+hideAllScreens();
 
   const boardBox = document.getElementById('boardBox');
   if(boardBox) {
@@ -2420,6 +2917,7 @@ function startMultiplayerGame(mpColor, opponentName) {
     S.mpClock = null;
   }
   updateClockUI();
+  fullscreenOnMobile();
 
   const movesEl = document.getElementById('moves');
   if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
@@ -3655,4 +4153,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   console.log('CHESHER ' + (DEVLOG.length ? DEVLOG[0].ver : 'init') + ' alpha — инициализация завершена');
+
+  // PWA: регистрируем service worker только на https (Pages), вне localhost
+  if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js?v=0.38.7').catch(() => {});
+    });
+  }
 });
