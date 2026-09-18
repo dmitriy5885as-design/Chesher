@@ -90,10 +90,15 @@ const ChesMP = {
     // Короткий код лобби — по нему можно войти прямо по QR/ссылке
     const codesRef = firebaseRtdb.ref('codes');
     let code = this._genCode();
-    for(let attempt = 0; attempt < 5; attempt++) {
-      const snap = await codesRef.child(code).once('value');
-      if(!snap.exists()) break;
-      code = this._genCode();
+    try {
+      for(let attempt = 0; attempt < 5; attempt++) {
+        const snap = await codesRef.child(code).once('value');
+        if(!snap.exists()) break;
+        code = this._genCode();
+      }
+    } catch(e) {
+      console.warn('createLobby: узел codes недоступен, лобби будет по длинному ID', e);
+      code = null;
     }
     this.lobbyCode = code;
 
@@ -119,7 +124,14 @@ const ChesMP = {
       createdAt: Date.now()
     });
 
-    await codesRef.child(code).set({ lobbyId: lobbyId, createdAt: Date.now() });
+    if(code) {
+      try {
+        await codesRef.child(code).set({ lobbyId: lobbyId, createdAt: Date.now() });
+      } catch(e) {
+        console.warn('createLobby: не удалось опубликовать короткий код', e);
+        this.lobbyCode = null;
+      }
+    }
 
     this.lobbyId = lobbyId;
     this.myColor = isWhite ? 'w' : 'b';
@@ -154,7 +166,10 @@ const ChesMP = {
 
     // Atomically claim the guest slot — prevents two guests from joining the same lobby
     const result = await lobbiesRef.child(lobbyId).transaction(node => {
-      if(!node) return;
+      // Firebase сначала вызывает функцию с null (локальный кэш ещё пуст).
+      // Возврат undefined здесь прервал бы транзакцию, так и не сходив на сервер,
+      // поэтому возвращаем null — это no-op и заставляет SDK прочитать данные с сервера.
+      if(node === null) return null;
       if(node.status !== 'waiting') return;
       if(node.guest) return;
       if(node.host === uid) return;
