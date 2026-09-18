@@ -244,8 +244,9 @@ function updateClockUI() {
   const topCol = humanCol === 'w' ? 'b' : 'w';
   const formatTime = (sec) => {
     if(!sec || sec <= 0) return '∞';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
+    const total = Math.floor(sec);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
     return m + ':' + String(s).padStart(2, '0');
   };
   if(elTop) {
