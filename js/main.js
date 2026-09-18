@@ -1258,6 +1258,7 @@ function endGame(reason, winnerColor, drawReason) {
 
 /* --- Клик по клетке --- */
 function onSquareClick(e) {
+  if(_suppressClickTs && Date.now() - _suppressClickTs < 500) return;
   if(!S || S.gameOver || isBotThinking) return;
   if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return;
   if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return;
@@ -1317,6 +1318,133 @@ function onSquareClick(e) {
     hintMove = null;
     snd.ui();
     paintMarks();
+  }
+}
+
+/* --- Drag-and-drop фигур (мышь/тач) --- */
+let _drag = null;
+let _suppressClickTs = 0;
+
+function _canTouchBoard() {
+  if(!S || S.gameOver || isBotThinking) return false;
+  if(cfg.gameMode === 'multiplayer' && S.turn !== S.humanColor) return false;
+  if(cfg.gameMode === 'ranked' && S.turn !== S.humanColor) return false;
+  if(cfg.gameMode === 'bot' && cfg.bot !== 'off' && S.turn !== S.humanColor) return false;
+  if(cfg.gameMode === 'meme' && cfg.bot !== 'off' && S.turn !== S.humanColor) return false;
+  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return false;
+  return true;
+}
+
+function _findPieceEl(r, c) {
+  const pcs = document.getElementById('pieces');
+  if(!pcs) return null;
+  return pcs.querySelector('.piece[data-r="' + r + '"][data-c="' + c + '"]');
+}
+
+function _dragCleanup() {
+  const g = document.querySelector('#boardBox .dragGhost');
+  if(g) g.remove();
+  const src = document.querySelector('#boardBox .dragSrc');
+  if(src) src.classList.remove('dragSrc');
+  const t = document.querySelectorAll('.sq.dragT');
+  for(const sq of t) sq.classList.remove('dragT');
+  _drag = null;
+}
+
+function initBoardPointer() {
+  const grid = document.getElementById('grid');
+  if(!grid || grid.dataset.mdrag) return;
+  grid.dataset.mdrag = '1';
+
+  grid.addEventListener('pointerdown', e => {
+    if(!_canTouchBoard()) return;
+    const sq = e.target.closest('.sq');
+    if(!sq) return;
+    const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
+    const piece = S.board[r][c];
+    if(!piece || pieceColorStatic(piece) !== S.turn) return;
+    _drag = { r, c, x: e.clientX, y: e.clientY, moved: false, srcEl: _findPieceEl(r, c), ghost: null };
+    try { grid.setPointerCapture(e.pointerId); } catch(err) {}
+  });
+
+  grid.addEventListener('pointermove', e => {
+    if(!_drag) return;
+    const dx = e.clientX - _drag.x, dy = e.clientY - _drag.y;
+    if(Math.abs(dx) + Math.abs(dy) < 7) return;
+    e.preventDefault();
+
+    if(!_drag.moved) {
+      _drag.moved = true;
+      if(_drag.srcEl) {
+        _drag.srcEl.classList.add('dragSrc');
+        const ghost = _drag.srcEl.cloneNode(true);
+        ghost.classList.remove('dragSrc');
+        ghost.classList.add('dragGhost');
+        document.getElementById('boardBox').appendChild(ghost);
+        _drag.ghost = ghost;
+      }
+      selected = { r: _drag.r, c: _drag.c };
+      legalCache = S.getLegalMoves(_drag.r, _drag.c);
+      hintMove = null;
+      paintMarks();
+    }
+
+    if(_drag.ghost) {
+      const box = document.getElementById('boardBox');
+      const rect = box ? box.getBoundingClientRect() : null;
+      if(rect) {
+        _drag.ghost.style.left = (e.clientX - rect.left) + 'px';
+        _drag.ghost.style.top = (e.clientY - rect.top) + 'px';
+      }
+    }
+
+    // Подсветка клетки под пальцем/курсором (если ход легален)
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const sq = el ? el.closest('.sq') : null;
+    const prev = document.querySelector('.sq.dragT');
+    if(prev) prev.classList.remove('dragT');
+    if(sq && legalCache) {
+      const tr = parseInt(sq.dataset.r), tc = parseInt(sq.dataset.c);
+      if(legalCache.some(m => m.tr === tr && m.tc === tc)) sq.classList.add('dragT');
+    }
+  });
+
+  function finishDrag(e) {
+    if(!_drag) return;
+    const drag = _drag;
+    const moved = drag.moved;
+    _dragCleanup();
+    try { grid.releasePointerCapture(e.pointerId); } catch(err) {}
+    if(!moved) return; // тап — обработку оставляет клику (onSquareClick)
+
+    _suppressClickTs = Date.now();
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const sq = el ? el.closest('.sq') : null;
+    if(!sq) return;
+    const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
+    const move = legalCache.find(m => m.fr === drag.r && m.fc === drag.c && m.tr === r && m.tc === c);
+    if(!move) return;
+    if(move.promo) {
+      pendingPromo = move;
+      openPromoModal();
+      return;
+    }
+    executeMove(move);
+  }
+
+  grid.addEventListener('pointerup', finishDrag);
+  grid.addEventListener('pointercancel', finishDrag);
+}
+
+/* --- Мобильный чат (выезжающая панель) --- */
+function toggleGameChat() {
+  const open = document.body.classList.toggle('chat-open');
+  const btn = document.getElementById('btnChat');
+  if(btn) btn.textContent = open ? '✕' : '💬';
+  if(open) {
+    const inp = document.getElementById('chatInput');
+    if(inp) setTimeout(() => { try { inp.focus(); } catch(e) {} }, 150);
   }
 }
 
@@ -2775,6 +2903,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if(typeof normalizeSkin === 'function') normalizeSkin();
   initStore();
   initDOMrefs();
+  initBoardPointer();
   syncThemeUI();
   if(typeof MemeThreatHandler !== 'undefined') MemeThreatHandler.init();
 
@@ -3279,6 +3408,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('btnUndo', () => undoMove());
   bind('btnRes', () => resignGame());
   bind('btnDraw', () => offerDraw());
+  bind('btnChat', () => toggleGameChat());
 
   // Replay viewer
   bind('rvBack', () => { rvIdx = 0; renderReplayBoard(rvFens[0]); });

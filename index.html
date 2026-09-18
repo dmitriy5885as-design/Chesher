@@ -7,10 +7,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.38.5">
+  <link rel="stylesheet" href="css/main.css?v=0.38.6">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.38.5">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.6">
 
 </head>
 <body>
@@ -579,28 +579,28 @@
   </div></div>
   
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
 
-  <!-- Подключение JS файлов в правильном порядке -->
-  <script src="js/chess-logic.js?v=0.38.5"></script>
-  <script src="js/bot.js?v=0.38.5"></script>
-  <script src="js/elo.js?v=0.38.5"></script>
-  <script src="js/profile.js?v=0.38.5"></script>
-  <script src="js/ui.js?v=0.38.5"></script>
-  <script src="js/chat.js?v=0.38.5"></script>
-  <script src="js/store.js?v=0.38.5"></script>
-  <script src="js/settings.js?v=0.38.5"></script>
-  <script src="js/meme/MemeEventBus.js?v=0.38.5"></script>
-  <script src="js/meme/MemeConfig.js?v=0.38.5"></script>
-  <script src="js/meme/MemeThreatHandler.js?v=0.38.5"></script>
-  <script src="js/firebase-config.js?v=0.38.5"></script>
-  <script src="js/auth.js?v=0.38.5"></script>
-  <script src="js/friends.js?v=0.38.5"></script>
-  <script src="js/multiplayer.js?v=0.38.5"></script>
-  <script src="js/net-ui.js?v=0.38.5"></script>
+  <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
+  <script defer src="js/chess-logic.js?v=0.38.6"></script>
+  <script defer src="js/bot.js?v=0.38.6"></script>
+  <script defer src="js/elo.js?v=0.38.6"></script>
+  <script defer src="js/profile.js?v=0.38.6"></script>
+  <script defer src="js/ui.js?v=0.38.6"></script>
+  <script defer src="js/chat.js?v=0.38.6"></script>
+  <script defer src="js/store.js?v=0.38.6"></script>
+  <script defer src="js/settings.js?v=0.38.6"></script>
+  <script defer src="js/meme/MemeEventBus.js?v=0.38.6"></script>
+  <script defer src="js/meme/MemeConfig.js?v=0.38.6"></script>
+  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.6"></script>
+  <script defer src="js/firebase-config.js?v=0.38.6"></script>
+  <script defer src="js/auth.js?v=0.38.6"></script>
+  <script defer src="js/friends.js?v=0.38.6"></script>
+  <script defer src="js/multiplayer.js?v=0.38.6"></script>
+  <script defer src="js/net-ui.js?v=0.38.6"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -614,6 +614,7 @@
   <button class="helpBtn" id="helpBtn" title="Помощь новым игрокам">?</button>
   <button class="giftBtn" id="giftBtn" title="Ежедневный подарок">🎁</button>
   <button class="phoneBtn" id="phoneBtn" title="Мобильный режим">📱</button>
+  <button class="chatFab" id="btnChat" title="Чат">💬</button>
 
   <!-- Девблог — левый верх -->
   <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">📝</button>
@@ -710,7 +711,7 @@
     </div>
   </div>
   
-  <script src="js/main.js?v=0.38.5"></script>
+  <script defer src="js/main.js?v=0.38.6"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>

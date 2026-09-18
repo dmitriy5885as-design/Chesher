@@ -1290,6 +1290,19 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
    Оригинальный десктопный layout не затронут.
    ============================ */
 
+/* Drag-and-drop: призрак фигуры под курсором/пальцем */
+#boardBox .dragGhost{
+  position:absolute;width:12.5%;height:12.5%;z-index:40;pointer-events:none;
+  transform:translate(-50%,-50%) scale(1.18);
+  transition:none!important;
+  filter:drop-shadow(0 8px 12px rgba(0,0,0,.55));
+}
+#boardBox .dragSrc{opacity:.35}
+.sq.dragT::after{content:'';position:absolute;inset:0;background:rgba(129,182,76,.4)}
+
+/* Кнопка чата (видна только в мобильном режиме, в игре) */
+#btnChat{display:none!important}
+
 /* Phone button active state */
 body.mobile-mode .phoneBtn{
   opacity:1;cursor:pointer;
@@ -1298,16 +1311,44 @@ body.mobile-mode .phoneBtn{
 }
 
 /* --- Глобальные --- */
-body.mobile-mode{--bsz:min(96vw,calc(100vh - 320px))}
+body.mobile-mode{--bsz:min(96vw,540px,calc(100dvh - 270px))}
 body.mobile-mode *{-webkit-tap-highlight-color:transparent}
+
+/* Кнопка чата / FAB в мобильном режиме */
+body.mobile-mode #btnChat{
+  display:flex!important;align-items:center;justify-content:center;
+  position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));
+  left:auto;
+  width:46px;height:46px;z-index:1250;border-radius:50%;
+  background:linear-gradient(180deg,#3a6ea5,var(--green));border:1px solid var(--line);
+  color:#fff;font-size:20px;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);
+}
+body.mobile-mode.chat-open #btnChat{bottom:calc(44vh + 12px);right:12px;left:auto}
+
+/* Чат-панель в мобильном режиме: выезжающая снизу */
+body.mobile-mode.chat-open #leftCol{display:flex!important;pointer-events:none}
+body.mobile-mode.chat-open #chatBox{
+  display:flex!important;flex-direction:column;pointer-events:auto;
+  position:fixed;left:0;right:0;bottom:0;height:44vh;max-height:44vh;z-index:1300;
+  border-radius:14px 14px 0 0;padding:8px 10px;
+  background:var(--panel);border:1px solid var(--line);border-bottom:none;
+  box-shadow:0 -8px 26px rgba(0,0,0,.55);
+}
+body.mobile-mode.chat-open #chatMsgs{flex:1;overflow-y:auto;min-height:60px}
+body.mobile-mode.chat-open .chatInput{display:flex;gap:6px}
+body.mobile-mode.chat-open .chatInput input{flex:1;min-width:0;font-size:14px;min-height:42px}
+body.mobile-mode.chat-open .chatSend{flex:0 0 56px;min-height:42px}
+
 body.mobile-mode #boardBox,
 body.mobile-mode .sq,
 body.mobile-mode .piece{touch-action:manipulation}
+body.mobile-mode #grid .sq{touch-action:none}
 
-/* --- Шапка --- */
-body.mobile-mode header{display:block;text-align:center;padding:6px 8px 2px}
-body.mobile-mode header h1{font-size:clamp(16px,5vw,22px);letter-spacing:3px}
-body.mobile-mode #statusLine{grid-column:auto;margin:2px auto 0;width:100%;max-width:var(--bsz)}
+/* --- Шапка: компактная (логотип скрыт) --- */
+body.mobile-mode header{display:block;text-align:center;padding:2px 8px 0}
+body.mobile-mode header h1{display:none}
+body.mobile-mode #statusLine{grid-column:auto;margin:2px auto 0;width:100%;max-width:var(--bsz);font-size:12px;padding:2px 8px}
 
 /* --- Wrap: вертикальная колонка --- */
 body.mobile-mode #wrap{
@@ -1322,11 +1363,11 @@ body.mobile-mode .pbar,
 body.mobile-mode .pbarTop,
 body.mobile-mode .pbarBot{
   margin:0;width:100%;max-width:var(--bsz);
-  padding:5px 10px;gap:6px;border-radius:8px;
+  padding:2px 8px;gap:4px;border-radius:8px;
 }
-body.mobile-mode .pbar .name{font-size:13px}
-body.mobile-mode .pbar .taken{font-size:12px}
-body.mobile-mode .pbar .clock{font-size:12px;min-width:55px;padding:4px 8px}
+body.mobile-mode .pbar .name{font-size:12px}
+body.mobile-mode .pbar .taken{font-size:11px}
+body.mobile-mode .pbar .clock{font-size:12px;min-width:52px;padding:2px 6px}
 
 /* --- Доска --- */
 body.mobile-mode #boardCol{width:100%;display:flex;justify-content:center}
@@ -1356,18 +1397,22 @@ body.mobile-mode .emPop{position:fixed!important;z-index:2000}
 /* --- Боковая панель (игровые кнопки) --- */
 body.mobile-mode #side{
   width:100%;max-width:var(--bsz);min-width:0!important;
-  flex-direction:row;flex-wrap:wrap;gap:6px;align-items:stretch;
+  flex-direction:row;flex-wrap:wrap;gap:5px;align-items:stretch;
 }
 body.mobile-mode #side .btn{
-  font-size:12px;padding:9px 8px;
+  font-size:13px;padding:8px 6px;
   flex:1 1 calc(50% - 3px);min-width:0;
 }
 body.mobile-mode #side .btn.primary{flex:1 1 100%}
-body.mobile-mode #side .row2{gap:6px}
-body.mobile-mode #modeLabel{font-size:11px;padding:6px 8px}
-body.mobile-mode #movesWrap{flex:1 1 100%;min-height:80px}
-body.mobile-mode #moves{max-height:100px;font-size:12px}
-body.mobile-mode .mrow{padding:2px 8px}
+body.mobile-mode #side .row2{gap:5px}
+body.mobile-mode #modeLabel{font-size:10px;padding:3px 8px}
+body.mobile-mode #movesWrap{flex:1 1 100%;min-height:0}
+body.mobile-mode #movesWrap h3{display:none}
+body.mobile-mode #moves{
+  display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  height:26px;font-size:11px;white-space:nowrap;scrollbar-width:thin;
+}
+body.mobile-mode .mrow{display:inline-flex;flex:0 0 auto;padding:2px 8px}
 body.mobile-mode .mv{font-size:12px}
 
 /* --- Статус-строка --- */
@@ -1442,11 +1487,12 @@ body.mobile-mode #segBot{max-height:120px}
 /* --- Чат в игре --- */
 body.mobile-mode #chatBox{border-radius:8px}
 
-/* Мобильный: скрыть чат в игре, оставить название режима */
-body.mobile-mode .chatBox{display:none!important}
+/* Мобильный: чат в игре скрыт, открывается кнопкой 💬 как нижняя панель */
+body.mobile-mode .chatBox{display:none}
 body.mobile-mode #modeLabel{display:block!important}
-/* Мобильный: скрыть карточки игроков над и под чатом */
-body.mobile-mode #leftCol .pCard{display:none!important}
+/* Мобильный: левая колонка (карточки + чат) в игре не нужна */
+body.mobile-mode #leftCol{display:none!important}
+body.mobile-mode #side{flex-wrap:wrap}
 
 /* --- Кнопка фидбека --- */
 body.mobile-mode .feedbackBtn{
@@ -1469,3 +1515,42 @@ body.mobile-mode .mobileOnlyLinks{display:block!important}
 body.mobile-mode .devblogTop,
 body.mobile-mode .feedbackBtn,
 body.mobile-mode .qrBtn{display:none!important}
+
+/* === Мобильный: низкие экраны (меньше отступы) === */
+@media (max-height:700px){
+  body.mobile-mode{--bsz:min(96vw,540px,calc(100dvh - 240px))}
+  body.mobile-mode .btn{min-height:40px}
+  body.mobile-mode .mBtn{min-height:44px}
+  body.mobile-mode .segBtn{min-height:36px}
+  body.mobile-mode #moves{height:24px}
+}
+
+/* === Мобильный: ландшафт — доска слева во весь экран, панель управления справа === */
+@media (orientation:landscape) and (max-width:960px){
+  body.mobile-mode{--bsz:min(calc(96vw - 300px),calc(100dvh - 120px))}
+  body.mobile-mode header{display:none}
+  body.mobile-mode #wrap{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 280px;
+    grid-template-rows:auto 1fr auto;
+    gap:6px 12px;align-items:center;align-content:center;
+    width:100%;max-width:100vw;padding:4px 8px;
+  }
+  body.mobile-mode #wrap .pbarTop{grid-area:1/1!important;justify-self:center}
+  body.mobile-mode #boardCol{grid-area:2/1!important;width:100%;display:flex;justify-content:center;align-items:center}
+  body.mobile-mode #wrap .pbarBot{grid-area:3/1!important;justify-self:center}
+  body.mobile-mode #side{
+    grid-area:1/2/4/3!important;
+    width:100%;max-width:none;min-width:0!important;
+    flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:5px;
+  }
+  body.mobile-mode #side .btn{flex:0 0 auto;width:100%;font-size:13px;padding:8px 10px}
+  body.mobile-mode #side .btn.primary{flex:0 0 auto;width:100%}
+  body.mobile-mode #side .row2{width:100%}
+  body.mobile-mode #movesWrap{flex:1 1 auto;min-height:0;max-height:none}
+  body.mobile-mode #moves{display:block;height:auto;max-height:100%;overflow-y:auto}
+  body.mobile-mode .mrow{display:block}
+  body.mobile-mode #btnChat{left:12px;right:auto}
+  body.mobile-mode.chat-open #btnChat{left:auto;right:12px}
+  body.mobile-mode.chat-open #leftCol{position:fixed;inset:0;z-index:1290;display:flex!important;align-items:flex-end}
+}
