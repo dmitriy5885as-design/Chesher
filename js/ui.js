@@ -71,6 +71,8 @@ function spawnPiece(pieceChar, r, c) {
   const el = document.createElement('div');
   el.className = 'piece ' + color;
   el.textContent = getSkinGlyph(color, type);
+  el.dataset.r = r;
+  el.dataset.c = c;
   el.style.left = (c * 12.5) + '%';
   el.style.top = (r * 12.5) + '%';
   el.style.width = '12.5%';
