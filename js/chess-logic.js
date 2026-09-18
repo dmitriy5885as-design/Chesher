@@ -172,6 +172,48 @@ class ChessEngine {
     this.positionHistory = [];
   }
 
+  /* --- Загрузить позицию из FEN (фигуры, очередь, ep) --- */
+  loadFen(fen) {
+    const parts = String(fen || '').trim().split(/\s+/);
+    const rows = parts[0] ? parts[0].split('/') : [];
+    if(rows.length !== 8) return false;
+    const board = [];
+    for(let ri = 0; ri < 8; ri++) {
+      const row = [];
+      let c = 0;
+      for(const ch of rows[ri]) {
+        if(ch >= '1' && ch <= '8') {
+          const n = parseInt(ch);
+          for(let i = 0; i < n; i++) row.push(null);
+          c += n;
+        } else {
+          row.push(ch);
+          c++;
+        }
+      }
+      if(row.length !== 8 || c !== 8) return false;
+      board[ri] = row;
+    }
+    this.board = board;
+    this.variant = 'classic';
+    this.fischerBackRow = null;
+    this.turn = (parts[1] || 'w') === 'b' ? 'b' : 'w';
+    const ep = parts[3] && parts[3] !== '-' ? parts[3] : null;
+    if(ep && /^[a-h][36]$/.test(ep)) {
+      this.ep = { r: 8 - parseInt(ep[1]), c: ep.charCodeAt(0) - 97 };
+    } else {
+      this.ep = null;
+    }
+    this.halfmove = parts[4] ? parseInt(parts[4]) || 0 : 0;
+    this.fullmove = parts[5] ? parseInt(parts[5]) || 1 : 1;
+    this.plyCount = 0;
+    this.moveHistory = [];
+    this.positionHistory = [];
+    this.gameOver = false;
+    this.opponentPlayerId = null;
+    return true;
+  }
+
   /* --- Фишер 960 с детерминированным seed (для мультиплеера) --- */
   newGameFischer960(seed) {
     this.resetBoard();

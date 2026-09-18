@@ -1,6 +1,6 @@
 /* ============================
    ЧЕШЕР — Основные стили
-    Версия: v0.23.15 alpha
+    Версия: v0.23.16 alpha
    ============================ */
 
 /* --- Переменные и базовые настройки --- */
@@ -228,6 +228,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 .sq.hintF::after{content:'';position:absolute;inset:0;background:rgba(96,165,250,.6)}
 .sq.hintT::after{content:'';position:absolute;inset:0;background:rgba(96,165,250,.35)}
+.sq.preF::after{content:'';position:absolute;inset:3px;border:3px dashed rgba(250,204,21,.9);border-radius:8px}
+.sq.preT::before{content:'';position:absolute;inset:9px;border-radius:50%;background:rgba(250,204,21,.75)}
 
 /* --- Чат --- */
 .chatBox{flex:1;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;width:100%;overflow:hidden}

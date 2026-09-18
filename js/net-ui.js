@@ -485,6 +485,7 @@ const NetUI = {
 
     // Game aborted while in lobby/game — kick back to the multiplayer screen
     if(data.status === 'cancelled') {
+      this._stopCountdown();
       toast((S && !S.gameOver) ? 'Соперник отменил игру' : 'Игра отменена');
       if(S && !S.gameOver) {
         S.gameOver = true;
@@ -499,6 +500,7 @@ const NetUI = {
     }
 
     if(data.status === 'playing') {
+      this._stopCountdown();
       if(statusEl) statusEl.textContent = 'Игра началась!';
       actionsEl.innerHTML = '<div style="color:var(--green);text-align:center;font-size:14px">⚔ Загрузка...</div>';
       return;
@@ -541,6 +543,57 @@ const NetUI = {
         const startBtn = document.getElementById('lobbyStartBtn');
         if(startBtn) startBtn.onclick = () => { ChesMP.startGame(); };
       }
+
+      // Автостарт: оба готовы — обратный отсчёт
+      this._lastLobbyData = data;
+      if(hostReady && oppReady) {
+        this._startCountdown();
+      } else {
+        this._stopCountdown();
+      }
+    }
+  },
+
+  /* --- Автостарт лобби (обратный отсчёт) --- */
+  _countdownTimer: null,
+  _countdownEndsAt: 0,
+  _lastLobbyData: null,
+
+  _startCountdown() {
+    const sec = this._autoStartSec || 60;
+    if(this._countdownTimer) clearInterval(this._countdownTimer);
+    this._countdownEndsAt = Date.now() + sec * 1000;
+    this._countdownTimer = setInterval(() => this._tickCountdown(), 500);
+    this._tickCountdown();
+  },
+
+  _stopCountdown() {
+    if(this._countdownTimer) { clearInterval(this._countdownTimer); this._countdownTimer = null; }
+    this._countdownEndsAt = 0;
+    const statusEl = document.getElementById('lobbyStatus');
+    if(statusEl && statusEl.dataset.autoTimer) {
+      statusEl.removeAttribute('data-autoTimer');
+    }
+  },
+
+  _tickCountdown() {
+    const left = Math.max(0, Math.ceil((this._countdownEndsAt - Date.now()) / 1000));
+    const data = this._lastLobbyData;
+    const stillReady = data && data.status === 'waiting' && data.guest && data.hostReady && data.guestReady;
+    if(!stillReady) {
+      this._stopCountdown();
+      return;
+    }
+    const statusEl = document.getElementById('lobbyStatus');
+    if(left <= 0) {
+      this._stopCountdown();
+      if(statusEl) statusEl.textContent = '🚀 Автостарт!';
+      if(typeof ChesMP !== 'undefined') ChesMP.startGame();
+      return;
+    }
+    if(statusEl) {
+      statusEl.textContent = 'Игроки найдены · ⏳ Автостарт через ' + left + 'с';
+      statusEl.dataset.autoTimer = '1';
     }
   },
 
