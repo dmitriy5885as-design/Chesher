@@ -2277,6 +2277,8 @@ function botMove() {
 let hintsLeft = 2;
 function showHint() {
   if(!S || S.gameOver || hintsLeft <= 0) return;
+  if(isBotThinking) return;
+  if(cfg.bot !== 'off' && S.turn !== S.humanColor) { toast('Подождите ход бота'); return; }
   hintsLeft--;
   updateCounters();
   const moves = S.allLegalMoves(S.turn);
@@ -4157,7 +4159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.7').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.8').catch(() => {});
     });
   }
 });
