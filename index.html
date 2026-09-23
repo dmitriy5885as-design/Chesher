@@ -1,409 +1,405 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CHESHER вЂ” Р§РµС€РёСЂ В· С€Р°С…РјР°С‚С‹</title>
-  <meta name="description" content="CHESHER вЂ” С€Р°С…РјР°С‚С‹ СЃ Р±РѕС‚Р°РјРё, РґСЂСѓР·СЊСЏРјРё Рё РїРѕ СЃРµС‚Рё. Р РµР№С‚РёРЅРіРё, Р·Р°РґР°С‡РєРё, С‚СѓСЂРЅРёСЂС‹.">
-  <meta name="theme-color" content="#0f0f1a">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
-  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <title>CHESHER — Чешир · шахматы</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.38.8">
+  <link rel="stylesheet" href="css/main.css?v=0.38.10">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.38.8">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.10">
 
 </head>
 <body>
   
-  <!-- ================= Р­РљР РђРќ: Р“Р›РђР’РќРћР• РњР•РќР® ================= -->
+  <!-- ================= ЭКРАН: ГЛАВНОЕ МЕНЮ ================= -->
   <div class="screen show" id="scrMenu">
     <div class="deco" id="decoBg">
-      <span>в™ћ</span><span>в™њ</span><span>в™ќ</span><span>в™›</span>
-      <span>в™џ</span><span>в™•</span><span>в™™</span>
-      <span>в™–</span><span>в™</span><span>в™љ</span>
-      <span>в™ќ</span><span>в™џ</span><span>в™”</span>
-      <span>в™•</span><span>в™–</span><span>в™ћ</span>
-      <span>в™џ</span><span>в™›</span><span>в™™</span>
-      <span>в™–</span><span>в™</span>
+      <span>♞</span><span>♜</span><span>♝</span><span>♛</span>
+      <span>♟</span><span>♕</span><span>♙</span>
+      <span>♖</span><span>♘</span><span>♚</span>
+      <span>♝</span><span>♟</span><span>♔</span>
+      <span>♕</span><span>♖</span><span>♞</span>
+      <span>♟</span><span>♛</span><span>♙</span>
+      <span>♖</span><span>♘</span>
     </div>
     <div class="logoBig">
       <h1>CHESHER</h1>
-      <div class="ru">С‡РµС€РёСЂ В· С€Р°С…РјР°С‚С‹</div>
+      <div class="ru">чешир · шахматы</div>
     </div>
     <div class="profBar" id="profBar">
-      <div class="ava" id="pbAva">рџђЈ</div>
+      <div class="ava" id="pbAva">🐣</div>
       <div class="pbTx">
-        <div class="pbName" id="pbName">Р“РѕСЃС‚СЊ</div>
-        <div class="pbSub" id="pbSub">0% winrate В· 0 РїР°СЂС‚РёР№</div>
+        <div class="pbName" id="pbName">Гость</div>
+        <div class="pbSub" id="pbSub">0% winrate · 0 партий</div>
       </div>
-      <button class="mBtn mAuthBtn" id="mAuth" style="display:none" onclick="event.stopPropagation();showScreen('scrAuth')">Р’РѕР№С‚Рё</button>
-      <div class="pbArrow">вЂє</div>
+      <button class="mBtn mAuthBtn" id="mAuth" style="display:none" onclick="event.stopPropagation();showScreen('scrAuth')">Войти</button>
+      <div class="pbArrow">›</div>
     </div>
     <div class="menuCol">
-      <button class="mBtn primary" id="mPlay">в™џ РРіСЂР°С‚СЊ<br><small style="font-weight:400;opacity:.7;font-size:10px">РїРѕ СЃРµС‚Рё СЃ РґСЂСѓРіРёРјРё РёРіСЂРѕРєР°РјРё</small></button>
+      <button class="mBtn primary" id="mPlay">♟ Играть<br><small style="font-weight:400;opacity:.7;font-size:10px">по сети с другими игроками</small></button>
       <div style="display:none;gap:8px;align-items:stretch" id="resumeRow">
-        <button class="mBtn" id="mResume" style="flex:1">в–¶ РџСЂРѕРґРѕР»Р¶РёС‚СЊ</button>
-        <button class="resumeX" id="mResumeClose" title="Р—Р°РІРµСЂС€РёС‚СЊ РїР°СЂС‚РёСЋ">вњ•</button>
+        <button class="mBtn" id="mResume" style="flex:1">▶ Продолжить</button>
+        <button class="resumeX" id="mResumeClose" title="Завершить партию">✕</button>
       </div>
-      <button class="mBtn" id="mModes">в° Р РµР¶РёРјС‹</button>
-      <button class="mBtn" id="mShop">рџ›Ќ РњР°РіР°Р·РёРЅ</button>
+      <button class="mBtn" id="mModes">☰ Режимы</button>
+      <button class="mBtn" id="mShop">🛍 Магазин</button>
       <div class="row2m">
-        <button class="mBtn half" id="mLeaderboard">рџЏ† РўР°Р±Р»РёС†Р° Р»РёРґРµСЂРѕРІ</button>
-        <button class="mBtn half" id="mSettings">вљ™ РќР°СЃС‚СЂРѕР№РєРё</button>
+        <button class="mBtn half" id="mLeaderboard">🏆 Таблица лидеров</button>
+        <button class="mBtn half" id="mSettings">⚙ Настройки</button>
       </div>
     </div>
     <div class="tipBox" id="tipBox"></div>
-    <div class="menuFoot">CHESHER v0.23.16 alpha</div>
+    <div class="menuFoot">CHESHER v0.23.15 alpha</div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: РџР РћР¤РР›Р¬ ================= -->
+  <!-- ================= ЭКРАН: ПРОФИЛЬ ================= -->
   <div class="screen" id="scrProf">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РџСЂРѕС„РёР»СЊ</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Профиль</span>
     </div>
 
-    <!-- Р’РєР»Р°РґРєРё РїСЂРѕС„РёР»СЏ -->
+    <!-- Вкладки профиля -->
     <div class="shopTabs" id="profTabs">
-      <button class="shopTab active" data-tab="main">в„№пёЏ РРЅС„РѕСЂРјР°С†РёСЏ</button>
-      <button class="shopTab" data-tab="style">рџЋЁ РЎС‚РёР»РёР·Р°С†РёСЏ</button>
-      <button class="shopTab" data-tab="history">рџ“њ РСЃС‚РѕСЂРёСЏ</button>
-      <button class="shopTab" data-tab="settings">вљ™ РќР°СЃС‚СЂРѕР№РєРё</button>
+      <button class="shopTab active" data-tab="main">ℹ️ Информация</button>
+      <button class="shopTab" data-tab="style">🎨 Стилизация</button>
+      <button class="shopTab" data-tab="history">📜 История</button>
+      <button class="shopTab" data-tab="settings">⚙ Настройки</button>
     </div>
 
-    <!-- Р’РєР»Р°РґРєР°: Р“Р»Р°РІРЅР°СЏ -->
+    <!-- Вкладка: Главная -->
     <div id="profTabMain" style="width:100%;max-width:520px;margin:0 auto">
       <div class="profHeader" id="profHeader" style="width:min(520px,94vw);margin:0 auto 14px"></div>
       <div class="setGroup" id="nickGroup" style="width:min(400px,94vw);margin:0 auto 14px">
-        <h3>вњЏпёЏ РЎРјРµРЅРёС‚СЊ РЅРёРє</h3>
+        <h3>✏️ Сменить ник</h3>
         <div style="display:flex;gap:8px;align-items:center">
-          <input id="nickInput" class="inputTxt" maxlength="14" placeholder="РќРѕРІС‹Р№ РЅРёРє" autocomplete="off" style="flex:3">
-          <button class="mBtn" id="nickChangeBtn" style="flex:1;white-space:nowrap">РР·РјРµРЅРёС‚СЊ</button>
+          <input id="nickInput" class="inputTxt" maxlength="14" placeholder="Новый ник" autocomplete="off" style="flex:3">
+          <button class="mBtn" id="nickChangeBtn" style="flex:1;white-space:nowrap">Изменить</button>
         </div>
         <div id="nickCooldown" style="color:var(--mut);font-size:12px;margin-top:6px"></div>
       </div>
       <div class="setGroup" id="customAvaGroup" style="width:min(400px,94vw);margin:0 auto 14px">
-        <h3>рџ–ј РЎРІРѕСЏ Р°РІР°С‚Р°СЂРєР°</h3>
+        <h3>🖼 Своя аватарка</h3>
         <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
           <div id="customAvaPreview" style="width:120px;height:120px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:48px;border:2px solid var(--line);overflow:hidden;flex-shrink:0"></div>
           <div style="flex:1;min-width:0">
-            <label class="mBtn" style="cursor:pointer;display:block;margin-bottom:6px;width:100%;text-align:center;box-sizing:border-box">рџ“Ѓ Р’С‹Р±СЂР°С‚СЊ С„Р°Р№Р»
+            <label class="mBtn" style="cursor:pointer;display:block;margin-bottom:6px;width:100%;text-align:center;box-sizing:border-box">📁 Выбрать файл
               <input type="file" id="customAvaInput" accept="image/*" style="display:none">
             </label>
-            <div style="color:var(--mut);font-size:11px;margin-bottom:8px">JPG, PNG, GIF В· РґРѕ 2РњР‘</div>
+            <div style="color:var(--mut);font-size:11px;margin-bottom:8px">JPG, PNG, GIF · до 2МБ</div>
             <div style="display:flex;gap:6px">
-              <button class="mBtn" id="customAvaSave" style="flex:1;display:none;font-weight:700">вњ“ РћРє</button>
-              <button class="mBtn" id="customAvaClear" style="flex:1;display:none;font-weight:700;color:var(--red)">вњ• РЈРґР°Р»РёС‚СЊ</button>
+              <button class="mBtn" id="customAvaSave" style="flex:1;display:none;font-weight:700">✓ Ок</button>
+              <button class="mBtn" id="customAvaClear" style="flex:1;display:none;font-weight:700;color:var(--red)">✕ Удалить</button>
             </div>
           </div>
         </div>
-        <div style="color:var(--mut);font-size:12px;margin-bottom:6px">РР»Рё РІС‹Р±РµСЂРё РёР· РїСЂРµРґР»РѕР¶РµРЅРЅС‹С…:</div>
+        <div style="color:var(--mut);font-size:12px;margin-bottom:6px">Или выбери из предложенных:</div>
         <div class="avaGrid" id="avaSuggested" style="display:flex;gap:8px;flex-wrap:wrap"></div>
       </div>
     </div>
 
-    <!-- Р’РєР»Р°РґРєР°: РЎС‚РёР»РёР·Р°С†РёСЏ -->
+    <!-- Вкладка: Стилизация -->
     <div id="profTabStyle" style="display:none;width:100%;max-width:520px;margin:0 auto">
-      <div class="setGroup"><h3>рџЋЁ РўРµРјР° РґРѕСЃРєРё</h3>
+      <div class="setGroup"><h3>🎨 Тема доски</h3>
         <div id="themeRow"></div>
       </div>
-      <div class="setGroup"><h3>в™џ РЎРєРёРЅ С„РёРіСѓСЂ</h3>
+      <div class="setGroup"><h3>♟ Скин фигур</h3>
         <div id="segSkinProf"></div>
       </div>
     </div>
 
-    <!-- Р’РєР»Р°РґРєР°: РСЃС‚РѕСЂРёСЏ -->
+    <!-- Вкладка: История -->
     <div id="profTabHistory" style="display:none;width:100%;max-width:520px;margin:0 auto">
       <div class="setGroup">
-        <h3>рџ“њ РСЃС‚РѕСЂРёСЏ РјР°С‚С‡РµР№</h3>
+        <h3>📜 История матчей</h3>
         <div id="matchHistory"></div>
       </div>
     </div>
 
-    <!-- Р’РєР»Р°РґРєР°: РќР°СЃС‚СЂРѕР№РєРё -->
+    <!-- Вкладка: Настройки -->
     <div id="profTabSettings" style="display:none;width:100%;max-width:520px;margin:0 auto">
       <div class="setGroup">
-        <h3>вљ™ РђРєРєР°СѓРЅС‚</h3>
+        <h3>⚙ Аккаунт</h3>
         <div id="profSettingsInfo" style="padding:8px 0"></div>
       </div>
       <div class="setGroup">
-        <button class="mBtn" id="profLogoutBtn2" style="width:100%;background:var(--red);color:#fff">рџљЄ Р’С‹Р№С‚Рё РёР· Р°РєРєР°СѓРЅС‚Р°</button>
+        <button class="mBtn" id="profLogoutBtn2" style="width:100%;background:var(--red);color:#fff">🚪 Выйти из аккаунта</button>
       </div>
     </div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: РђР’РўРћР РР—РђР¦РРЇ ================= -->
+  <!-- ================= ЭКРАН: АВТОРИЗАЦИЯ ================= -->
   <div class="screen" id="scrAuth">
     <div class="scrHead">
-      <span class="scrTitle">Р’С…РѕРґ</span>
+      <span class="scrTitle">Вход</span>
     </div>
     <div style="max-width:380px;margin:0 auto;padding:20px">
-      <h3 style="color:var(--txt);margin-bottom:16px;text-align:center">Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ!</h3>
+      <h3 style="color:var(--txt);margin-bottom:16px;text-align:center">Добро пожаловать!</h3>
       <div id="authForm" style="display:flex;flex-direction:column;gap:12px">
-        <input type="text" id="authName" class="inputTxt" placeholder="Р’Р°С€ РЅРёРє" style="width:100%">
+        <input type="text" id="authName" class="inputTxt" placeholder="Ваш ник" style="width:100%">
         <input type="email" id="authEmail" class="inputTxt" placeholder="Email" style="width:100%">
-        <input type="password" id="authPass" class="inputTxt" placeholder="РџР°СЂРѕР»СЊ" style="width:100%">
-        <button class="mBtn primary" id="authRegBtn" style="width:100%">Р РµРіРёСЃС‚СЂР°С†РёСЏ</button>
-        <button class="mBtn" id="authLoginBtn" style="width:100%">Р’РѕР№С‚Рё</button>
-        <button class="mBtn" id="authGoogleBtn" style="width:100%">рџ”µ Р’РѕР№С‚Рё С‡РµСЂРµР· Google</button>
-        <button class="mBtn" id="authAnonBtn" style="width:100%;opacity:.6">РђРЅРѕРЅРёРјРЅРѕ</button>
-        <button class="mBtn" id="authResetBtn" style="width:100%;opacity:.6">рџ”‘ Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?</button>
+        <input type="password" id="authPass" class="inputTxt" placeholder="Пароль" style="width:100%">
+        <button class="mBtn primary" id="authRegBtn" style="width:100%">Регистрация</button>
+        <button class="mBtn" id="authLoginBtn" style="width:100%">Войти</button>
+        <button class="mBtn" id="authGoogleBtn" style="width:100%">🔵 Войти через Google</button>
+        <button class="mBtn" id="authAnonBtn" style="width:100%;opacity:.6">Анонимно</button>
+        <button class="mBtn" id="authResetBtn" style="width:100%;opacity:.6">🔑 Забыли пароль?</button>
       </div>
       <div style="text-align:center;margin-top:16px">
-        <button class="mBtn" id="authSkipBtn" style="opacity:.5">РџСЂРѕРїСѓСЃС‚РёС‚СЊ</button>
+        <button class="mBtn" id="authSkipBtn" style="opacity:.5">Пропустить</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= Р­РљР РђРќ: Р”Р РЈР—Р¬РЇ ================= -->
+  <!-- ================= ЭКРАН: ДРУЗЬЯ ================= -->
   <div class="screen" id="scrFriends">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">Р”СЂСѓР·СЊСЏ</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Друзья</span>
     </div>
     <div style="max-width:500px;margin:0 auto;padding:10px">
       <div style="display:flex;gap:8px;margin-bottom:16px">
-        <input type="text" id="friendSearch" class="inputTxt" placeholder="РРјСЏ РёР»Рё UID РёРіСЂРѕРєР°..." style="flex:1;font-size:16px;padding:14px 16px">
-        <button class="mBtn" id="friendSearchBtn" style="width:auto;padding:14px 24px;font-size:16px;font-weight:700;white-space:nowrap">рџ”Ќ РќР°Р№С‚Рё</button>
+        <input type="text" id="friendSearch" class="inputTxt" placeholder="Имя или UID игрока..." style="flex:1;font-size:16px;padding:14px 16px">
+        <button class="mBtn" id="friendSearchBtn" style="width:auto;padding:14px 24px;font-size:16px;font-weight:700;white-space:nowrap">🔍 Найти</button>
       </div>
       <div id="friendSearchResults" style="margin-bottom:16px"></div>
       <div id="friendRequests" style="margin-bottom:16px"></div>
-      <h3 style="color:var(--txt);margin-bottom:8px">Р”СЂСѓР·СЊСЏ РѕРЅР»Р°Р№РЅ</h3>
+      <h3 style="color:var(--txt);margin-bottom:8px">Друзья онлайн</h3>
       <div id="friendList"></div>
     </div>
   </div>
 
-  <!-- ================= Р­РљР РђРќ: РЎРћР—Р”РђРќРР• Р›РћР‘Р‘Р (РЅР°СЃС‚СЂРѕР№РєРё) ================= -->
+  <!-- ================= ЭКРАН: СОЗДАНИЕ ЛОББИ (настройки) ================= -->
   <div class="screen" id="scrLobbySetup">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РќР°СЃС‚СЂРѕР№РєР° Р»РѕР±Р±Рё</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Настройка лобби</span>
     </div>
     <div style="width:min(420px,94vw);margin:0 auto;padding:16px 0">
       <div class="setGroup">
-        <h3>рџЋ® Р РµР¶РёРј РёРіСЂС‹</h3>
+        <h3>🎮 Режим игры</h3>
         <div id="lobbyModeSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="setGroup">
-        <h3>вЏ± РљРѕРЅС‚СЂРѕР»СЊ РІСЂРµРјРµРЅРё</h3>
+        <h3>⏱ Контроль времени</h3>
         <div id="lobbyTimeSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="setGroup">
-        <h3>вЏ± РџСЂРёСЂРѕСЃС‚ (Р¤РёС€РµСЂ)</h3>
+        <h3>⏱ Прирост (Фишер)</h3>
         <div id="lobbyIncSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="setGroup">
-        <h3>рџЋЁ Р’Р°С€ С†РІРµС‚</h3>
+        <h3>🎨 Ваш цвет</h3>
         <div id="lobbyColorSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="applyBar" style="margin-top:20px">
-        <button class="mBtn primary" id="lobbyConfirmBtn" style="width:100%;font-size:18px" onclick="startLobbyFromSetup()">рџљЂ Р—Р°РїСѓСЃРє</button>
+        <button class="mBtn primary" id="lobbyConfirmBtn" style="width:100%;font-size:18px" onclick="startLobbyFromSetup()">🚀 Запуск</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= Р­РљР РђРќ: Р›РћР‘Р‘Р ================= -->
+  <!-- ================= ЭКРАН: ЛОББИ ================= -->
   <div class="screen" id="scrLobby">
     <div class="scrHead">
-      <button class="backBtn" id="lobbyBackBtn">в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">Р›РѕР±Р±Рё</span>
+      <button class="backBtn" id="lobbyBackBtn">← Назад</button>
+      <span class="scrTitle">Лобби</span>
     </div>
     <div style="max-width:400px;margin:0 auto;padding:20px;text-align:center">
       <div id="lobbyStatus" style="font-size:16px;color:var(--txt);margin-bottom:20px"></div>
       <div id="lobbyPlayers" style="display:flex;justify-content:center;gap:20px;margin-bottom:20px"></div>
       <div id="lobbyCode" style="margin-bottom:20px;display:none">
-        <p style="color:var(--mut);font-size:12px;margin-bottom:4px">РљРѕРґ Р»РѕР±Р±Рё:</p>
-        <div id="lobbyIdText" style="font-size:18px;font-weight:700;color:var(--gold);font-family:monospace;cursor:pointer" title="РќР°Р¶РјРёС‚Рµ С‡С‚РѕР±С‹ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ"></div>
+        <p style="color:var(--mut);font-size:12px;margin-bottom:4px">Код лобби:</p>
+        <div id="lobbyIdText" style="font-size:18px;font-weight:700;color:var(--gold);font-family:monospace;cursor:pointer" title="Нажмите чтобы скопировать"></div>
       </div>
       <div id="lobbyQr" style="margin-bottom:20px;display:none">
-        <p style="color:var(--mut);font-size:12px;margin-bottom:8px">рџ“І РћС‚СЃРєР°РЅРёСЂСѓР№С‚Рµ QR, С‡С‚РѕР±С‹ РїРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ:</p>
-        <img id="lobbyQrImg" style="display:block;margin:0 auto;border-radius:12px;background:#fff;padding:8px" width="180" height="180" alt="QR-РєРѕРґ Р»РѕР±Р±Рё">
-        <button class="mBtn" id="lobbyCopyLink" style="width:100%;margin-top:8px">рџ”— РЎРєРѕРїРёСЂРѕРІР°С‚СЊ СЃСЃС‹Р»РєСѓ</button>
+        <p style="color:var(--mut);font-size:12px;margin-bottom:8px">📲 Отсканируйте QR, чтобы подключиться:</p>
+        <img id="lobbyQrImg" style="display:block;margin:0 auto;border-radius:12px;background:#fff;padding:8px" width="180" height="180" alt="QR-код лобби">
+        <button class="mBtn" id="lobbyCopyLink" style="width:100%;margin-top:8px">🔗 Скопировать ссылку</button>
       </div>
       <div id="lobbyActions" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
   </div>
 
-  <!-- ================= Р­РљР РђРќ: РЎР•РўР•Р’РђРЇ РР“Р Рђ ================= -->
+  <!-- ================= ЭКРАН: СЕТЕВАЯ ИГРА ================= -->
   <div class="screen" id="scrMulti">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РЎРµС‚РµРІР°СЏ РёРіСЂР°</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Сетевая игра</span>
     </div>
     <div style="max-width:400px;margin:0 auto;padding:20px">
       <div style="display:flex;flex-direction:column;gap:10px">
         <button class="mBtn primary" id="mpCreateBtn" style="width:100%;padding:16px">
-          рџЏ  РЎРѕР·РґР°С‚СЊ Р»РѕР±Р±Рё
-          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">РџСЂРёРіР»Р°СЃРё РґСЂСѓРіР° РїРѕ РєРѕРґСѓ</small>
+          🏠 Создать лобби
+          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">Пригласи друга по коду</small>
         </button>
         <button class="mBtn" id="mpJoinBtn" style="width:100%;padding:16px">
-          рџ”— РџСЂРёСЃРѕРµРґРёРЅРёС‚СЊСЃСЏ РїРѕ РєРѕРґСѓ
-          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">Р’РІРµРґРё РєРѕРґ РѕС‚ РґСЂСѓРіР°</small>
+          🔗 Присоединиться по коду
+          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">Введи код от друга</small>
         </button>
         <button class="mBtn" id="mpFriendsBtn" style="width:100%;padding:16px">
-          рџ‘Ґ РџСЂРёРіР»Р°СЃРёС‚СЊ РґСЂСѓРіР°
-          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">РР· СЃРїРёСЃРєР° РґСЂСѓР·РµР№</small>
+          👥 Пригласить друга
+          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">Из списка друзей</small>
         </button>
         <button class="mBtn" id="mpRandomBtn" style="width:100%;padding:16px">
-          рџЋІ РЎР»СѓС‡Р°Р№РЅС‹Р№ РјР°С‚С‡
-          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">РќР°Р№С‚Рё СЃРѕРїРµСЂРЅРёРєР°</small>
+          🎲 Случайный матч
+          <small style="display:block;font-weight:400;opacity:.7;font-size:11px">Найти соперника</small>
         </button>
       </div>
       <div style="margin-top:16px;text-align:center;color:var(--mut);font-size:12px" id="mpStatus"></div>
     </div>
   </div>
 
-  <!-- ================= Р­РљР РђРќ: Р Р•Р™РўРРќР“РћР’РђРЇ ================= -->
+  <!-- ================= ЭКРАН: РЕЙТИНГОВАЯ ================= -->
   <div class="screen" id="scrRanked">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">Р РµР№С‚РёРЅРіРѕРІР°СЏ</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Рейтинговая</span>
     </div>
     <div style="max-width:420px;margin:0 auto;padding:20px;text-align:center">
       <!-- Rating card -->
       <div id="rankedRatingCard" style="background:var(--panel);border:2px solid var(--gold);border-radius:16px;padding:24px 20px;margin-bottom:16px">
-        <div id="rankedLeagueIcon" style="font-size:48px;margin-bottom:8px">рџЏ†</div>
-        <div id="rankedLeagueName" style="color:var(--gold);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Р›РёРіР°</div>
+        <div id="rankedLeagueIcon" style="font-size:48px;margin-bottom:8px">🏆</div>
+        <div id="rankedLeagueName" style="color:var(--gold);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Лига</div>
         <div id="rankedElo" style="font-size:clamp(40px,10vw,64px);font-weight:900;color:var(--txt);line-height:1">1000</div>
-        <div style="color:var(--mut);font-size:12px;margin-top:4px">ELO СЂРµР№С‚РёРЅРі</div>
+        <div style="color:var(--mut);font-size:12px;margin-top:4px">ELO рейтинг</div>
       </div>
 
       <!-- Stats row -->
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
           <div id="rankedWins" style="font-size:22px;font-weight:800;color:var(--green)">0</div>
-          <div style="color:var(--mut);font-size:11px">РџРѕР±РµРґ</div>
+          <div style="color:var(--mut);font-size:11px">Побед</div>
         </div>
         <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
           <div id="rankedLosses" style="font-size:22px;font-weight:800;color:var(--red)">0</div>
-          <div style="color:var(--mut);font-size:11px">РџРѕСЂР°Р¶РµРЅРёР№</div>
+          <div style="color:var(--mut);font-size:11px">Поражений</div>
         </div>
         <div style="flex:1;background:var(--panel);border-radius:10px;padding:10px;text-align:center">
           <div id="rankedWinrate" style="font-size:22px;font-weight:800;color:var(--gold)">0%</div>
-          <div style="color:var(--mut);font-size:11px">Р’РёРЅСЂРµР№С‚</div>
+          <div style="color:var(--mut);font-size:11px">Винрейт</div>
         </div>
       </div>
 
       <!-- Recent matches -->
       <div style="text-align:left;margin-bottom:16px">
-        <div style="color:var(--mut);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">РџРѕСЃР»РµРґРЅРёРµ РїР°СЂС‚РёРё</div>
+        <div style="color:var(--mut);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">Последние партии</div>
         <div id="rankedHistory" style="max-height:180px;overflow-y:auto"></div>
       </div>
 
       <!-- Play button -->
       <button class="mBtn primary" id="rankedPlayBtn" style="width:100%;padding:18px;font-size:18px">
-        вљ” РќР°Р№С‚Рё СЃРѕРїРµСЂРЅРёРєР°
+        ⚔ Найти соперника
       </button>
     </div>
   </div>
 
-  <!-- ================= Р­РљР РђРќ: Р‘Р«РЎРўР Р«Р™ РЎРўРђР Рў ================= -->
+  <!-- ================= ЭКРАН: БЫСТРЫЙ СТАРТ ================= -->
   <div class="screen" id="scrPlay">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РРіСЂР°С‚СЊ</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Играть</span>
     </div>
     <div id="playList"></div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: РњРђР“РђР—РРќ ================= -->
+  <!-- ================= ЭКРАН: МАГАЗИН ================= -->
   <div class="screen" id="scrShop">
     <div class="scrHead" style="width:min(760px,94vw)">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РњР°РіР°Р·РёРЅ</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Магазин</span>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;width:min(760px,94vw);margin-bottom:12px">
-      <span class="coinChip" id="shopCoins" style="margin-left:0">рџЄ™ 0</span>
-      <span class="coinChip gemChip" id="shopGems" style="margin-left:0">рџ’Ћ 0</span>
+      <span class="coinChip" id="shopCoins" style="margin-left:0">🪙 0</span>
+      <span class="coinChip gemChip" id="shopGems" style="margin-left:0">💎 0</span>
     </div>
     <div class="shopTabs" id="shopTabs">
-      <button class="shopTab active" data-tab="skins">рџЋЁ РЎРєРёРЅС‹ С„РёРіСѓСЂ</button>
-      <button class="shopTab" data-tab="premium">рџ’Ћ РџСЂРµРјРёСѓРј</button>
-      <button class="shopTab" data-tab="boards">в™џ Р”РѕСЃРєРё</button>
-      <button class="shopTab" data-tab="stickers">рџ“¦ РЎС‚РёРєРµСЂС‹</button>
-      <button class="shopTab" data-tab="avatars">рџ‘¤ РђРІР°С‚Р°СЂРєРё</button>
-      <button class="shopTab" data-tab="videos">рџЋ¬ Р’РёРґРµРѕ РјРµРјС‹</button>
+      <button class="shopTab active" data-tab="skins">🎨 Скины фигур</button>
+      <button class="shopTab" data-tab="premium">💎 Премиум</button>
+      <button class="shopTab" data-tab="boards">♟ Доски</button>
+      <button class="shopTab" data-tab="stickers">📦 Стикеры</button>
+      <button class="shopTab" data-tab="avatars">👤 Аватарки</button>
+      <button class="shopTab" data-tab="videos">🎬 Видео мемы</button>
     </div>
     <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center">
       <p class="note" style="width:min(760px,94vw);text-align:left;margin-bottom:12px;color:var(--mut);font-size:12px">
-        РЎРєРёРЅС‹ РјРµРЅСЏСЋС‚ РІРёРґ С„РёРіСѓСЂ РЅР° РґРѕСЃРєРµ. РњРѕРЅРµС‚С‹ рџЄ™ РґР°СЋС‚ РїРѕР±РµРґС‹ (+10), РЅРёС‡СЊРё (+3),
-        СЃРµСЂРёРё Рё РµР¶РµРґРЅРµРІРЅС‹Р№ РІС…РѕРґ (+25). РљСЂРёСЃС‚Р°Р»Р»С‹ рџ’Ћ вЂ” РїСЂРµРјРёР°Р»СЊРЅР°СЏ РІР°Р»СЋС‚Р°, РґР°С‘С‚СЃСЏ Р·Р° РєР°Р¶РґСѓСЋ 3-СЋ РїРѕР±РµРґСѓ.</p>
+        Скины меняют вид фигур на доске. Монеты 🪙 дают победы (+10), ничьи (+3),
+        серии и ежедневный вход (+25). Кристаллы 💎 — премиальная валюта, даётся за каждую 3-ю победу.</p>
       <div class="shopGrid" id="shopGrid"></div>
     </div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: Р Р•Р–РРњР« ================= -->
+  <!-- ================= ЭКРАН: РЕЖИМЫ ================= -->
   <div class="screen" id="scrModes">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">Р РµР¶РёРјС‹ РёРіСЂС‹</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Режимы игры</span>
     </div>
     <div id="modesList"></div>
     <div id="modesCfg" style="display:none">
       <div id="modesCfgTitle" style="text-align:center;margin-bottom:10px;font-size:15px;font-weight:700;color:var(--txt)"></div>
-      <div class="setGroup" id="variantCfgGroup"><h3>в™” Р’Р°СЂРёР°РЅС‚</h3>
+      <div class="setGroup" id="variantCfgGroup"><h3>♔ Вариант</h3>
         <div id="segVariant"></div>
       </div>
-      <div class="setGroup" id="botToggleGroup" style="display:none"><h3>рџ¤– Р РµР¶РёРј РёРіСЂС‹</h3><small style="color:var(--mut);font-size:11px">РќР°СЃС‚СЂРѕР№РєРё СЃРѕРїРµСЂРЅРёРєР°</small>
+      <div class="setGroup" id="botToggleGroup" style="display:none"><h3>🤖 Режим игры</h3><small style="color:var(--mut);font-size:11px">Настройки соперника</small>
         <div class="toggleRow">
-          <span class="toggleLabel">РРіСЂР°С‚СЊ СЃ Р±РѕС‚РѕРј</span>
+          <span class="toggleLabel">Играть с ботом</span>
           <label class="toggle">
             <input type="checkbox" id="botToggle">
             <span class="toggleSlider"></span>
           </label>
         </div>
       </div>
-      <div class="setGroup" id="botCfgGroup"><h3>рџ¤– РЎРѕРїРµСЂРЅРёРє</h3>
+      <div class="setGroup" id="botCfgGroup"><h3>🤖 Соперник</h3>
         <div id="segBot"></div>
       </div>
-      <div class="setGroup" id="sideCfgGroup"><h3>рџЋЁ Р’Р°С€ С†РІРµС‚</h3><small style="color:var(--mut);font-size:11px">Р—Р° РєРѕРіРѕ РёРіСЂР°РµС‚Рµ</small>
+      <div class="setGroup" id="sideCfgGroup"><h3>🎨 Ваш цвет</h3><small style="color:var(--mut);font-size:11px">За кого играете</small>
         <div id="segSide"></div>
       </div>
-      <div class="setGroup" id="timeCfgGroup"><h3>вЏ± РљРѕРЅС‚СЂРѕР»СЊ РІСЂРµРјРµРЅРё</h3><small style="color:var(--mut);font-size:11px">РЎРєРѕР»СЊРєРѕ РІСЂРµРјРµРЅРё РЅР° РѕР±РґСѓРјС‹РІР°РЅРёРµ</small>
+      <div class="setGroup" id="timeCfgGroup"><h3>⏱ Контроль времени</h3><small style="color:var(--mut);font-size:11px">Сколько времени на обдумывание</small>
         <div id="segTime"></div>
         <div id="timeInput" style="display:none;margin-top:10px">
-          <input type="number" id="customTime" class="inputTxt" min="1" max="60" value="10" placeholder="РњРёРЅСѓС‚С‹">
-          <p style="color:var(--mut);font-size:11px;margin-top:4px">Р’РІРµРґРёС‚Рµ РІСЂРµРјСЏ РІ РјРёРЅСѓС‚Р°С… (1-60)</p>
+          <input type="number" id="customTime" class="inputTxt" min="1" max="60" value="10" placeholder="Минуты">
+          <p style="color:var(--mut);font-size:11px;margin-top:4px">Введите время в минутах (1-60)</p>
         </div>
       </div>
-      <div class="setGroup" id="timeIncGroup" style="display:none"><h3>вЏ± РџСЂРёСЂРѕСЃС‚ (Р¤РёС€РµСЂ)</h3><small style="color:var(--mut);font-size:11px">РЎРµРєСѓРЅРґС‹ РґРѕР±Р°РІР»СЏСЋС‚СЃСЏ РїРѕСЃР»Рµ РєР°Р¶РґРѕРіРѕ С…РѕРґР°</small>
+      <div class="setGroup" id="timeIncGroup" style="display:none"><h3>⏱ Прирост (Фишер)</h3><small style="color:var(--mut);font-size:11px">Секунды добавляются после каждого хода</small>
         <div id="segTimeInc"></div>
       </div>
-      <div class="setGroup" id="memeModesGroup" style="display:none"><h3>рџ”« РњРµРјР°СЃРёСЏ</h3>
+      <div class="setGroup" id="memeModesGroup" style="display:none"><h3>🔫 Мемасия</h3>
         <div id="memeModesOpts"></div>
       </div>
       <div class="applyBar">
-        <button class="mBtn primary" id="modesStart">в–¶ РќР°С‡Р°С‚СЊ РёРіСЂСѓ</button>
+        <button class="mBtn primary" id="modesStart">▶ Начать игру</button>
       </div>
     </div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: РўРђР‘Р›РР¦Рђ Р›РР”Р•Р РћР’ ================= -->
+  <!-- ================= ЭКРАН: ТАБЛИЦА ЛИДЕРОВ ================= -->
   <div class="screen" id="scrLeaderboard">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РўР°Р±Р»РёС†Р° Р»РёРґРµСЂРѕРІ</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Таблица лидеров</span>
     </div>
     <div class="shopTabs" id="lbTabs">
-      <button class="shopTab active" data-mode="classic">в™џ РљР»Р°СЃСЃРёРєР°</button>
-      <button class="shopTab" data-mode="bot">рџ¤– Р‘РѕС‚С‹</button>
-      <button class="shopTab" data-mode="ranked">рџЏ† Р РµР№С‚РёРЅРі</button>
-      <button class="shopTab" data-mode="fischer">рџЋІ Р¤РёС€РµСЂ</button>
-      <button class="shopTab" data-mode="overall">рџЏ† РћР±С‰РёР№</button>
+      <button class="shopTab active" data-mode="classic">♟ Классика</button>
+      <button class="shopTab" data-mode="bot">🤖 Боты</button>
+      <button class="shopTab" data-mode="ranked">🏆 Рейтинг</button>
+      <button class="shopTab" data-mode="fischer">🎲 Фишер</button>
+      <button class="shopTab" data-mode="overall">🏆 Общий</button>
     </div>
     <div id="lbTop"></div>
     <div id="lbList"></div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: Р’Р«Р‘РћР  Р‘РћРўРђ ================= -->
+  <!-- ================= ЭКРАН: ВЫБОР БОТА ================= -->
   <div class="screen" id="scrBots">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">Р’С‹Р±РѕСЂ Р±РѕС‚Р°</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Выбор бота</span>
     </div>
     <div class="botsLayout">
       <div class="botsCenter">
@@ -412,75 +408,75 @@
         <div class="botsRow">
           <div class="botsGrid" id="botsGrid"></div>
           <div class="botsRight" id="botsInfo">
-            <div class="botInfoEmpty">Р’С‹Р±РµСЂРёС‚Рµ Р±РѕС‚Р° СЃР»РµРІР°</div>
+            <div class="botInfoEmpty">Выберите бота слева</div>
           </div>
         </div>
         <div class="applyBar" style="margin-top:12px">
-          <button class="mBtn primary" id="botsStart">в–¶ РќР°С‡Р°С‚СЊ РёРіСЂСѓ</button>
+          <button class="mBtn primary" id="botsStart">▶ Начать игру</button>
         </div>
       </div>
     </div>
   </div>
   
-  <!-- ================= Р­РљР РђРќ: РќРђРЎРўР РћР™РљР ================= -->
+  <!-- ================= ЭКРАН: НАСТРОЙКИ ================= -->
   <div class="screen" id="scrSet">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
-      <span class="scrTitle">РќР°СЃС‚СЂРѕР№РєРё</span>
+      <button class="backBtn" data-back>← Назад</button>
+      <span class="scrTitle">Настройки</span>
     </div>
     
-    <div class="setSectionTitle">рџ“¦ РћР±С‰РёРµ РЅР°СЃС‚СЂРѕР№РєРё</div>
+    <div class="setSectionTitle">📦 Общие настройки</div>
     
-    <div class="setGroup"><h3>рџЋµ Р—РІСѓРє</h3>
+    <div class="setGroup"><h3>🎵 Звук</h3>
       <div id="sndSliders"></div>
     </div>
     
-    <div class="setSectionTitle" id="modeSetTitle" style="display:none">рџЋ® РќР°СЃС‚СЂРѕР№РєРё СЂРµР¶РёРјР°</div>
-    <div class="setGroup" id="memeCfgGroup" style="display:none"><h3>рџ”« РњРµРјР°СЃРёСЏ</h3>
+    <div class="setSectionTitle" id="modeSetTitle" style="display:none">🎮 Настройки режима</div>
+    <div class="setGroup" id="memeCfgGroup" style="display:none"><h3>🔫 Мемасия</h3>
       <div id="memeOpts"></div>
     </div>
     
     <div class="applyBar">
-      <button class="mBtn primary" id="setApply">РџСЂРёРјРµРЅРёС‚СЊ Рё РЅР°С‡Р°С‚СЊ Р·Р°РЅРѕРІРѕ</button>
+      <button class="mBtn primary" id="setApply">Применить и начать заново</button>
     </div>
-    <p class="applyNote">РќР°СЃС‚СЂРѕР№РєРё РїСЂРёРјРµРЅСЏСЋС‚СЃСЏ СЃ РЅРѕРІРѕР№ РїР°СЂС‚РёРё.</p>
+    <p class="applyNote">Настройки применяются с новой партии.</p>
     
     <div class="setGroup" style="margin-top:20px">
-      <button class="mBtn" id="btnReset" style="background:var(--red);color:#fff">рџ—‘ РЎР±СЂРѕСЃРёС‚СЊ РІСЃРµ РґР°РЅРЅС‹Рµ</button>
+      <button class="mBtn" id="btnReset" style="background:var(--red);color:#fff">🗑 Сбросить все данные</button>
     </div>
 
     <div class="setGroup mobileOnlyLinks" style="margin-top:20px">
-      <button class="mBtn" id="qrBtnMob">рџ“І QR-РєРѕРґ РґР»СЏ С‚РµР»РµС„РѕРЅР°</button>
-      <button class="mBtn" id="feedbackBtnMob">рџ’¬ РџРѕР¶РµР»Р°РЅРёСЏ Рё РёРґРµРё</button>
-      <button class="mBtn" id="devblogBtnMob">рџ“ќ Р”РµРІР±Р»РѕРі</button>
+      <button class="mBtn" id="qrBtnMob">📲 QR-код для телефона</button>
+      <button class="mBtn" id="feedbackBtnMob">💬 Пожелания и идеи</button>
+      <button class="mBtn" id="devblogBtnMob">📝 Девблог</button>
     </div>
   </div>
   
-  <!-- РР“Р Рђ -->
-  <header><h1>CHESHER</h1><div id="statusLine">Р—Р°РіСЂСѓР·РєР°вЂ¦</div></header>
+  <!-- ИГРА -->
+  <header><h1>CHESHER</h1><div id="statusLine">Загрузка…</div></header>
   
   <div id="wrap">
     <div class="pbar pbarTop">
-      <div class="who"><div class="name" id="nameTop">РЎРѕРїРµСЂРЅРёРє</div>
+      <div class="who"><div class="name" id="nameTop">Соперник</div>
         <div class="taken"><span id="takTop"></span><span class="adv" id="advTop"></span></div></div>
-        <div class="clock" id="clkTop">в€ћ</div>
+        <div class="clock" id="clkTop">∞</div>
     </div>
     <div id="leftCol">
-      <div class="pCard" id="pTop" title="РџСЂРѕС„РёР»СЊ СЃРѕРїРµСЂРЅРёРєР°">
-        <div class="ava" id="avaTop">рџ¤–</div>
-        <div class="nm" id="nmTop">РЎРѕРїРµСЂРЅРёРє</div>
-        <button class="muteBtn" id="muteBtn" title="Р—Р°РіР»СѓС€РёС‚СЊ СЃРѕРїРµСЂРЅРёРєР°">рџ”Љ</button>
+      <div class="pCard" id="pTop" title="Профиль соперника">
+        <div class="ava" id="avaTop">🤖</div>
+        <div class="nm" id="nmTop">Соперник</div>
+        <button class="muteBtn" id="muteBtn" title="Заглушить соперника">🔊</button>
       </div>
       <div class="chatBox" id="chatBox">
         <div class="chatMessages" id="chatMsgs"></div>
         <div class="chatInput">
-          <input type="text" id="chatInput" placeholder="РЎРѕРѕР±С‰РµРЅРёРµ..." maxlength="80">
-          <button class="chatSend" id="chatSend">вћ¤</button>
+          <input type="text" id="chatInput" placeholder="Сообщение..." maxlength="80">
+          <button class="chatSend" id="chatSend">➤</button>
         </div>
       </div>
-      <div class="pCard clickable" id="pBot" title="Р’Р°С€ РїСЂРѕС„РёР»СЊ вЂ” РЅР°Р¶РјРёС‚Рµ РґР»СЏ СЌРјРѕС†РёР№">
-        <div class="ava" id="avaBot">рџђЈ</div>
-        <div class="nm" id="nmBot">Р’С‹</div>
+      <div class="pCard clickable" id="pBot" title="Ваш профиль — нажмите для эмоций">
+        <div class="ava" id="avaBot">🐣</div>
+        <div class="nm" id="nmBot">Вы</div>
       </div>
       <div class="emPop" id="emoPopBot"></div>
     </div>
@@ -493,91 +489,91 @@
     </div>
     <div class="pbar pbarBot">
       <div class="who">
-        <div class="name" id="nameBot">Р’С‹</div>
+        <div class="name" id="nameBot">Вы</div>
         <div class="taken" id="capCol" style="display:none"><span id="capColPieces"></span><span class="adv" id="capColScore"></span></div>
       </div>
-      <div class="clock" id="clkBot">в€ћ</div>
+      <div class="clock" id="clkBot">∞</div>
     </div>
     
     <aside id="side">
       <div id="modeLabel"></div>
-      <button class="btn primary" id="btnNew">РќРѕРІР°СЏ РїР°СЂС‚РёСЏ</button>
-      <button class="btn" id="btnGoMenu">рџЏ  Р“Р»Р°РІРЅРѕРµ РјРµРЅСЋ</button>
-      <button class="btn" id="btnSet">вљ™ <span class="btnText">РќР°СЃС‚СЂРѕР№РєРё</span></button>
+      <button class="btn primary" id="btnNew">Новая партия</button>
+      <button class="btn" id="btnGoMenu">🏠 Главное меню</button>
+      <button class="btn" id="btnSet">⚙ <span class="btnText">Настройки</span></button>
       <div class="row2">
-        <button class="btn" id="btnHint">рџ’Ў <span class="btnText">РҐРѕРґ</span> <span id="hintN">(2)</span></button>
-        <button class="btn" id="btnUndo">в†©пёЏ <span class="btnText">РќР°Р·Р°Рґ</span> <span id="undoN">(3)</span></button>
+        <button class="btn" id="btnHint">💡 <span class="btnText">Ход</span> <span id="hintN">(2)</span></button>
+        <button class="btn" id="btnUndo">↩️ <span class="btnText">Назад</span> <span id="undoN">(3)</span></button>
       </div>
       <div class="row2">
-        <button class="btn warn" id="btnRes">РЎРґР°С‚СЊСЃСЏ</button>
-        <button class="btn" id="btnDraw">РќРёС‡СЊСЏ</button>
+        <button class="btn warn" id="btnRes">Сдаться</button>
+        <button class="btn" id="btnDraw">Ничья</button>
       </div>
       
       <div id="movesWrap">
-        <h3>РҐРѕРґС‹</h3>
-        <div id="moves"><div id="noMoves">РҐРѕРґРѕРІ РїРѕРєР° РЅРµС‚</div></div>
+        <h3>Ходы</h3>
+        <div id="moves"><div id="noMoves">Ходов пока нет</div></div>
       </div>
     </aside>
   </div>
   
   <div id="toast"></div>
   
-  <!-- РџРћР”РўР’Р•Р Р–Р”Р•РќРР• -->
+  <!-- ПОДТВЕРЖДЕНИЕ -->
   <div class="overlay" id="ovConf"><div class="modal">
-    <h2 id="confT">РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ</h2>
+    <h2 id="confT">Подтверждение</h2>
     <p id="confX" style="text-align:center;color:var(--mut);line-height:1.55"></p>
     <div class="modalBtns">
-      <button class="btn warn" id="confY">РџРѕРґС‚РІРµСЂРґРёС‚СЊ</button>
-      <button class="btn" data-close="ovConf">РћС‚РјРµРЅР°</button>
+      <button class="btn warn" id="confY">Подтвердить</button>
+      <button class="btn" data-close="ovConf">Отмена</button>
     </div>
   </div></div>
   
-  <!-- РџР РћРЎРњРћРўР  РџРђР РўРР -->
+  <!-- ПРОСМОТР ПАРТИИ -->
   <div class="overlay" id="ovReplay"><div class="modal" style="width:min(92vw,360px)">
-    <h2>в†©пёЏ РџСЂРѕСЃРјРѕС‚СЂ РїР°СЂС‚РёРё</h2>
+    <h2>↩️ Просмотр партии</h2>
     <div style="display:flex;justify-content:center;margin:10px 0 6px"><div style="width:min(78vw,268px)"><div style="display:grid;grid-template-columns:repeat(8,1fr);border:2px solid #6b5b3f;border-radius:4px;overflow:hidden" id="rvBoard"></div></div></div>
     <div style="text-align:center;color:var(--mut);font-size:12px;margin:4px 0 10px" id="rvInfo">0</div>
     <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px">
-      <button class="btn" id="rvBack" title="Рљ РЅР°С‡Р°Р»Сѓ">вЏ®</button>
-      <button class="btn" id="rvPrev" title="РќР°Р·Р°Рґ">в—Ђ</button>
-      <button class="btn" id="rvNext" title="Р’РїРµСЂС‘Рґ">в–¶</button>
-      <button class="btn" id="rvFwd" title="Рљ РєРѕРЅС†Сѓ">вЏ­</button>
+      <button class="btn" id="rvBack" title="К началу">⏮</button>
+      <button class="btn" id="rvPrev" title="Назад">◀</button>
+      <button class="btn" id="rvNext" title="Вперёд">▶</button>
+      <button class="btn" id="rvFwd" title="К концу">⏭</button>
     </div>
     <div id="rvMoveList" style="max-height:150px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;line-height:1.5;margin-bottom:10px"></div>
-    <div class="modalBtns"><button class="btn" data-close="ovReplay">Р—Р°РєСЂС‹С‚СЊ</button></div>
+    <div class="modalBtns"><button class="btn" data-close="ovReplay">Закрыть</button></div>
   </div></div>
 
-  <!-- РџР Р•Р’Р РђР©Р•РќРР• -->
+  <!-- ПРЕВРАЩЕНИЕ -->
   <div class="overlay" id="ovPr"><div class="modal">
-    <h2>РџСЂРµРІСЂР°С‰РµРЅРёРµ РїРµС€РєРё</h2>
+    <h2>Превращение пешки</h2>
     <div id="promoRow">
-      <div class="promoP" data-p="q">в™•</div>
-      <div class="promoP" data-p="r">в™–</div>
-      <div class="promoP" data-p="b">в™—</div>
-      <div class="promoP" data-p="n">в™</div>
+      <div class="promoP" data-p="q">♕</div>
+      <div class="promoP" data-p="r">♖</div>
+      <div class="promoP" data-p="b">♗</div>
+      <div class="promoP" data-p="n">♘</div>
     </div>
   </div></div>
   
-  <!-- РљРћРќР•Р¦ РџРђР РўРР -->
+  <!-- КОНЕЦ ПАРТИИ -->
   <div class="overlay" id="ovOver"><div class="modal">
     <div id="goT"></div>
     <div id="goS"></div>
     <div class="modalBtns">
-      <button class="btn primary" id="overNew">РќРѕРІР°СЏ РїР°СЂС‚РёСЏ</button>
-      <button class="btn primary" id="overRematch" style="display:none">рџ”Ѓ Р РµРІР°РЅС€</button>
-      <button class="btn" id="overMenu">Р’ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ</button>
-      <button class="btn" data-close="ovOver">РџРѕСЃРјРѕС‚СЂРµС‚СЊ РґРѕСЃРєСѓ</button>
+      <button class="btn primary" id="overNew">Новая партия</button>
+      <button class="btn primary" id="overRematch" style="display:none">🔁 Реванш</button>
+      <button class="btn" id="overMenu">В главное меню</button>
+      <button class="btn" data-close="ovOver">Посмотреть доску</button>
     </div>
   </div></div>
 
-  <!-- РћРІРµСЂР»РµР№: РџРѕР¶РµР»Р°РЅРёСЏ -->
+  <!-- Оверлей: Пожелания -->
   <div class="overlay" id="ovFeedback"><div class="modal" style="max-width:460px">
-    <h2 style="margin:0 0 6px">рџ’¬ РџРѕР¶РµР»Р°РЅРёСЏ Рё РёРґРµРё</h2>
-    <p style="color:var(--mut);font-size:13px;margin:0 0 14px">Р Р°СЃСЃРєР°Р¶РёС‚Рµ, С‡С‚Рѕ Р±С‹ РІС‹ С…РѕС‚РµР»Рё СѓРІРёРґРµС‚СЊ РІ РёРіСЂРµ: РЅРѕРІС‹Рµ СЂРµР¶РёРјС‹, РІРёРґРµРѕРјРµРјС‹, С„СѓРЅРєС†РёРё...</p>
-    <textarea id="feedbackText" class="inputTxt" rows="4" maxlength="500" placeholder="Р’Р°С€Р° РёРґРµСЏ..." style="width:100%;resize:vertical;box-sizing:border-box"></textarea>
+    <h2 style="margin:0 0 6px">💬 Пожелания и идеи</h2>
+    <p style="color:var(--mut);font-size:13px;margin:0 0 14px">Расскажите, что бы вы хотели увидеть в игре: новые режимы, видеомемы, функции...</p>
+    <textarea id="feedbackText" class="inputTxt" rows="4" maxlength="500" placeholder="Ваша идея..." style="width:100%;resize:vertical;box-sizing:border-box"></textarea>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn" data-close="ovFeedback" style="flex:1">РћС‚РјРµРЅР°</button>
-      <button class="btn primary" id="feedbackSend" style="flex:1">РћС‚РїСЂР°РІРёС‚СЊ</button>
+      <button class="btn" data-close="ovFeedback" style="flex:1">Отмена</button>
+      <button class="btn primary" id="feedbackSend" style="flex:1">Отправить</button>
     </div>
     <div id="feedbackStatus" style="color:var(--green);font-size:12px;margin-top:8px;text-align:center"></div>
   </div></div>
@@ -588,136 +584,136 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
 
-  <!-- РџРѕРґРєР»СЋС‡РµРЅРёРµ JS С„Р°Р№Р»РѕРІ РІ РїСЂР°РІРёР»СЊРЅРѕРј РїРѕСЂСЏРґРєРµ (defer = РїР°СЂР°Р»Р»РµР»СЊРЅР°СЏ Р·Р°РіСЂСѓР·РєР°, РїРѕСЂСЏРґРѕРє РІС‹РїРѕР»РЅРµРЅРёСЏ СЃРѕС…СЂР°РЅС‘РЅ) -->
-  <script defer src="js/chess-logic.js?v=0.38.8"></script>
-  <script defer src="js/bot.js?v=0.38.8"></script>
-  <script defer src="js/elo.js?v=0.38.8"></script>
-  <script defer src="js/profile.js?v=0.38.8"></script>
-  <script defer src="js/ui.js?v=0.38.8"></script>
-  <script defer src="js/chat.js?v=0.38.8"></script>
-  <script defer src="js/store.js?v=0.38.8"></script>
-  <script defer src="js/settings.js?v=0.38.8"></script>
-  <script defer src="js/meme/MemeEventBus.js?v=0.38.8"></script>
-  <script defer src="js/meme/MemeConfig.js?v=0.38.8"></script>
-  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.8"></script>
-  <script defer src="js/firebase-config.js?v=0.38.8"></script>
-  <script defer src="js/auth.js?v=0.38.8"></script>
-  <script defer src="js/friends.js?v=0.38.8"></script>
-  <script defer src="js/multiplayer.js?v=0.38.8"></script>
-  <script defer src="js/net-ui.js?v=0.38.8"></script>
-  <!-- ================= Р­РљР РђРќ: Р”Р•Р’-Р‘Р›РћР“ ================= -->
+  <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
+  <script defer src="js/chess-logic.js?v=0.38.10"></script>
+  <script defer src="js/bot.js?v=0.38.10"></script>
+  <script defer src="js/elo.js?v=0.38.10"></script>
+  <script defer src="js/profile.js?v=0.38.10"></script>
+  <script defer src="js/ui.js?v=0.38.10"></script>
+  <script defer src="js/chat.js?v=0.38.10"></script>
+  <script defer src="js/store.js?v=0.38.10"></script>
+  <script defer src="js/settings.js?v=0.38.10"></script>
+  <script defer src="js/meme/MemeEventBus.js?v=0.38.10"></script>
+  <script defer src="js/meme/MemeConfig.js?v=0.38.10"></script>
+  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.10"></script>
+  <script defer src="js/firebase-config.js?v=0.38.10"></script>
+  <script defer src="js/auth.js?v=0.38.10"></script>
+  <script defer src="js/friends.js?v=0.38.10"></script>
+  <script defer src="js/multiplayer.js?v=0.38.10"></script>
+  <script defer src="js/net-ui.js?v=0.38.10"></script>
+  <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
-      <button class="backBtn" data-back>в†ђ РќР°Р·Р°Рґ</button>
+      <button class="backBtn" data-back>← Назад</button>
       <span class="scrTitle">Dev Blog</span>
     </div>
     <div class="dbWrap" id="dbWrap"></div>
   </div>
   
-  <!-- РљРЅРѕРїРєР° РїРѕРјРѕС‰Рё + Р•Р¶РµРґРЅРµРІРЅС‹Р№ РїРѕРґР°СЂРѕРє + РўРµР»РµС„РѕРЅ -->
-  <button class="helpBtn" id="helpBtn" title="РџРѕРјРѕС‰СЊ РЅРѕРІС‹Рј РёРіСЂРѕРєР°Рј">?</button>
-  <button class="giftBtn" id="giftBtn" title="Р•Р¶РµРґРЅРµРІРЅС‹Р№ РїРѕРґР°СЂРѕРє">рџЋЃ</button>
-  <button class="phoneBtn" id="phoneBtn" title="РњРѕР±РёР»СЊРЅС‹Р№ СЂРµР¶РёРј">рџ“±</button>
-  <button class="chatFab" id="btnChat" title="Р§Р°С‚">рџ’¬</button>
+  <!-- Кнопка помощи + Ежедневный подарок + Телефон -->
+  <button class="helpBtn" id="helpBtn" title="Помощь новым игрокам">?</button>
+  <button class="giftBtn" id="giftBtn" title="Ежедневный подарок">🎁</button>
+  <button class="phoneBtn" id="phoneBtn" title="Мобильный режим">📱</button>
+  <button class="chatFab" id="btnChat" title="Чат">💬</button>
 
-  <!-- Р”РµРІР±Р»РѕРі вЂ” Р»РµРІС‹Р№ РІРµСЂС… -->
-  <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">рџ“ќ</button>
-  <button class="devblogBtn feedbackBtn" id="feedbackBtn" title="РџРѕР¶РµР»Р°РЅРёСЏ Рё РёРґРµРё">рџ’¬</button>
-  <button class="qrBtn" id="qrBtn" title="QR-РєРѕРґ РґР»СЏ РјРѕР±РёР»СЊРЅРѕРіРѕ">рџ“І</button>
+  <!-- Девблог — левый верх -->
+  <button class="devblogBtn devblogTop" id="devblogBtn" title="Dev Blog">📝</button>
+  <button class="devblogBtn feedbackBtn" id="feedbackBtn" title="Пожелания и идеи">💬</button>
+  <button class="qrBtn" id="qrBtn" title="QR-код для мобильного">📲</button>
 
   <!-- QR Overlay -->
   <div class="qrOverlay" id="qrOverlay">
     <div class="qrModal">
-      <h3>рџ“І QR-РљРћР”</h3>
+      <h3>📲 QR-КОД</h3>
       <img id="qrImg" style="display:block;margin:0 auto 16px;border-radius:8px;background:#fff;padding:8px" width="200" height="200" alt="QR">
-      <div class="qrUrl" id="qrUrl" title="РќР°Р¶РјРёС‚Рµ С‡С‚РѕР±С‹ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ"></div>
-      <button class="qrClose" id="qrClose">Р—Р°РєСЂС‹С‚СЊ</button>
+      <div class="qrUrl" id="qrUrl" title="Нажмите чтобы скопировать"></div>
+      <button class="qrClose" id="qrClose">Закрыть</button>
     </div>
   </div>
 
-  <!-- Р’Р°Р»СЋС‚Р° вЂ” РїСЂР°РІС‹Р№ РЅРёР¶ -->
+  <!-- Валюта — правый ниж -->
   <div class="cornerFloat" id="cornerFloat">
-    <span class="coinChip" id="pbCoins" style="margin:0">рџЄ™ 0</span>
-    <span class="coinChip gemChip" id="pbGems" style="margin:0">рџ’Ћ 0</span>
+    <span class="coinChip" id="pbCoins" style="margin:0">🪙 0</span>
+    <span class="coinChip gemChip" id="pbGems" style="margin:0">💎 0</span>
   </div>
 
-  <!-- Р”СЂСѓР·СЊСЏ вЂ” Р»РµРІС‹Р№ РЅРёР· -->
-  <button class="friendsFloatBtn" id="friendsFloatBtn" title="Р”СЂСѓР·СЊСЏ">рџ‘Ґ</button>
-  <button class="devblogBtn cheatBtn" id="cheatBtn" title="Dev Tools" style="display:none">рџ”§</button>
+  <!-- Друзья — левый низ -->
+  <button class="friendsFloatBtn" id="friendsFloatBtn" title="Друзья">👥</button>
+  <button class="devblogBtn cheatBtn" id="cheatBtn" title="Dev Tools" style="display:none">🔧</button>
   
-  <!-- РџР°РЅРµР»СЊ РґСЂСѓР·РµР№ -->
+  <!-- Панель друзей -->
   <div class="friendsPanel" id="friendsPanel">
     <div class="fpHeader">
-      <span class="fpTitle">рџ‘Ґ Р”СЂСѓР·СЊСЏ</span>
-      <button class="fpClose" id="fpClose">вњ•</button>
+      <span class="fpTitle">👥 Друзья</span>
+      <button class="fpClose" id="fpClose">✕</button>
     </div>
     <div class="fpSearch">
-      <input type="text" id="fpSearchInput" placeholder="РќР°Р№С‚Рё РґСЂСѓРіР°..." maxlength="30">
-      <button class="fpSearchBtn" id="fpSearchBtn">рџ”Ќ</button>
+      <input type="text" id="fpSearchInput" placeholder="Найти друга..." maxlength="30">
+      <button class="fpSearchBtn" id="fpSearchBtn">🔍</button>
     </div>
     <div class="fpSearchResults" id="fpSearchResults"></div>
     <div class="fpRequests" id="fpRequests"></div>
     <div class="fpList" id="fpList">
-      <div class="fpEmpty">Р”РѕР±Р°РІСЊС‚Рµ РґСЂСѓР·РµР№, С‡С‚РѕР±С‹ РЅР°С‡Р°С‚СЊ РѕР±С‰РµРЅРёРµ</div>
+      <div class="fpEmpty">Добавьте друзей, чтобы начать общение</div>
     </div>
   </div>
 
-  <!-- Р§Р°С‚ СЃ РґСЂСѓРіРѕРј -->
+  <!-- Чат с другом -->
   <div class="friendChatPanel" id="friendChatPanel">
     <div class="fcHeader">
-      <button class="fcBack" id="fcBack">в†ђ</button>
-      <span class="fcName" id="fcName">Р”СЂСѓРі</span>
+      <button class="fcBack" id="fcBack">←</button>
+      <span class="fcName" id="fcName">Друг</span>
       <div class="fcStatus" id="fcStatus"></div>
-      <button class="fpClose" id="fcClose">вњ•</button>
+      <button class="fpClose" id="fcClose">✕</button>
     </div>
     <div class="fcMessages" id="fcMessages"></div>
     <div class="fcInput">
-      <input type="text" id="fcInput" placeholder="РЎРѕРѕР±С‰РµРЅРёРµ..." maxlength="200">
-      <button class="fcSend" id="fcSend">вћ¤</button>
+      <input type="text" id="fcInput" placeholder="Сообщение..." maxlength="200">
+      <button class="fcSend" id="fcSend">➤</button>
     </div>
   </div>
   
   <!-- Cheat panel -->
   <div class="cheatPanel" id="cheatPanel">
-    <div class="cheatTitle">рџ”§ Dev Tools</div>
+    <div class="cheatTitle">🔧 Dev Tools</div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddCoins(100)">+100 рџЄ™</button>
-      <button class="cheatAction" onclick="cheatAddCoins(500)">+500 рџЄ™</button>
-      <button class="cheatAction" onclick="cheatAddCoins(9999)">+9999 рџЄ™</button>
+      <button class="cheatAction" onclick="cheatAddCoins(100)">+100 🪙</button>
+      <button class="cheatAction" onclick="cheatAddCoins(500)">+500 🪙</button>
+      <button class="cheatAction" onclick="cheatAddCoins(9999)">+9999 🪙</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddGems(5)">+5 рџ’Ћ</button>
-      <button class="cheatAction" onclick="cheatAddGems(20)">+20 рџ’Ћ</button>
-      <button class="cheatAction" onclick="cheatAddGems(100)">+100 рџ’Ћ</button>
+      <button class="cheatAction" onclick="cheatAddGems(5)">+5 💎</button>
+      <button class="cheatAction" onclick="cheatAddGems(20)">+20 💎</button>
+      <button class="cheatAction" onclick="cheatAddGems(100)">+100 💎</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddCoins(-100)">-100 рџЄ™</button>
-      <button class="cheatAction" onclick="cheatAddCoins(-500)">-500 рџЄ™</button>
-      <button class="cheatAction" onclick="cheatResetCoins()">=0 рџЄ™</button>
+      <button class="cheatAction" onclick="cheatAddCoins(-100)">-100 🪙</button>
+      <button class="cheatAction" onclick="cheatAddCoins(-500)">-500 🪙</button>
+      <button class="cheatAction" onclick="cheatResetCoins()">=0 🪙</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatUnlockAll()">рџ”“ Р’СЃС‘ РєСѓРїРёС‚СЊ</button>
-      <button class="cheatAction" onclick="cheatLockAll()">рџ”’ Р’СЃС‘ Р·Р°Р±СЂР°С‚СЊ</button>
+      <button class="cheatAction" onclick="cheatUnlockAll()">🔓 Всё купить</button>
+      <button class="cheatAction" onclick="cheatLockAll()">🔒 Всё забрать</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddWins(10)">+10 РїРѕР±РµРґ</button>
-      <button class="cheatAction" onclick="cheatAddWins(50)">+50 РїРѕР±РµРґ</button>
-      <button class="cheatAction" onclick="cheatResetWins()">=0 РїРѕР±РµРґ</button>
+      <button class="cheatAction" onclick="cheatAddWins(10)">+10 побед</button>
+      <button class="cheatAction" onclick="cheatAddWins(50)">+50 побед</button>
+      <button class="cheatAction" onclick="cheatResetWins()">=0 побед</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatMaxElo()">в†‘ РњР°РєСЃ Р­Р»Рѕ</button>
-      <button class="cheatAction" onclick="cheatResetElo()">в†“ РЎР±СЂРѕСЃ Р­Р»Рѕ</button>
+      <button class="cheatAction" onclick="cheatMaxElo()">↑ Макс Эло</button>
+      <button class="cheatAction" onclick="cheatResetElo()">↓ Сброс Эло</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatToggleSound()">рџ”Љ/рџ”‡ Р—РІСѓРє</button>
-      <button class="cheatAction" onclick="cheatTestWin()">рџЏ† РўРµСЃС‚ РїРѕР±РµРґС‹</button>
-      <button class="cheatAction" onclick="cheatTestLose()">рџ’Ђ РўРµСЃС‚ РїРѕСЂР°Р¶РµРЅРёСЏ</button>
+      <button class="cheatAction" onclick="cheatToggleSound()">🔊/🔇 Звук</button>
+      <button class="cheatAction" onclick="cheatTestWin()">🏆 Тест победы</button>
+      <button class="cheatAction" onclick="cheatTestLose()">💀 Тест поражения</button>
     </div>
   </div>
   
-  <script defer src="js/main.js?v=0.38.8"></script>
+  <script defer src="js/main.js?v=0.38.10"></script>
   
-  <!-- Р¤РѕР»Р±СЌРє-СЃС‚РёР»Рё РЅР° СЃР»СѓС‡Р°Р№, РµСЃР»Рё CSS РїРµСЂРµРјРµРЅРЅС‹Рµ РЅРµ СЃСЂР°Р±РѕС‚Р°СЋС‚ -->
+  <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>
     :root {
       --bsz: min(calc(100vh - 150px), 620px, 94vw);
