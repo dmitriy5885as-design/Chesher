@@ -126,7 +126,7 @@ const ChesMP = {
 
     if(code) {
       try {
-        await codesRef.child(code).set({ lobbyId: lobbyId, createdAt: Date.now() });
+        await codesRef.child(code).set({ lobbyId: lobbyId, createdAt: Date.now(), createdBy: uid });
       } catch(e) {
         console.warn('createLobby: не удалось опубликовать короткий код', e);
         this.lobbyCode = null;

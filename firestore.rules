@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Профили игроков: свой документ — полный доступ,
+    // чужой — только чтение (поиск/друзья) и поля друзей.
+    // ВАЖНО: gems (донатная валюта) клиент НЕ может увеличить —
+    // выдача кристаллов только сервером (Admin SDK / Cloud Functions).
+    match /users/{userId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.gems == 0;
+
+      allow update: if request.auth != null && (
+        // Свой документ: кристаллы можно только уменьшить (покупка), не увеличить;
+        // admin нельзя назначить себе самому
+        (request.auth.uid == userId
+          && request.resource.data.get('gems', 0) <= resource.data.get('gems', 0)
+          && (resource.data.get('admin', false) == true
+              || request.resource.data.get('admin', false) == false))
+        ||
+        // Чужой документ: только взаимные поля друзей
+        (request.auth.uid != userId
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['friends', 'friendRequests']))
+      );
+
+      allow delete: if false;
+    }
+
+    // Никаких других коллекций клиенту не нужно
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

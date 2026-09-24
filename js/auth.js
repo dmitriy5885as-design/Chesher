@@ -92,12 +92,7 @@ const ChesAuth = {
     const cred = await firebaseAuth.signInWithPopup(provider);
     this.user = cred.user;
     if(cred.additionalUserInfo && cred.additionalUserInfo.isNewUser) {
-      const allUsers = await firebaseDB.collection('users').limit(1).get();
-      const isFirst = allUsers.empty;
       await this._createProfile(cred.user.uid, cred.user.displayName || 'Игрок');
-      if(isFirst) {
-        await firebaseDB.collection('users').doc(cred.user.uid).update({ admin: true });
-      }
     }
     return cred.user;
   },
@@ -108,12 +103,7 @@ const ChesAuth = {
     const cred = await firebaseAuth.signInAnonymously();
     this.user = cred.user;
     try {
-      const allUsers = await firebaseDB.collection('users').limit(1).get();
-      const isFirst = allUsers.empty;
       await this._createProfile(cred.user.uid, 'Аноним #' + Math.floor(Math.random() * 9999));
-      if(isFirst) {
-        await firebaseDB.collection('users').doc(cred.user.uid).update({ admin: true });
-      }
     } catch(e) {
       console.warn('Firestore profile create skipped:', e.message);
     }
@@ -139,9 +129,6 @@ const ChesAuth = {
     const ref = firebaseDB.collection('users').doc(uid);
     const snap = await ref.get();
     if(!snap.exists) {
-      // Check if this is the first user
-      const allUsers = await firebaseDB.collection('users').limit(1).get();
-      const isFirst = allUsers.empty;
       const isAnon = this.user && this.user.isAnonymous;
       const playerId = isAnon ? null : await this._createUniquePlayerId();
       const data = {
@@ -154,7 +141,6 @@ const ChesAuth = {
         friends: [],
         friendRequests: [],
         owned: ['classic', 'board_classic'],
-        admin: isFirst,
         createdAt: Date.now(),
         playerId: playerId
       };
@@ -190,20 +176,23 @@ const ChesAuth = {
     if(!firebaseDB || !this.user) return;
     const ref = firebaseDB.collection('users').doc(this.user.uid);
     const snap = await ref.get();
+    let cloudGems = 0;
     if(snap.exists) {
       const cloud = snap.data();
       if(cloud.coins > localProfile.coins) {
         localProfile.coins = cloud.coins;
       }
-      if(cloud.gems > localProfile.gems) {
-        localProfile.gems = cloud.gems;
+      if(typeof cloud.gems === 'number') {
+        cloudGems = cloud.gems;
       }
     }
+    // Кристаллы — донатная валюта: сервер авторитетен, локальные значения не запушиваются
+    localProfile.gems = cloudGems;
     await ref.set({
       name: localProfile.name || 'Игрок',
       ava: localProfile.ava || '🐣',
       coins: localProfile.coins || 0,
-      gems: localProfile.gems || 0,
+      gems: cloudGems,
       elo: localProfile.elo || 0,
       ratings: localProfile.ratings || { classic: 0, bot: 0, fischer: 0, meme: 0, ranked: 0 },
       friends: localProfile.friends || [],

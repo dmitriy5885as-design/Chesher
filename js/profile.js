@@ -90,12 +90,7 @@ class Profile {
     return true;
   }
 
-  /* --- Кристаллы --- */
-  addGems(amount) {
-    this.gems = Math.max(0, (this.gems || 0) + amount);
-    return this.gems;
-  }
-
+  /* --- Кристаллы (донатная валюта: выдаётся только сервером) --- */
   spendGems(amount) {
     if((this.gems || 0) < amount) return false;
     this.gems -= amount;
@@ -139,7 +134,6 @@ class Profile {
       this.streak++;
       if(vsBot) this.winsBot++;
       this.addCoins(10);
-      if(this.st.wins % 3 === 0) this.addGems(1);
     } else if(result === 'loss') {
       this.st.losses++;
       this.st.lastResult = 'поражение';

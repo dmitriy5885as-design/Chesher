@@ -190,6 +190,10 @@ const NetUI = {
     const box = document.getElementById('friendSearchResults');
     if(!box) return;
     if(!q || q.length < 2) { box.innerHTML = ''; return; }
+    if(!ChesAuth.user) {
+      box.innerHTML = '<div style="color:var(--mut);font-size:12px;padding:8px">Войдите, чтобы искать игроков</div>';
+      return;
+    }
 
     const results = await ChesFriends.search(q);
     const myUid = ChesAuth.getUid();
