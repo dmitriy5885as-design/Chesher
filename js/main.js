@@ -1179,7 +1179,20 @@ function endGame(reason, winnerColor, drawReason) {
   // Capture ELO before recordResult
   const eloBefore = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
 
-  cu.recordResult(result, cfg.bot !== 'off', cfg.modeId);
+  cu.recordResult(result, cfg.bot !== 'off', cfg.modeId, opponentRating);
+  // Серверная запись результата (античит: лимиты, капы, авторитетный баланс/ELO)
+  if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+    ChesAuth.submitGameResult({ result: result, mode: cfg.modeId, opponentElo: opponentRating, vsBot: cfg.bot !== 'off' })
+      .then(data => {
+        if(data && typeof data.rating === 'number') {
+          const p = ProfilesManager.getCurrent();
+          if(p && p.ratings) {
+            p.ratings[cfg.modeId] = data.rating;
+            saveProfiles();
+          }
+        }
+      });
+  }
   Store.checkAchievements();
   renderCoins();
   renderProfBar();
@@ -1607,6 +1620,7 @@ function _puzzleSolveDone() {
     saveProfiles();
     renderCoins();
     localStorage.setItem(key, String(reward));
+    if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('puzzle', reward);
   }
 
   const old = document.getElementById('ovPuzzle');
@@ -1778,6 +1792,7 @@ function _tournamentShowEnd(kind, reward, label) {
     else cu.coins = (cu.coins || 0) + reward;
     saveProfiles();
     renderCoins();
+    if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('tournament', reward);
   }
   const old = document.getElementById('ovTourEnd');
   if(old) old.remove();
@@ -3410,7 +3425,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const _profile = ProfilesManager.getCurrent();
   if(_profile && _profile.checkDailyBonus) {
     const got = _profile.checkDailyBonus();
-    if(got) setTimeout(() => toast('🎁 Ежедневный бонус: +25 🪙'), 450);
+    if(got) {
+      setTimeout(() => toast('🎁 Ежедневный бонус: +25 🪙'), 450);
+      if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('daily', 25);
+    }
   }
 
   refreshModeLabel();
@@ -3557,6 +3575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCoins();
     updateGiftBtn();
     toast('🎁 Ежедневный подарок: +' + coins + ' 🪙');
+    if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('gift', coins);
     if(typeof Analytics !== 'undefined') Analytics.track('daily_gift', { coins: coins });
   });
 
@@ -4155,7 +4174,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.11').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.12').catch(() => {});
     });
   }
 });

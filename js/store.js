@@ -655,7 +655,10 @@ const Store = {
         const msg = '🏆 "' + ach.name + '" · +' + ach.coins + ' 🪙';
         setTimeout(() => {
           toast(msg);
-          if(ach.coins) Store.addCoins(ach.coins);
+          if(ach.coins) {
+            Store.addCoins(ach.coins);
+            if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('achievement', ach.coins);
+          }
           saveProfiles();
         }, 650);
       }

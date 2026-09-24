@@ -38,7 +38,25 @@ const Analytics = {
   track(goal, params) {
     if(!this._ready || typeof ym === 'undefined') return;
     try { ym(YM_COUNTER_ID, 'reachGoal', goal, params || {}); } catch(e) {}
+  },
+
+  /* Ошибка: Analytics.sendError('message') -> цель js_error в Метрике */
+  sendError(message) {
+    const msg = String((message && message.message) || message || 'unknown').slice(0, 200);
+    if(typeof console !== 'undefined' && console.error) console.error('[Analytics.error]', msg);
+    this.track('js_error', { message: msg });
   }
 };
 
 document.addEventListener('DOMContentLoaded', () => Analytics.init());
+
+/* Глобальные обработчики ошибок -> Яндекс.Метрика */
+if(typeof window !== 'undefined') {
+  window.addEventListener('error', e => {
+    try { Analytics.sendError(e.message || 'script error'); } catch(err) {}
+  });
+  window.addEventListener('unhandledrejection', e => {
+    const r = e && e.reason;
+    try { Analytics.sendError((r && (r.message || r)) || 'unhandled rejection'); } catch(err) {}
+  });
+}

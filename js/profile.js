@@ -126,7 +126,7 @@ class Profile {
   }
 
   /* --- Результат игры --- */
-  recordResult(result, vsBot = false, mode) {
+  recordResult(result, vsBot = false, mode, opponentElo = 0) {
     this.st.games++;
     if(result === 'win') {
       this.st.wins++;
@@ -156,8 +156,8 @@ class Profile {
     if(this.ratings[modeId] !== undefined) {
       const K = 32;
       const elo = this.ratings[modeId];
-      const opponentElo = 0;
-      const expected = 1 / (1 + Math.pow(10, (opponentElo - elo) / 400));
+      const oppElo = typeof opponentElo === 'number' && isFinite(opponentElo) ? opponentElo : 0;
+      const expected = 1 / (1 + Math.pow(10, (oppElo - elo) / 400));
       const actual = result === 'win' ? 1 : result === 'draw' ? 0.5 : 0;
       this.ratings[modeId] = Math.round(elo + K * (actual - expected));
     }

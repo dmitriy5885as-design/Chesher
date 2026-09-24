@@ -50,11 +50,15 @@ const ChesAuth = {
       this.user = user;
       if(user) {
         await this._loadProfile(user.uid);
+        this.flushPending();
       } else {
         this.profile = null;
       }
       this.listeners.forEach(fn => fn(user));
     });
+    if(typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.flushPending());
+    }
   },
 
   onAuthChange(fn) {
@@ -171,38 +175,114 @@ const ChesAuth = {
     Object.assign(this.profile, data);
   },
 
-  /* --- Синхронизировать локальный профиль с Firebase --- */
+  /* --- Cloud Functions: вызов --- */
+  async callFn(name, payload) {
+    if(typeof firebase === 'undefined' || !firebase.functions || !this.user) return null;
+    try {
+      const res = await firebase.functions().httpsCallable(name)(payload || {});
+      return res.data || null;
+    } catch(e) {
+      console.warn('callFn ' + name + ' failed:', e.message);
+      return null;
+    }
+  },
+
+  /* --- Применить серверный баланс монет (сервер авторитетен) --- */
+  applyServerCoins(data) {
+    if(!data || typeof data.coins !== 'number') return;
+    if(typeof ProfilesManager === 'undefined') return;
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.coins = data.coins;
+    saveProfiles();
+    if(typeof renderCoins === 'function') renderCoins();
+  },
+
+  /* --- Результат партии -> submitResult (античит, серверные лимиты) --- */
+  async submitGameResult(payload) {
+    const data = await this.callFn('submitResult', payload);
+    if(data) this.applyServerCoins(data);
+    else if(this.user) this._queuePending({ type: 'result', payload: payload, ts: Date.now() });
+    return data;
+  },
+
+  /* --- Выдача монет за событие -> awardCoins (серверные капы) --- */
+  async awardCoins(reason, amount) {
+    const data = await this.callFn('awardCoins', { reason: reason, amount: amount });
+    if(data) this.applyServerCoins(data);
+    else if(this.user && amount > 0) this._queuePending({ type: 'award', payload: { reason: reason, amount: amount }, ts: Date.now() });
+    return data;
+  },
+
+  /* --- Очередь неотправленных наград (офлайн) --- */
+  _queuePending(item) {
+    try {
+      const raw = localStorage.getItem('chesher_pending_fns') || '[]';
+      const q = JSON.parse(raw);
+      if(!Array.isArray(q)) return;
+      q.push(item);
+      localStorage.setItem('chesher_pending_fns', JSON.stringify(q.slice(-50)));
+    } catch(e) {}
+  },
+
+  async flushPending() {
+    if(!this.user) return;
+    let q = [];
+    try { q = JSON.parse(localStorage.getItem('chesher_pending_fns') || '[]'); } catch(e) { return; }
+    if(!Array.isArray(q) || !q.length) return;
+    const remain = [];
+    for(let i = 0; i < q.length; i++) {
+      const item = q[i];
+      let ok = null;
+      if(item && item.type === 'result') ok = await this.callFn('submitResult', item.payload);
+      else if(item && item.type === 'award') ok = await this.callFn('awardCoins', item.payload);
+      if(!ok && item) remain.push(item);
+      else if(ok) this.applyServerCoins(ok);
+    }
+    try { localStorage.setItem('chesher_pending_fns', JSON.stringify(remain)); } catch(e) {}
+  },
+
+  /* --- Синхронизировать локальный профиль с Firebase ---
+     Сервер-авторитетная модель:
+     - 💎 gems: всегда из облака (клиент не запушивает)
+     - 🪙 coins: клиент может только уменьшить (трата); прирост уходит в awardCoins
+     - ratings/wins/games: пишет только сервер (создание документа — исключение) */
   async syncLocalToCloud(localProfile) {
     if(!firebaseDB || !this.user) return;
     const ref = firebaseDB.collection('users').doc(this.user.uid);
     const snap = await ref.get();
-    let cloudGems = 0;
-    if(snap.exists) {
-      const cloud = snap.data();
-      if(cloud.coins > localProfile.coins) {
-        localProfile.coins = cloud.coins;
-      }
-      if(typeof cloud.gems === 'number') {
-        cloudGems = cloud.gems;
-      }
-    }
-    // Кристаллы — донатная валюта: сервер авторитетен, локальные значения не запушиваются
-    localProfile.gems = cloudGems;
-    await ref.set({
+    const payload = {
       name: localProfile.name || 'Игрок',
       ava: localProfile.ava || '🐣',
-      coins: localProfile.coins || 0,
-      gems: cloudGems,
       elo: localProfile.elo || 0,
-      ratings: localProfile.ratings || { classic: 0, bot: 0, fischer: 0, meme: 0, ranked: 0 },
       friends: localProfile.friends || [],
       friendRequests: localProfile.friendRequests || [],
       owned: localProfile.owned || ['classic'],
       lastNickChange: localProfile.lastNickChange || 0,
       customAva: localProfile.customAva || null,
-      wins: (localProfile.st || {}).wins || 0,
-      games: (localProfile.st || {}).games || 0,
       playerId: localProfile.playerId || null
-    }, { merge: true });
+    };
+    if(!snap.exists) {
+      // Создание документа: полная инициализация (create разрешает всё кроме gems > 0)
+      payload.coins = localProfile.coins || 0;
+      payload.gems = 0;
+      payload.ratings = localProfile.ratings || { classic: 0, bot: 0, fischer: 0, meme: 0, ranked: 0 };
+      payload.wins = (localProfile.st || {}).wins || 0;
+      payload.games = (localProfile.st || {}).games || 0;
+    } else {
+      const cloud = snap.data();
+      if(typeof cloud.gems === 'number') {
+        localProfile.gems = cloud.gems;
+      }
+      const cloudCoins = typeof cloud.coins === 'number' ? cloud.coins : 0;
+      if((localProfile.coins || 0) <= cloudCoins) {
+        payload.coins = localProfile.coins || 0; // трата — разрешена правилами
+      }
+      // local > cloud: прирост (напр. офлайн) не пишем — его делает submitResult/awardCoins
+      if(cloud.ratings && typeof cloud.ratings === 'object') {
+        localProfile.ratings = cloud.ratings;
+      }
+    }
+    await ref.set(payload, { merge: true });
   }
 };

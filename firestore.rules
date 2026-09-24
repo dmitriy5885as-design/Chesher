@@ -2,10 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Профили игроков: свой документ — полный доступ,
-    // чужой — только чтение (поиск/друзья) и поля друзей.
-    // ВАЖНО: gems (донатная валюта) клиент НЕ может увеличить —
-    // выдача кристаллов только сервером (Admin SDK / Cloud Functions).
+    // Профили игроков: свой документ — ограниченный доступ, чужой — только чтение
+    // (поиск/друзья) и поля друзей.
+    // ВАЖНО: экономика сервер-авторитетна:
+    // - gems 💎 (донат): клиент может только уменьшить (покупка), выдача — только сервером
+    // - coins 🪙: клиент может только тратить (уменьшать); прирост — только Cloud Functions
+    // - ratings/wins/games: пишет только сервер (submitResult, Admin SDK)
+    // - admin: нельзя назначить себе самому (назначается в Firebase Console)
     match /users/{userId} {
       allow read: if request.auth != null;
 
@@ -14,10 +17,14 @@ service cloud.firestore {
         && request.resource.data.gems == 0;
 
       allow update: if request.auth != null && (
-        // Свой документ: кристаллы можно только уменьшить (покупка), не увеличить;
-        // admin нельзя назначить себе самому
+        // Свой документ: только трата монет/кристаллов, статистику и рейтинг
+        // менять клиенту нельзя
         (request.auth.uid == userId
           && request.resource.data.get('gems', 0) <= resource.data.get('gems', 0)
+          && request.resource.data.get('coins', 0) <= resource.data.get('coins', 0)
+          && request.resource.data.get('ratings', null) == resource.data.get('ratings', null)
+          && request.resource.data.get('wins', 0) == resource.data.get('wins', 0)
+          && request.resource.data.get('games', 0) == resource.data.get('games', 0)
           && (resource.data.get('admin', false) == true
               || request.resource.data.get('admin', false) == false))
         ||
@@ -28,6 +35,11 @@ service cloud.firestore {
       );
 
       allow delete: if false;
+
+      // Лимиты античита — читает/пишет только сервер (Admin SDK)
+      match /meta/{docId} {
+        allow read, write: if false;
+      }
     }
 
     // Никаких других коллекций клиенту не нужно
