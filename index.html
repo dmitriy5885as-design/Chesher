@@ -4,13 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CHESHER — Чешир · шахматы</title>
+  <meta name="description" content="Шахматы с ботами, друзьями и по сети. Рейтинги, задачки и турниры. Играй бесплатно в браузере — CHESHER.">
+  <meta name="theme-color" content="#161512">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CHESHER">
+  <meta property="og:title" content="CHESHER — Чешир · шахматы">
+  <meta property="og:description" content="Шахматы с ботами, друзьями и по сети. Рейтинги, задачки и турниры.">
+  <meta name="twitter:card" content="summary">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.38.11">
+  <link rel="stylesheet" href="css/main.css?v=0.38.12">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.38.11">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.12">
 
 </head>
 <body>
@@ -53,7 +61,7 @@
       </div>
     </div>
     <div class="tipBox" id="tipBox"></div>
-    <div class="menuFoot">CHESHER v0.23.19 alpha</div>
+    <div class="menuFoot">CHESHER v0.23.20 alpha</div>
   </div>
   
   <!-- ================= ЭКРАН: ПРОФИЛЬ ================= -->
@@ -583,25 +591,26 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-functions-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
-  <script defer src="js/chess-logic.js?v=0.38.11"></script>
-  <script defer src="js/bot.js?v=0.38.11"></script>
-  <script defer src="js/elo.js?v=0.38.11"></script>
-  <script defer src="js/profile.js?v=0.38.11"></script>
-  <script defer src="js/ui.js?v=0.38.11"></script>
-  <script defer src="js/chat.js?v=0.38.11"></script>
-  <script defer src="js/store.js?v=0.38.11"></script>
-  <script defer src="js/settings.js?v=0.38.11"></script>
-  <script defer src="js/meme/MemeEventBus.js?v=0.38.11"></script>
-  <script defer src="js/meme/MemeConfig.js?v=0.38.11"></script>
-  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.11"></script>
-  <script defer src="js/firebase-config.js?v=0.38.11"></script>
-  <script defer src="js/auth.js?v=0.38.11"></script>
-  <script defer src="js/friends.js?v=0.38.11"></script>
-  <script defer src="js/multiplayer.js?v=0.38.11"></script>
-  <script defer src="js/net-ui.js?v=0.38.11"></script>
-  <script defer src="js/analytics.js?v=0.38.11"></script>
+  <script defer src="js/chess-logic.js?v=0.38.12"></script>
+  <script defer src="js/bot.js?v=0.38.12"></script>
+  <script defer src="js/elo.js?v=0.38.12"></script>
+  <script defer src="js/profile.js?v=0.38.12"></script>
+  <script defer src="js/ui.js?v=0.38.12"></script>
+  <script defer src="js/chat.js?v=0.38.12"></script>
+  <script defer src="js/store.js?v=0.38.12"></script>
+  <script defer src="js/settings.js?v=0.38.12"></script>
+  <script defer src="js/meme/MemeEventBus.js?v=0.38.12"></script>
+  <script defer src="js/meme/MemeConfig.js?v=0.38.12"></script>
+  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.12"></script>
+  <script defer src="js/firebase-config.js?v=0.38.12"></script>
+  <script defer src="js/auth.js?v=0.38.12"></script>
+  <script defer src="js/friends.js?v=0.38.12"></script>
+  <script defer src="js/multiplayer.js?v=0.38.12"></script>
+  <script defer src="js/net-ui.js?v=0.38.12"></script>
+  <script defer src="js/analytics.js?v=0.38.12"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -707,7 +716,7 @@
     </div>
   </div>
   
-  <script defer src="js/main.js?v=0.38.11"></script>
+  <script defer src="js/main.js?v=0.38.12"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>
