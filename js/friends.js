@@ -10,7 +10,7 @@ const ChesFriends = {
 
   /* --- Поиск пользователей --- */
   async search(query) {
-    if(!firebaseDB || !query || query.length < 2) return [];
+    if(!firebaseDB || !ChesAuth.user || !query || query.length < 2) return [];
     const results = [];
     const seen = new Set();
 

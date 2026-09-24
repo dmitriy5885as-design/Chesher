@@ -31,6 +31,8 @@ function showScreen(id) {
 
   if(id === 'scrMenu') exitFullscreenMobile();
 
+  if(typeof Analytics !== 'undefined') Analytics.screen(id);
+
   // Devblog button only on main menu
   const cornerFloat = document.getElementById('cornerFloat');
   if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
@@ -3309,14 +3311,6 @@ function cheatResetCoins() {
   renderCoins();
   toast('🪙 0');
 }
-function cheatAddGems(amount) {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.addGems(amount);
-  saveProfiles();
-  renderCoins();
-  toast('💎 ' + cu.gems);
-}
 function cheatUnlockAll() {
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
@@ -3324,10 +3318,9 @@ function cheatUnlockAll() {
   Object.keys(BOARDS).forEach(id => { const k = 'board_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
   Object.keys(STICKERS).forEach(id => { const k = 'sticker_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
   Object.keys(AVATARS).forEach(id => { const k = 'avatar_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
-  cu.addGems(100);
   saveProfiles();
   renderCoins();
-  toast('🔓 Всё открыто + 💎 100');
+  toast('🔓 Всё открыто');
 }
 function cheatLockAll() {
   const cu = ProfilesManager.getCurrent();
@@ -3554,18 +3547,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if(lastClaim === today) { toast('Уже получено сегодня!'); return; }
 
     const coins = 25 + Math.floor(Math.random() * 26);
-    const gems = Math.random() < 0.3 ? 1 : 0;
 
     localStorage.setItem('chesher_daily_gift', today);
     const cu = ProfilesManager.getCurrent();
     if(cu) {
       cu.coins = (cu.coins || 0) + coins;
-      cu.gems = (cu.gems || 0) + gems;
       saveProfiles();
     }
     renderCoins();
     updateGiftBtn();
-    toast('🎁 Ежедневный подарок: +' + coins + ' 🪙' + (gems ? ' +1 💎' : ''));
+    toast('🎁 Ежедневный подарок: +' + coins + ' 🪙');
+    if(typeof Analytics !== 'undefined') Analytics.track('daily_gift', { coins: coins });
   });
 
   // === Friends panel ===
@@ -3761,6 +3753,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!inp || !box) return;
     const q = inp.value.trim();
     if(q.length < 2) { box.innerHTML = ''; box.classList.remove('hasItems'); return; }
+    if(!ChesAuth.user) {
+      box.innerHTML = '<div class="fpEmpty">Войдите, чтобы искать игроков</div>';
+      box.classList.add('hasItems');
+      return;
+    }
 
     const results = await ChesFriends.search(q);
     const myUid = ChesAuth.getUid();
@@ -3880,8 +3877,7 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   // Multiplayer menu
-  bind('mpCreateBtn', async () => {
-    await ensureAuth();
+  bind('mpCreateBtn', () => {
     showScreen('scrLobbySetup');
     renderLobbySetup();
   });
@@ -4159,7 +4155,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.9').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.11').catch(() => {});
     });
   }
 });

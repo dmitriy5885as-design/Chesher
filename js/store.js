@@ -380,7 +380,7 @@ const Store = {
       return;
     }
 
-    if(note) note.textContent = 'Скины меняют вид фигур на доске. Монеты 🪙 дают победы (+10), ничьи (+3), серии и ежедневный вход (+25). Кристаллы 💎 — премиальная валюта, даётся за каждую 3-ю победу.';
+    if(note) note.textContent = 'Скины меняют вид фигур на доске. Монеты 🪙 — игровая валюта: победы (+10), ничьи (+3), серии и ежедневный вход (+25). Кристаллы 💎 — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере.';
 
     if(cfg.shopTab === 'skins') {
       Object.keys(SKINS).forEach(id => {
@@ -507,9 +507,14 @@ const Store = {
         if(skin.gem) {
           if((profile.gems || 0) < skin.gemPrice) { toast('Не хватает кристаллов!'); return; }
           profile.spendGems(skin.gemPrice);
+          if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+            Promise.resolve(ChesAuth.updateProfile({ gems: profile.gems, owned: profile.owned })).catch(() => {});
+          }
+          if(typeof Analytics !== 'undefined') Analytics.track('purchase_gem_item', { id: id, price: skin.gemPrice });
           renderCoins();
         } else {
           if(!Store.spendCoins(skin.price)) { toast('Не хватает монет!'); return; }
+          if(typeof Analytics !== 'undefined') Analytics.track('purchase_coin_item', { id: id, price: skin.price });
         }
         profile.owned.push(id);
         saveProfiles();
