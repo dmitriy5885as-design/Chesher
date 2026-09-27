@@ -1307,6 +1307,11 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   transition:none!important;
   filter:drop-shadow(0 8px 12px rgba(0,0,0,.55));
 }
+/* При игре чёрными доска перевёрнута: призрак не должен терять позицию/масштаб
+   и не должен переворачиваться вместе с правилом #boardBox.flipped .piece */
+#boardBox.flipped .piece.dragGhost{
+  transform:translate(-50%,-50%) scale(1.18) rotate(180deg);
+}
 #boardBox .dragSrc{opacity:.35}
 .sq.dragT::after{content:'';position:absolute;inset:0;background:rgba(129,182,76,.4)}
 

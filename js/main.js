@@ -1855,18 +1855,24 @@ function initBoardPointer() {
     const myCol = S.turn === S.humanColor ? S.turn : S.humanColor;
     if(!piece || pieceColorStatic(piece) !== myCol) return;
     const pm = S.turn !== S.humanColor;
-    _drag = { r, c, x: e.clientX, y: e.clientY, moved: false, srcEl: _findPieceEl(r, c), ghost: null, pmove: pm };
-    try { grid.setPointerCapture(e.pointerId); } catch(err) {}
+    // Никакого setPointerCapture на тапе: обычный клик должен дойти до onSquareClick
+    // (клик-клик: выбрать фигуру -> показать пути -> нажать клетку)
+    _drag = { r, c, x: e.clientX, y: e.clientY, t0: Date.now(), dragging: false, srcEl: _findPieceEl(r, c), ghost: null, pmove: pm };
   });
 
   grid.addEventListener('pointermove', e => {
     if(!_drag) return;
     const dx = e.clientX - _drag.x, dy = e.clientY - _drag.y;
-    if(Math.abs(dx) + Math.abs(dy) < 7) return;
-    e.preventDefault();
+    const dist = Math.abs(dx) + Math.abs(dy);
 
-    if(!_drag.moved) {
-      _drag.moved = true;
+    if(!_drag.dragging) {
+      // Драг — только намеренный: >=24px сразу, либо >=8px через 120мс удержания.
+      // Обычный тап (дрожание пальца/мыши) драгом не считается.
+      const held = Date.now() - _drag.t0;
+      const deliberate = dist >= 24 || (dist >= 8 && held >= 120);
+      if(!deliberate) return;
+      _drag.dragging = true;
+      try { grid.setPointerCapture(e.pointerId); } catch(err) {}
       if(_drag.srcEl) {
         _drag.srcEl.classList.add('dragSrc');
         const ghost = _drag.srcEl.cloneNode(true);
@@ -1880,6 +1886,8 @@ function initBoardPointer() {
       hintMove = null;
       paintMarks();
     }
+
+    e.preventDefault();
 
     if(_drag.ghost) {
       const box = document.getElementById('boardBox');
@@ -1904,11 +1912,10 @@ function initBoardPointer() {
   function finishDrag(e) {
     if(!_drag) return;
     const drag = _drag;
-    const moved = drag.moved;
-    const wasPmove = drag.pmove;
+    const dragging = drag.dragging;
     _dragCleanup();
+    if(!dragging) return; // тап — обработку оставляет клику (onSquareClick)
     try { grid.releasePointerCapture(e.pointerId); } catch(err) {}
-    if(!moved) return; // тап — обработку оставляет клику (onSquareClick)
 
     _suppressClickTs = Date.now();
 
@@ -1918,7 +1925,7 @@ function initBoardPointer() {
     const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
 
     // Премув драгом (не наш ход) — заготовить ход, не ходить
-    if(wasPmove) {
+    if(drag.pmove) {
       premove = { fr: drag.r, fc: drag.c, tr: r, tc: c, promo: null };
       preSel = null;
       snd.ui();
@@ -1939,6 +1946,8 @@ function initBoardPointer() {
 
   grid.addEventListener('pointerup', finishDrag);
   grid.addEventListener('pointercancel', finishDrag);
+  // Страховка: отпустили за пределами доски до старта драга — сбросить состояние
+  window.addEventListener('pointerup', () => { if(_drag) _dragCleanup(); });
 }
 
 /* --- Мобильный чат (выезжающая панель) --- */
@@ -4178,7 +4187,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.13').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.14').catch(() => {});
     });
   }
 });
