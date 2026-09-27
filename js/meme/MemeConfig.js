@@ -72,6 +72,27 @@ const MemeConfig = (() => {
     return vp;
   }
 
+  // Общий список на оба цвета: объединяем w/b и синхронизируем (v0.24.2)
+  function unifyColors(vp) {
+    if(!vp) return vp;
+    MEME_EVENT_TYPES.forEach(function(k) {
+      var e = vp[k];
+      if(!e) return;
+      var uni = function(pair) {
+        if(!pair || typeof pair !== 'object') return;
+        var merged = Array.isArray(pair.w) ? pair.w.slice() : [];
+        (Array.isArray(pair.b) ? pair.b : []).forEach(function(f) {
+          if(merged.indexOf(f) < 0) merged.push(f);
+        });
+        pair.w = merged.slice();
+        pair.b = merged.slice();
+      };
+      uni(e);
+      PIECE_KEYS.forEach(function(pk) { if(e[pk]) uni(e[pk]); });
+    });
+    return vp;
+  }
+
   function migratePresets(vp) {
     if(!vp) return backfillDefaults(defaultPresets());
 
@@ -132,8 +153,9 @@ const MemeConfig = (() => {
         // Миграция: старый дефолт (одно видео на всех событиях) → событийные видео
         if(isLegacyDefault(config.videoPresets)) {
           config.videoPresets = defaultPresets();
-          save();
         }
+        unifyColors(config.videoPresets);
+        save();
       }
     } catch(e) {}
   }
@@ -208,6 +230,7 @@ const MemeConfig = (() => {
     var p = list.find(function(x) { return x.name === name; });
     if(p) {
       config.videoPresets = migratePresets(JSON.parse(JSON.stringify(p.videoPresets)));
+      unifyColors(config.videoPresets);
       save();
     }
     return config.videoPresets;
