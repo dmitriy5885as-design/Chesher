@@ -19,15 +19,32 @@ const MemeConfig = (() => {
 
   function defaultPresets() {
     return {
-      check:      { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      capture:    { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      threat:     { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
+      check:      { w: ['video/net.mp4'], b: ['video/net.mp4'] },
+      capture:    { w: ['video/this-is-sparta.mp4'], b: ['video/this-is-sparta.mp4'] },
+      threat:     { w: ['video/why-are-you-running.mp4'], b: ['video/why-are-you-running.mp4'] },
       defense:    { w: [], b: [] },
-      promotion:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      sacrifice:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      blunder:    { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] },
-      brilliant:  { w: [DEFAULT_VIDEO], b: [DEFAULT_VIDEO] }
+      promotion:  { w: ['video/vot-eto-povorot.mp4'], b: ['video/vot-eto-povorot.mp4'] },
+      sacrifice:  { w: ['video/titry-robert.mp4'], b: ['video/titry-robert.mp4'] },
+      blunder:    { w: ['video/a-che-tak-mozhno.mp4'], b: ['video/a-che-tak-mozhno.mp4'] },
+      brilliant:  { w: ['video/daaaammmmm.mp4'], b: ['video/daaaammmmm.mp4'] }
     };
+  }
+
+  // Старый дефолт (до v0.24.2): одно видео на всех событиях — для миграции
+  function isLegacyDefault(vp) {
+    if(!vp) return false;
+    return MEME_EVENT_TYPES.every(function(k) {
+      var e = vp[k];
+      if(!e) return false;
+      if(PIECE_KEYS.some(function(pk) { return e[pk]; })) return false;
+      var isOld = function(arr) {
+        return Array.isArray(arr) && arr.length === 1 && arr[0] === DEFAULT_VIDEO;
+      };
+      if(k === 'defense') {
+        return Array.isArray(e.w) && e.w.length === 0 && Array.isArray(e.b) && e.b.length === 0;
+      }
+      return isOld(e.w) && isOld(e.b);
+    });
   }
 
   function ensureArrays(obj) {
@@ -40,12 +57,15 @@ const MemeConfig = (() => {
   function backfillDefaults(vp) {
     ['threat'].forEach(function(k) {
       if(!vp[k]) return;
-      if(!Array.isArray(vp[k].w) || !vp[k].w.length) vp[k].w = [DEFAULT_VIDEO];
-      if(!Array.isArray(vp[k].b) || !vp[k].b.length) vp[k].b = [DEFAULT_VIDEO];
+      var d = defaultPresets()[k];
+      var defW = (d && d.w && d.w.length) ? d.w : [DEFAULT_VIDEO];
+      var defB = (d && d.b && d.b.length) ? d.b : [DEFAULT_VIDEO];
+      if(!Array.isArray(vp[k].w) || !vp[k].w.length) vp[k].w = defW.slice();
+      if(!Array.isArray(vp[k].b) || !vp[k].b.length) vp[k].b = defB.slice();
       PIECE_KEYS.forEach(function(pk) {
         if(vp[k][pk]) {
-          if(!Array.isArray(vp[k][pk].w) || !vp[k][pk].w.length) vp[k][pk].w = [DEFAULT_VIDEO];
-          if(!Array.isArray(vp[k][pk].b) || !vp[k][pk].b.length) vp[k][pk].b = [DEFAULT_VIDEO];
+          if(!Array.isArray(vp[k][pk].w) || !vp[k][pk].w.length) vp[k][pk].w = defW.slice();
+          if(!Array.isArray(vp[k][pk].b) || !vp[k][pk].b.length) vp[k][pk].b = defB.slice();
         }
       });
     });
@@ -109,6 +129,11 @@ const MemeConfig = (() => {
       if(raw) {
         Object.assign(config, JSON.parse(raw));
         config.videoPresets = migratePresets(config.videoPresets);
+        // Миграция: старый дефолт (одно видео на всех событиях) → событийные видео
+        if(isLegacyDefault(config.videoPresets)) {
+          config.videoPresets = defaultPresets();
+          save();
+        }
       }
     } catch(e) {}
   }
