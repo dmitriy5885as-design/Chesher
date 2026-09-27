@@ -591,6 +591,14 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 }
 .helpBtn:hover{border-color:var(--gold);background:rgba(247,197,49,.15);color:var(--gold);transform:scale(1.1)}
 
+/* --- Раздел помощи (овлей "?") --- */
+.helpSec{margin:0 0 10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.helpH{font-weight:700;font-size:13.5px;color:var(--gold);margin-bottom:6px}
+.helpSec p{margin:0 0 6px;font-size:12.5px;color:var(--txt);line-height:1.55}
+.helpSec ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--mut);line-height:1.6}
+.helpSec ul li{margin-bottom:3px}
+.helpSec b{color:var(--txt)}
+
 .giftBtn{
   position:fixed;top:16px;right:60px;z-index:1100;
   width:36px;height:36px;border-radius:50%;border:1px solid var(--line);
