@@ -30,7 +30,7 @@ const NetUI = {
       try {
         await ChesAuth.resetPassword(email);
         toast('Ссылка для сброса отправлена на ' + email);
-      } catch(e) { toast('Ошибка: ' + e.message); }
+      } catch(e) { toast(humanError(e)); }
     };
 
     if(regBtn) regBtn.onclick = async () => {
@@ -48,7 +48,7 @@ const NetUI = {
         }
         showScreen('scrMenu');
         toast('Аккаунт создан!');
-      } catch(e) { toast('Ошибка: ' + e.message); }
+      } catch(e) { toast(humanError(e)); }
     };
 
     if(loginBtn) loginBtn.onclick = async () => {
@@ -59,7 +59,7 @@ const NetUI = {
         await ChesAuth.login(email, pass);
         showScreen('scrMenu');
         toast('Добро пожаловать!');
-      } catch(e) { toast('Ошибка: ' + e.message); }
+      } catch(e) { toast(humanError(e)); }
     };
 
     if(googleBtn) googleBtn.onclick = async () => {
@@ -71,7 +71,7 @@ const NetUI = {
         }
         showScreen('scrMenu');
         toast('Вход через Google выполнен!');
-      } catch(e) { toast('Ошибка: ' + e.message); }
+      } catch(e) { toast(humanError(e)); }
     };
 
     if(anonBtn) anonBtn.onclick = async () => {
@@ -79,7 +79,7 @@ const NetUI = {
         await ChesAuth.loginAnon();
         showScreen('scrMenu');
         toast('Анонимный вход выполнен!');
-      } catch(e) { toast('Ошибка: ' + e.message); }
+      } catch(e) { toast(humanError(e)); }
     };
 
     if(skipBtn) skipBtn.onclick = () => {
@@ -151,7 +151,7 @@ const NetUI = {
       if(pbName) pbName.textContent = cu ? cu.name : (user.displayName || user.email);
       if(pbAva && cu) {
         if(cu.customAva) {
-          pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+          pbAva.innerHTML = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
         } else {
           pbAva.textContent = cu.ava || '👽';
         }
@@ -199,13 +199,13 @@ const NetUI = {
     const myUid = ChesAuth.getUid();
     box.innerHTML = results.filter(r => r.uid !== myUid).map(r =>
       '<div class="friendRow">' +
-        '<span class="friendAva">' + r.ava + '</span>' +
+        '<span class="friendAva">' + escapeHtml(r.ava) + '</span>' +
         '<div style="flex:1;min-width:0">' +
-          '<span class="friendName">' + r.name + '</span>' +
-          (r.playerId ? '<div style="font-size:10px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">#' + r.playerId + '</div>' : '') +
-          '<div style="font-size:10px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + r.uid + '">' + r.uid + '</div>' +
+          '<span class="friendName">' + escapeHtml(r.name) + '</span>' +
+          (r.playerId ? '<div style="font-size:10px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">#' + escapeHtml(r.playerId) + '</div>' : '') +
+          '<div style="font-size:10px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(r.uid) + '">' + escapeHtml(r.uid) + '</div>' +
         '</div>' +
-        '<button class="mBtn friendAddBtn" data-uid="' + r.uid + '">➕ Добавить</button>' +
+        '<button class="mBtn friendAddBtn" data-uid="' + escapeHtml(r.uid) + '">➕ Добавить</button>' +
       '</div>'
     ).join('');
 
@@ -233,26 +233,32 @@ const NetUI = {
         '<h3 style="color:var(--txt);margin-bottom:8px">Заявки в друзья</h3>' +
         requests.map(r =>
           '<div class="friendRow">' +
-            '<span class="friendAva">' + r.ava + '</span>' +
-            '<span class="friendName">' + r.name + '</span>' +
-            '<button class="mBtn" onclick="NetUI._acceptReq(\'' + r.uid + '\')">✓</button>' +
-            '<button class="mBtn" onclick="NetUI._rejectReq(\'' + r.uid + '\')">✕</button>' +
+            '<span class="friendAva">' + escapeHtml(r.ava) + '</span>' +
+            '<span class="friendName">' + escapeHtml(r.name) + '</span>' +
+            '<button class="mBtn friendReqAccept" data-uid="' + escapeHtml(r.uid) + '">✓</button>' +
+            '<button class="mBtn friendReqReject" data-uid="' + escapeHtml(r.uid) + '">✕</button>' +
           '</div>'
         ).join('') : '';
+      reqBox.querySelectorAll('.friendReqAccept').forEach(btn => {
+        btn.onclick = () => NetUI._acceptReq(btn.dataset.uid);
+      });
+      reqBox.querySelectorAll('.friendReqReject').forEach(btn => {
+        btn.onclick = () => NetUI._rejectReq(btn.dataset.uid);
+      });
     }
 
     // Load friends
     const friends = await ChesFriends.getFriends();
     list.innerHTML = friends.length ? friends.map(f =>
       '<div class="friendRow">' +
-        '<span class="friendAva">' + f.ava + '</span>' +
+        '<span class="friendAva">' + escapeHtml(f.ava) + '</span>' +
         '<div style="flex:1;min-width:0">' +
-          '<span class="friendName">' + f.name + '</span>' +
-          (f.playerId ? '<div style="font-size:10px;color:var(--accent)">#' + f.playerId + '</div>' : '') +
+            '<span class="friendName">' + escapeHtml(f.name) + '</span>' +
+          (f.playerId ? '<div style="font-size:10px;color:var(--accent)">#' + escapeHtml(f.playerId) + '</div>' : '') +
         '</div>' +
-        '<span class="friendElo" style="color:var(--mut)">' + f.elo + ' эло</span>' +
+        '<span class="friendElo" style="color:var(--mut)">' + escapeHtml(f.elo) + ' эло</span>' +
         (f.online ? '<span class="friendOnline">🟢</span>' : '<span class="friendOnline">⚫</span>') +
-        (f.online ? '<button class="mBtn friendPlayBtn" data-uid="' + f.uid + '">🎮 Играть</button>' : '') +
+        (f.online ? '<button class="mBtn friendPlayBtn" data-uid="' + escapeHtml(f.uid) + '">🎮 Играть</button>' : '') +
       '</div>'
     ).join('') : '<p style="color:var(--mut);text-align:center;padding:20px">Пока нет друзей. Найдите игроков выше!</p>';
 
@@ -462,7 +468,7 @@ const NetUI = {
 
     if(playersEl) {
       playersEl.innerHTML =
-        '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + myPid + '</div>' : '') + '</div>' +
+        '<div style="text-align:center"><div style="font-size:32px">' + escapeHtml(myAva) + '</div><div style="font-size:12px;color:var(--mut)">' + escapeHtml(myName) + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + escapeHtml(myPid) + '</div>' : '') + '</div>' +
         '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
         '<div style="text-align:center;color:var(--mut)"><div style="font-size:32px">❓</div><div style="font-size:12px">Ожидание...</div></div>';
     }
@@ -527,9 +533,9 @@ const NetUI = {
       if(statusEl) statusEl.textContent = data.status === 'playing' ? 'Игра началась!' : 'Игроки найдены';
 
       playersEl.innerHTML =
-        '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + myPid + '</div>' : '') + '<div style="font-size:11px;margin-top:4px;color:' + (myReady ? 'var(--green)' : 'var(--mut)') + '">' + (myReady ? '✓ Готов' : '○ Не готов') + '</div></div>' +
+        '<div style="text-align:center"><div style="font-size:32px">' + escapeHtml(myAva) + '</div><div style="font-size:12px;color:var(--mut)">' + escapeHtml(myName) + '</div>' + (myPid ? '<div style="font-size:10px;color:var(--accent)">' + escapeHtml(myPid) + '</div>' : '') + '<div style="font-size:11px;margin-top:4px;color:' + (myReady ? 'var(--green)' : 'var(--mut)') + '">' + (myReady ? '✓ Готов' : '○ Не готов') + '</div></div>' +
         '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
-        '<div style="text-align:center"><div style="font-size:32px">' + (isHost ? oppAva : data.hostAva || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + (isHost ? oppName : (data.hostName || 'Хост')) + '</div>' + '<div style="font-size:11px;margin-top:4px;color:' + ((isHost ? oppReady : hostReady) ? 'var(--green)' : 'var(--mut)') + '">' + ((isHost ? oppReady : hostReady) ? '✓ Готов' : '○ Не готов') + '</div></div>';
+        '<div style="text-align:center"><div style="font-size:32px">' + escapeHtml(isHost ? oppAva : data.hostAva || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + escapeHtml(isHost ? oppName : (data.hostName || 'Хост')) + '</div>' + '<div style="font-size:11px;margin-top:4px;color:' + ((isHost ? oppReady : hostReady) ? 'var(--green)' : 'var(--mut)') + '">' + ((isHost ? oppReady : hostReady) ? '✓ Готов' : '○ Не готов') + '</div></div>';
 
       // Action buttons
       let btns = '';
@@ -602,8 +608,7 @@ const NetUI = {
   },
 
   _showJoinInput() {
-    const code = prompt('Введите код лобби:');
-    if(code) this._joinByCode(code.trim());
+    askInput('Вход по коду', 'Введите код лобби, который прислал соперник', 'Например: 4829', (code) => this._joinByCode(code));
   },
 
   _startMultiplayerGame() {
@@ -616,9 +621,9 @@ const NetUI = {
       const playersEl = document.getElementById('lobbyPlayers');
       if(playersEl) {
         playersEl.innerHTML =
-          '<div style="text-align:center"><div style="font-size:32px">' + myAva + '</div><div style="font-size:12px;color:var(--mut)">' + myName + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
+          '<div style="text-align:center"><div style="font-size:32px">' + escapeHtml(myAva) + '</div><div style="font-size:12px;color:var(--mut)">' + escapeHtml(myName) + ' (' + (ChesMP.myColor === 'w' ? '⚪' : '⚫') + ')</div></div>' +
           '<div style="color:var(--mut);font-size:24px;align-self:center">VS</div>' +
-          '<div style="text-align:center"><div style="font-size:32px">' + (opponent.ava || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + opponent.name + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
+          '<div style="text-align:center"><div style="font-size:32px">' + escapeHtml(opponent.ava || '👽') + '</div><div style="font-size:12px;color:var(--mut)">' + escapeHtml(opponent.name) + ' (' + (ChesMP.myColor === 'w' ? '⚫' : '⚪') + ')</div></div>';
       }
 
       const actionsEl = document.getElementById('lobbyActions');

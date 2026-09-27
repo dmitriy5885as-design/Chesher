@@ -3,6 +3,17 @@
  */
 "use strict";
 
+/* --- Dev-режим: настоящий флаг, а не скрытая кнопка ---
+   В проде (github.io/домен) Dev Tools недоступны: нет функций, нет триггеров.
+   Включается ?dev в URL (для этой вкладки) или автоматически на localhost. */
+const IS_DEV_MODE = (function() {
+  try {
+    const h = location.hostname;
+    if(h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '') return true;
+    return /[?&#]dev(=|&|#|$)/.test(location.search + location.hash);
+  } catch(e) { return false; }
+})();
+
 /* --- Глобальное состояние игры --- */
 let S = null;
 let lastMove = null;
@@ -81,14 +92,22 @@ function applyScreenChrome(id) {
     if(el) el.style.display = isMenu ? '' : 'none';
   }
   if(!isMenu) {
-    const fp = document.getElementById('friendsPanel');
+    // Закрываем через реальные кнопки, чтобы сбросились внутренние флаги
+    // (_fpOpen/_fcOpen) и отписался слушатель чата
     const fc = document.getElementById('friendChatPanel');
-    if(fp) fp.classList.remove('open');
-    if(fc) fc.classList.remove('open');
+    const fp = document.getElementById('friendsPanel');
+    if(fc && fc.classList.contains('open')) {
+      const b = document.getElementById('fcClose') || document.getElementById('fcBack');
+      if(b) b.click(); else fc.classList.remove('open');
+    }
+    if(fp && fp.classList.contains('open')) {
+      const b = document.getElementById('fpClose');
+      if(b) b.click(); else fp.classList.remove('open');
+    }
   }
   const chBtn = document.getElementById('cheatBtn');
   const chPanel = document.getElementById('cheatPanel');
-  if(chBtn && !isMenu) chBtn.style.display = 'none';
+  if(chBtn) chBtn.style.display = (isMenu && typeof IS_DEV_MODE !== 'undefined' && IS_DEV_MODE) ? '' : 'none';
   if(chPanel) chPanel.classList.remove('show');
 }
 
@@ -185,11 +204,12 @@ function renderBotsScreen(elo) {
   // Next bot progress — по победам
   if(progressEl) {
     if(nextBot.next) {
+      const left = Math.max(0, (nextBot.next.winsReq || 0) - wins);
       progressEl.innerHTML = '<div class="nextBotLabel">До следующего бота: ' + 
         nextBot.next.emoji + ' ' + nextBot.next.name + ' (' + nextBot.next.rating + ') — ещё ' +
-        nextBot.next.winsLeft + ' побед</div>' +
+        left + ' ' + pluralRu(left, ['победа', 'победы', 'побед']) + '</div>' +
         '<div class="progressTrack"><div class="progressFill" style="width:' + Math.round(nextBot.progress) + '%"></div></div>' +
-        '<div class="progressText">' + wins + ' / ' + nextBot.next.winsReq + ' побед</div>';
+        '<div class="progressText">' + wins + ' / ' + nextBot.next.winsReq + ' ' + pluralRu(wins, ['победа', 'победы', 'побед']) + '</div>';
     } else {
       progressEl.innerHTML = '<div class="allUnlocked">🎉 Все боты открыты!</div>';
     }
@@ -198,7 +218,9 @@ function renderBotsScreen(elo) {
   // Bot grid — grouped by leagues
   if(grid) {
     grid.innerHTML = '';
-    selectedBotId = recommended.id;
+    // Запоминаем прошлый выбор игрока, а не сбрасываем на рекомендованного
+    const persisted = cu && cu.botId ? bots.find(b => b.id === cu.botId && b.isAvailable) : null;
+    selectedBotId = persisted ? persisted.id : recommended.id;
     
     const leagues = [
       {name:'Начинающие', color:'#4caf50', emoji:'🟢'},
@@ -225,7 +247,7 @@ function renderBotsScreen(elo) {
         card.innerHTML = '<div class="botEmoji">' + bot.emoji + '</div>' +
           '<div class="botName">' + bot.name + '</div>' +
           '<div class="botRating">' + bot.rating + '</div>' +
-          (!bot.isAvailable ? '<div class="lockIcon">🔒</div><div class="lockWins">Ещё ' + bot.winsLeft + ' побед</div>' : '') +
+          (!bot.isAvailable ? '<div class="lockIcon">🔒</div><div class="lockWins">Ещё ' + bot.winsLeft + ' ' + pluralRu(bot.winsLeft, ['победа', 'победы', 'побед']) + '</div>' : '') +
           (bot.id === recommended.id ? '<div class="recBadge">⭐</div>' : '');
         
         if(bot.isAvailable) {
@@ -241,8 +263,9 @@ function renderBotsScreen(elo) {
       });
     });
     
-    // Show recommended bot info by default
-    showBotInfo(recommended);
+    // Показываем info-карточку выбранного (или рекомендованного) бота
+    const initialBot = bots.find(b => b.id === selectedBotId) || recommended;
+    showBotInfo(initialBot);
   }
 }
 
@@ -286,9 +309,9 @@ function showBotInfo(bot) {
       '<div class="botInfoSection botStatsSection">' +
         '<div class="botInfoLabel">Ваша статистика</div>' +
         '<div class="botStatsRow">' +
-          '<span class="bsGames">🎮 ' + bsGames + ' игр</span>' +
-          '<span class="bsWins">✅ ' + bsWins + ' побед</span>' +
-          '<span class="bsLosses">❌ ' + bsLosses + ' поражений</span>' +
+          '<span class="bsGames">🎮 ' + bsGames + ' ' + pluralRu(bsGames, ['игра', 'игры', 'игр']) + '</span>' +
+          '<span class="bsWins">✅ ' + bsWins + ' ' + pluralRu(bsWins, ['победа', 'победы', 'побед']) + '</span>' +
+          '<span class="bsLosses">❌ ' + bsLosses + ' ' + pluralRu(bsLosses, ['поражение', 'поражения', 'поражений']) + '</span>' +
         '</div>' +
       '</div>' : '') +
   '</div>';
@@ -741,11 +764,12 @@ function buildModesCfg(modeId) {
       resetBtn.className = 'mBtn';
       resetBtn.textContent = '↺ Сбросить все видео';
       resetBtn.addEventListener('click', function() {
-        if(!confirm('Сбросить все назначенные видео?')) return;
-        MemeConfig.resetVideoPresets();
-        renderPCards();
-        renderDetail();
-        toast('Видео сброшены');
+        askConfirm('Сбросить все видео?', 'Все назначенные мем-видео вернутся к стандартным.', function() {
+          MemeConfig.resetVideoPresets();
+          renderPCards();
+          renderDetail();
+          toast('Видео сброшены');
+        }, 'Сбросить');
       });
       btnsRow.appendChild(resetBtn);
 
@@ -1093,7 +1117,7 @@ function startClock() {
         const loser = turn;
         const winner = loser === 'w' ? 'b' : 'w';
         const loserName = loser === S.humanColor ? 'Вы' : 'Соперник';
-        toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
+        toast('⏰ ' + loserName + ' — время вышло! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
         endGame('timeout', winner);
       }
       return;
@@ -1113,7 +1137,7 @@ function startClock() {
         const bot = BOT_LIST.find(b => b.id === botId);
         if(bot) loserName = bot.emoji + ' ' + bot.name;
       }
-      toast('⏰ ' + loserName + ' просрочили время! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
+      toast('⏰ ' + loserName + ' — время вышло! ' + (winner === S.humanColor ? '🏆 Победа!' : '😔 Поражение'));
       endGame('timeout', winner);
     }
   }, 1000);
@@ -2671,7 +2695,7 @@ function startLobbyFromSetup() {
       ChesMP._listenGame();
     }).catch(e => {
       console.error('createLobby error:', e);
-      toast('❌ Ошибка: ' + (e.message || e));
+      toast('❌ ' + humanError(e));
       showScreen('scrMulti');
     });
   });
@@ -2688,7 +2712,7 @@ function showRankedScreen() {
   const leagueIcon = document.getElementById('rankedLeagueIcon');
   const leagueName = document.getElementById('rankedLeagueName');
   const eloEl = document.getElementById('rankedElo');
-  if(leagueIcon) leagueIcon.textContent = league.icon;
+  if(leagueIcon) leagueIcon.textContent = league.emoji;
   if(leagueName) { leagueName.textContent = league.name; leagueName.style.color = league.color; }
   if(eloEl) eloEl.textContent = elo;
 
@@ -2763,9 +2787,9 @@ function showMultiplayerMenu() {
       if(mpStatus) mpStatus.textContent = 'Анонимный вход · Лобби доступны';
       if(ChesAuth.user) {
         ChesMP.listenInvites(inv => {
-          if(confirm(inv.fromName + ' приглашает в игру! Принять?')) {
+          askConfirm('Приглашение в игру', inv.fromName + ' приглашает в игру. Принять?', () => {
             NetUI.acceptInvite(inv);
-          }
+          }, 'Принять');
         });
       }
     }).catch(e => {
@@ -2774,9 +2798,9 @@ function showMultiplayerMenu() {
   } else {
     ChesMP.setOnline();
     ChesMP.listenInvites(inv => {
-      if(confirm(inv.fromName + ' приглашает в игру! Принять?')) {
+      askConfirm('Приглашение в игру', inv.fromName + ' приглашает в игру. Принять?', () => {
         NetUI.acceptInvite(inv);
-      }
+      }, 'Принять');
     });
   }
 }
@@ -3200,7 +3224,13 @@ function renderLeaderboard(mode) {
   const profiles = ProfilesManager.profiles || [];
   
   const players = profiles
-    .filter(p => p.name && p.name !== 'Гость' && p.name !== 'Guest')
+    .filter(p => {
+      if(!p.name) return false;
+      const placeholder = (p.name === 'Гость' || p.name === 'Guest');
+      if(!placeholder) return true;
+      // Пустые заглушки прячем, но текущий гостевой профиль (или уже сыгравший) показываем
+      return p.id === curId || (p.st && p.st.games) > 0;
+    })
     .map(p => {
       const ratings = p.ratings || {classic:1000,bot:1000,fischer:1000,meme:1000,ranked:1000};
       const rVal = (k) => (ratings[k] && ratings[k] > 0) ? ratings[k] : 1000;
@@ -3234,11 +3264,11 @@ function renderLeaderboard(mode) {
   
   if(lbTop) {
     lbTop.innerHTML = '<div class="lbChamp">' +
-      '<div class="lbChampAva">' + top.ava + '</div>' +
+      '<div class="lbChampAva">' + escapeHtml(top.ava) + '</div>' +
       '<div class="lbChampInfo">' +
-        '<div class="lbChampName">🏆 ' + top.name + '</div>' +
+        '<div class="lbChampName">🏆 ' + escapeHtml(top.name) + '</div>' +
         '<div class="lbChampRating" style="color:' + league.color + '">' + league.emoji + ' ' + top.rating + ' — ' + league.name + '</div>' +
-        '<div class="lbChampStats">' + top.wins + ' побед · ' + top.winrate + '% винрейт · ' + top.games + ' партий</div>' +
+        '<div class="lbChampStats">' + top.wins + ' ' + pluralRu(top.wins, ['победа', 'победы', 'побед']) + ' · ' + top.winrate + '% винрейт · ' + top.games + ' ' + pluralRu(top.games, ['партия', 'партии', 'партий']) + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -3249,96 +3279,99 @@ function renderLeaderboard(mode) {
     const isMe = p.id === curId;
     const row = document.createElement('div');
     row.className = 'lbRow' + (isMe ? ' me' : '');
-    row.innerHTML = '<div class="lbRank">' + (i + 1) + '</div>' +
-      '<div class="lbAva">' + p.ava + '</div>' +
+    row.innerHTML = '<div class="lbRank' + (i < 3 ? ' top' + (i + 1) : '') + '">' + (i + 1) + '</div>' +
+      '<div class="lbAva">' + escapeHtml(p.ava) + '</div>' +
       '<div class="lbInfo">' +
-        '<div class="lbName">' + p.name + (isMe ? ' <span class="lbMeTag">Вы</span>' : '') + (p.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + p.playerId + '</span>' : '') + '</div>' +
-        '<div class="lbStats">' + p.wins + ' побед · ' + p.winrate + '%</div>' +
+        '<div class="lbName">' + escapeHtml(p.name) + (isMe ? ' <span class="lbMeTag">Вы</span>' : '') + (p.playerId ? ' <span style="color:var(--accent);font-size:10px">#' + escapeHtml(p.playerId) + '</span>' : '') + '</div>' +
+        '<div class="lbStats">' + p.wins + ' ' + pluralRu(p.wins, ['победа', 'победы', 'побед']) + ' · ' + p.winrate + '%</div>' +
       '</div>' +
       '<div class="lbRating" style="color:' + pLeague.color + '">' + p.rating + '</div>';
     lbList.appendChild(row);
   });
 }
 
-/* === CHEAT FUNCTIONS (dev tools) === */
-function cheatAddCoins(amount) {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) { toast('Нет профиля'); return; }
-  cu.coins = Math.max(0, cu.coins + amount);
-  saveProfiles();
-  renderCoins();
-  toast('🪙 ' + cu.coins);
-}
-function cheatResetCoins() {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.coins = 0;
-  saveProfiles();
-  renderCoins();
-  toast('🪙 0');
-}
-function cheatUnlockAll() {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  Object.keys(SKINS).forEach(id => { if(!cu.owned.includes(id)) cu.owned.push(id); });
-  Object.keys(BOARDS).forEach(id => { const k = 'board_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
-  Object.keys(STICKERS).forEach(id => { const k = 'sticker_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
-  Object.keys(AVATARS).forEach(id => { const k = 'avatar_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
-  saveProfiles();
-  renderCoins();
-  toast('🔓 Всё открыто');
-}
-function cheatLockAll() {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.owned = ['classic'];
-  saveProfiles();
-  toast('🔒 Всё заблокировано');
-}
-function cheatAddWins(amount) {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.winsBot = Math.max(0, (cu.winsBot || 0) + amount);
-  saveProfiles();
-  renderProfBar();
-  toast('🏆 ' + cu.winsBot + ' побед');
-}
-function cheatResetWins() {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.winsBot = 0;
-  saveProfiles();
-  renderProfBar();
-  toast('🏆 0 побед');
-}
-function cheatMaxElo() {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.elo = 3000;
-  cu.ratings = {classic:3000, bot:3000, fischer:3000, meme:3000, ranked:3000};
-  saveProfiles();
-  renderProfBar();
-  toast('↑ Эло 3000');
-}
-function cheatResetElo() {
-  const cu = ProfilesManager.getCurrent();
-  if(!cu) return;
-  cu.elo = 0;
-  cu.ratings = {classic:1000, bot:1000, fischer:1000, meme:1000, ranked:1000};
-  saveProfiles();
-  renderProfBar();
-  toast('↓ Эло 1000');
-}
-function cheatToggleSound() {
-  cfg.sound = !cfg.sound;
-  saveCfg();
-  toast(cfg.sound ? '🔊 Звук включён' : '🔇 Звук выключен');
-}
-function cheatTestWin() {
-  if(S && !S.gameOver) endGame('checkmate', S.humanColor);
-}
-function cheatTestLose() {
-  if(S && !S.gameOver) endGame('checkmate', S.humanColor === 'w' ? 'b' : 'w');
+/* === CHEAT FUNCTIONS (dev tools) ===
+   Объявляются только в dev-режиме: в проде их нет ни в window, ни в консоли. */
+if(IS_DEV_MODE) {
+  window.cheatAddCoins = function(amount) {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) { toast('Нет профиля'); return; }
+    cu.coins = Math.max(0, cu.coins + amount);
+    saveProfiles();
+    renderCoins();
+    toast('🪙 ' + cu.coins);
+  };
+  window.cheatResetCoins = function() {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.coins = 0;
+    saveProfiles();
+    renderCoins();
+    toast('🪙 0');
+  };
+  window.cheatUnlockAll = function() {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    Object.keys(SKINS).forEach(id => { if(!cu.owned.includes(id)) cu.owned.push(id); });
+    Object.keys(BOARDS).forEach(id => { const k = 'board_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
+    Object.keys(STICKERS).forEach(id => { const k = 'sticker_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
+    Object.keys(AVATARS).forEach(id => { const k = 'avatar_' + id; if(!cu.owned.includes(k)) cu.owned.push(k); });
+    saveProfiles();
+    renderCoins();
+    toast('🔓 Всё открыто');
+  };
+  window.cheatLockAll = function() {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.owned = ['classic'];
+    saveProfiles();
+    toast('🔒 Всё заблокировано');
+  };
+  window.cheatAddWins = function(amount) {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.winsBot = Math.max(0, (cu.winsBot || 0) + amount);
+    saveProfiles();
+    renderProfBar();
+    toast('🏆 ' + cu.winsBot + ' ' + pluralRu(cu.winsBot, ['победа', 'победы', 'побед']));
+  };
+  window.cheatResetWins = function() {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.winsBot = 0;
+    saveProfiles();
+    renderProfBar();
+    toast('🏆 0 побед');
+  };
+  window.cheatMaxElo = function() {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.elo = 3000;
+    cu.ratings = {classic:3000, bot:3000, fischer:3000, meme:3000, ranked:3000};
+    saveProfiles();
+    renderProfBar();
+    toast('↑ Эло 3000');
+  };
+  window.cheatResetElo = function() {
+    const cu = ProfilesManager.getCurrent();
+    if(!cu) return;
+    cu.elo = 0;
+    cu.ratings = {classic:1000, bot:1000, fischer:1000, meme:1000, ranked:1000};
+    saveProfiles();
+    renderProfBar();
+    toast('↓ Эло 1000');
+  };
+  window.cheatToggleSound = function() {
+    cfg.sound = !cfg.sound;
+    saveCfg();
+    toast(cfg.sound ? '🔊 Звук включён' : '🔇 Звук выключен');
+  };
+  window.cheatTestWin = function() {
+    if(S && !S.gameOver) endGame('checkmate', S.humanColor);
+  };
+  window.cheatTestLose = function() {
+    if(S && !S.gameOver) endGame('checkmate', S.humanColor === 'w' ? 'b' : 'w');
+  };
 }
 
 /* === ИНИЦИАЛИЗАЦИЯ === */
@@ -3386,6 +3419,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(user && !user.isAnonymous) tryDailyBonus();
   });
 
+  // Состояние девблога (объявлено здесь: loadDevlog() зовётся ниже на этом же проходе)
+  let DEVLOG = [];
+  let _devlogState = 'idle'; // idle | loading | ok | error
+
   refreshModeLabel();
   renderProfBar();
   renderCoins();
@@ -3413,15 +3450,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedGame = ChessEngine.loadFromStorage();
     const isMp = !!(savedGame && savedGame.mp && savedGame.mp.lobbyId);
     const msg = isMp
-      ? 'Завершить сетевую партию? Соперник узнает о вашем выходе, рейтинг не изменится.'
-      : 'Завершить партию? Прогресс будет потерян.';
-    if(!confirm(msg)) return;
-    if(isMp && savedGame.mp.lobbyId && typeof ChesMP !== 'undefined' && ChesMP && firebaseRtdb) {
-      try { firebaseRtdb.ref('lobbies/' + savedGame.mp.lobbyId).update({ status: 'cancelled' }); } catch(e) {}
-    }
-    ChessEngine.clearStorage();
-    hideResumeBtn();
-    toast('Партия завершена');
+      ? 'Соперник узнает о вашем выходе, рейтинг не изменится.'
+      : 'Прогресс этой партии будет потерян.';
+    askConfirm(isMp ? 'Завершить сетевую партию?' : 'Завершить партию?', msg, () => {
+      if(isMp && savedGame.mp.lobbyId && typeof ChesMP !== 'undefined' && ChesMP && firebaseRtdb) {
+        try { firebaseRtdb.ref('lobbies/' + savedGame.mp.lobbyId).update({ status: 'cancelled' }); } catch(e) {}
+      }
+      ChessEngine.clearStorage();
+      hideResumeBtn();
+      toast('Партия завершена');
+    }, 'Завершить');
   });
   bind('mModes', () => { showScreen('scrModes'); showModesList(); });
   bind('mQuick', () => { showScreen('scrModes'); showModesList(); selectMode('bot'); });
@@ -3572,14 +3610,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!friends.length) { list.innerHTML = '<div class="fpEmpty">Добавьте друзей, чтобы начать общение</div>'; return; }
       list.innerHTML = friends.map(f => {
         const chatId = [ChesAuth.getUid(), f.uid].sort().join('_');
-        return '<div class="fpItem" data-uid="' + f.uid + '">' +
-          '<div class="fpAva">' + f.ava + '</div>' +
-          '<div class="fpInfo"><div class="fpNm">' + f.name + '</div>' +
-          '<div class="fpSub">' + f.elo + ' эло</div></div>' +
+        return '<div class="fpItem" data-uid="' + escapeHtml(f.uid) + '">' +
+          '<div class="fpAva">' + escapeHtml(f.ava) + '</div>' +
+          '<div class="fpInfo"><div class="fpNm">' + escapeHtml(f.name) + '</div>' +
+          '<div class="fpSub">' + escapeHtml(f.elo) + ' эло</div></div>' +
           '<div class="fpOnline ' + (f.online ? 'on' : 'off') + '"></div>' +
           '<div class="fpActions">' +
-            '<button class="fpChatBtn" data-uid="' + f.uid + '" data-name="' + f.name + '" title="Написать">💬</button>' +
-            '<button class="fpRemoveBtn" data-uid="' + f.uid + '" data-name="' + f.name + '" title="Удалить">✕</button>' +
+            '<button class="fpChatBtn" data-uid="' + escapeHtml(f.uid) + '" data-name="' + escapeHtml(f.name) + '" title="Написать">💬</button>' +
+            '<button class="fpRemoveBtn" data-uid="' + escapeHtml(f.uid) + '" data-name="' + escapeHtml(f.name) + '" title="Удалить">✕</button>' +
           '</div></div>';
       }).join('');
 
@@ -3590,13 +3628,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       list.querySelectorAll('.fpRemoveBtn').forEach(btn => {
-        btn.addEventListener('click', async e => {
+        btn.addEventListener('click', e => {
           e.stopPropagation();
-          if(confirm('Удалить ' + btn.dataset.name + ' из друзей?')) {
+          const nm = btn.dataset.name;
+          askConfirm('Удалить из друзей?', 'Удалить ' + nm + ' из списка друзей?', async () => {
             await ChesFriends.removeFriend(btn.dataset.uid);
             loadFriendsList();
-            toast(btn.dataset.name + ' удалён из друзей');
-          }
+            toast(nm + ' удалён из друзей');
+          }, 'Удалить');
         });
       });
     } catch(e) {
@@ -3615,11 +3654,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!requests.length) { el.innerHTML = ''; return; }
       el.innerHTML = requests.map(r =>
         '<div class="fpReqItem">' +
-          '<div class="fpAva" style="font-size:20px">' + r.ava + '</div>' +
-          '<div class="fpInfo"><div class="fpNm">' + r.name + '</div></div>' +
+          '<div class="fpAva" style="font-size:20px">' + escapeHtml(r.ava) + '</div>' +
+          '<div class="fpInfo"><div class="fpNm">' + escapeHtml(r.name) + '</div></div>' +
           '<div class="fpReqBtns">' +
-            '<button class="fpAccept" data-uid="' + r.uid + '">✓</button>' +
-            '<button class="fpReject" data-uid="' + r.uid + '">✕</button>' +
+            '<button class="fpAccept" data-uid="' + escapeHtml(r.uid) + '">✓</button>' +
+            '<button class="fpReject" data-uid="' + escapeHtml(r.uid) + '">✕</button>' +
           '</div></div>'
       ).join('');
 
@@ -3746,11 +3785,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!filtered.length) { box.innerHTML = '<div class="fpEmpty">Ничего не найдено</div>'; box.classList.add('hasItems'); return; }
 
     box.innerHTML = filtered.map(r =>
-      '<div class="fpItem" data-uid="' + r.uid + '">' +
-        '<div class="fpAva">' + r.ava + '</div>' +
-        '<div class="fpInfo"><div class="fpNm">' + r.name + '</div>' +
-        '<div class="fpSub">' + r.elo + ' эло</div></div>' +
-        '<div class="fpActions"><button class="fpAddBtn" data-uid="' + r.uid + '" data-name="' + r.name + '">+ Друг</button></div>' +
+      '<div class="fpItem" data-uid="' + escapeHtml(r.uid) + '">' +
+        '<div class="fpAva">' + escapeHtml(r.ava) + '</div>' +
+        '<div class="fpInfo"><div class="fpNm">' + escapeHtml(r.name) + '</div>' +
+        '<div class="fpSub">' + escapeHtml(r.elo) + ' эло</div></div>' +
+        '<div class="fpActions"><button class="fpAddBtn" data-uid="' + escapeHtml(r.uid) + '" data-name="' + escapeHtml(r.name) + '">+ Друг</button></div>' +
       '</div>'
     ).join('');
     box.classList.add('hasItems');
@@ -3864,10 +3903,10 @@ document.addEventListener('DOMContentLoaded', () => {
     renderLobbySetup();
   });
   bind('mpJoinBtn', async () => {
-    const code = prompt('Введите код лобби:');
-    if(!code) return;
-    await ensureAuth();
-    NetUI._joinByCode(code.trim());
+    askInput('Вход по коду', 'Введите код лобби, который прислал соперник', 'Например: 4829', async (code) => {
+      await ensureAuth();
+      NetUI._joinByCode(code);
+    });
   });
   bind('mpFriendsBtn', async () => {
     await ensureAuth();
@@ -3875,7 +3914,7 @@ document.addEventListener('DOMContentLoaded', () => {
     NetUI._loadFriends();
   });
   bind('mpRandomBtn', () => {
-    toast('Случайный матч — скоро!');
+    toast('⏱ СКОРО: «Случайный матч» ещё в работе');
   });
 
   // Game screen
@@ -3972,29 +4011,48 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* === DEV BLOG === */
-  let DEVLOG = [];
+  // DEVLOG и _devlogState объявлены выше (см. init-блок до loadDevlog())
 
-  async function loadDevlog() {
+  async function loadDevlog(force) {
+    if(_devlogState === 'loading') return;
+    if(_devlogState === 'ok' && !force) return;
+    _devlogState = 'loading';
     try {
       const res = await fetch('version.json?t=' + Date.now());
-      DEVLOG = await res.json();
-      if(DEVLOG.length) {
-        updateMenuVersion();
-      }
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      DEVLOG = Array.isArray(data) ? data : [];
+      _devlogState = 'ok';
+      if(DEVLOG.length) updateMenuVersion();
     } catch(e) {
       DEVLOG = [];
+      _devlogState = 'error';
     }
   }
 
   function renderDevblog() {
     const wrap = document.getElementById('dbWrap');
     if(!wrap) return;
-    if(!DEVLOG.length) {
-      wrap.innerHTML = '<div style="text-align:center;color:var(--mut);padding:40px">Загрузка...</div>';
-      loadDevlog().then(() => {
-        renderDevblog();
-        updateMenuVersion();
+    if(_devlogState === 'ok' && !DEVLOG.length) {
+      wrap.innerHTML = '<div style="text-align:center;color:var(--mut);padding:40px">Девблог пока пуст</div>';
+      return;
+    }
+    if(_devlogState === 'error') {
+      // Никакой рекурсии — только явная кнопка повтора
+      wrap.innerHTML = '<div style="text-align:center;color:var(--mut);padding:40px">Не удалось загрузить девблог' +
+        '<br><small>Проверьте подключение к интернету</small>' +
+        '<br><button class="btn" id="dbRetry" style="margin-top:14px;max-width:220px">Повторить</button></div>';
+      const retry = document.getElementById('dbRetry');
+      if(retry) retry.addEventListener('click', () => {
+        retry.disabled = true;
+        retry.textContent = 'Загрузка...';
+        loadDevlog(true).then(renderDevblog);
       });
+      return;
+    }
+    if(_devlogState !== 'ok') {
+      wrap.innerHTML = '<div style="text-align:center;color:var(--mut);padding:40px">Загрузка...</div>';
+      loadDevlog().then(() => { if(document.getElementById('dbWrap') === wrap) renderDevblog(); });
       return;
     }
     wrap.innerHTML = '';
@@ -4091,39 +4149,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Cheat button (dev tools) — triple-click devblog OR coins to toggle
-  let dbClicks = 0, dbTimer = null;
+  // Dev Tools (реальный dev-флаг IS_DEV_MODE)
+  // В проде: нет функций cheat*, нет триггеров, кнопка и панель недоступны.
+  // В dev: кнопка видна в меню, триггер — тройной клик по «Девблогу» или монетам.
   const cheatBtn = document.getElementById('cheatBtn');
   const cheatPanel = document.getElementById('cheatPanel');
-  function toggleCheatBtn() {
-    if(!cheatBtn) return;
-    cheatBtn.style.display = cheatBtn.style.display === 'none' ? '' : 'none';
-  }
-  if(devblogBtn && cheatBtn) {
-    devblogBtn.addEventListener('click', () => {
-      dbClicks++;
-      clearTimeout(dbTimer);
-      dbTimer = setTimeout(() => { dbClicks = 0; }, 500);
-      if(dbClicks >= 3) { dbClicks = 0; toggleCheatBtn(); }
-    });
-    cheatBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if(cheatPanel) cheatPanel.classList.toggle('show');
-    });
-  }
-  const pbCoinsEl = document.getElementById('pbCoins');
-  let coinClicks = 0, coinTimer = null;
-  if(pbCoinsEl) {
-    pbCoinsEl.addEventListener('click', () => {
-      coinClicks++;
-      clearTimeout(coinTimer);
-      coinTimer = setTimeout(() => { coinClicks = 0; }, 500);
-      if(coinClicks >= 3) {
-        coinClicks = 0;
-        toggleCheatBtn();
-        if(cheatPanel) cheatPanel.classList.add('show');
-      }
-    });
+  if(IS_DEV_MODE) {
+    if(cheatBtn) cheatBtn.style.display = '';
+    let dbClicks = 0, dbTimer = null;
+    if(devblogBtn && cheatBtn) {
+      devblogBtn.addEventListener('click', (e) => {
+        dbClicks++;
+        clearTimeout(dbTimer);
+        dbTimer = setTimeout(() => { dbClicks = 0; }, 500);
+        if(dbClicks >= 3) {
+          dbClicks = 0;
+          e.stopPropagation();
+          if(cheatPanel) cheatPanel.classList.toggle('show');
+        }
+      });
+      cheatBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(cheatPanel) cheatPanel.classList.toggle('show');
+      });
+    }
+    const pbCoinsEl = document.getElementById('pbCoins');
+    let coinClicks = 0, coinTimer = null;
+    if(pbCoinsEl) {
+      pbCoinsEl.addEventListener('click', (e) => {
+        coinClicks++;
+        clearTimeout(coinTimer);
+        coinTimer = setTimeout(() => { coinClicks = 0; }, 500);
+        if(coinClicks >= 3) {
+          coinClicks = 0;
+          e.stopPropagation();
+          if(cheatPanel) cheatPanel.classList.toggle('show');
+        }
+      });
+    }
+    if(cheatPanel) {
+      cheatPanel.querySelectorAll('[data-cheat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const fn = window[btn.dataset.cheat];
+          if(typeof fn !== 'function') return;
+          const raw = btn.dataset.cheatArg;
+          if(raw !== undefined && raw !== '' && !isNaN(Number(raw))) fn(Number(raw));
+          else fn();
+        });
+      });
+      const cheatClose = document.getElementById('cheatClose');
+      if(cheatClose) cheatClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cheatPanel.classList.remove('show');
+      });
+      document.addEventListener('click', (e) => {
+        if(!cheatPanel.classList.contains('show')) return;
+        if(cheatPanel.contains(e.target) || (cheatBtn && cheatBtn.contains(e.target))) return;
+        cheatPanel.classList.remove('show');
+      });
+      document.addEventListener('keydown', (e) => {
+        if(e.key === 'Escape' && cheatPanel.classList.contains('show')) cheatPanel.classList.remove('show');
+      });
+    }
+  } else if(cheatBtn) {
+    cheatBtn.style.display = 'none';
   }
 
   // Firebase init
@@ -4147,7 +4236,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.16').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.17').catch(() => {});
     });
   }
 });

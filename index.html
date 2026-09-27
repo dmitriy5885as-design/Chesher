@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHESHER — Чешир · шахматы</title>
   <meta name="description" content="Шахматы с ботами, друзьями и по сети. Рейтинги, задачки и турниры. Играй бесплатно в браузере — CHESHER.">
   <meta name="theme-color" content="#161512">
@@ -15,10 +15,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.38.16">
+  <link rel="stylesheet" href="css/main.css?v=0.38.17">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.38.16">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.17">
 
 </head>
 <body>
@@ -42,7 +42,7 @@
       <div class="ava" id="pbAva">🐣</div>
       <div class="pbTx">
         <div class="pbName" id="pbName">Гость</div>
-        <div class="pbSub" id="pbSub">0% winrate · 0 партий</div>
+        <div class="pbSub" id="pbSub">0% винрейт · 0 партий</div>
       </div>
       <button class="mBtn mAuthBtn" id="mAuth" style="display:none" onclick="event.stopPropagation();showScreen('scrAuth')">Войти</button>
       <div class="pbArrow">›</div>
@@ -59,7 +59,7 @@
         <button class="mBtn third" id="mPlay">👥<br><span>С другом</span></button>
       </div>
       <div class="row2m">
-        <button class="mBtn half" id="mPuzzle">🧩 Задача дня</button>
+          <button class="mBtn half" id="mPuzzle">🧩 Задачка дня</button>
         <button class="mBtn half" id="mTournament">🏆 Турнир</button>
       </div>
       <div class="row2m">
@@ -69,7 +69,7 @@
       <button class="mBtn soft" id="mSettings">⚙ Настройки</button>
     </div>
     <div class="tipBox" id="tipBox"></div>
-    <div class="menuFoot">CHESHER v0.24.0 alpha</div>
+    <div class="menuFoot">CHESHER v0.24.1 alpha</div>
   </div>
   
   <!-- ================= ЭКРАН: ПРОФИЛЬ ================= -->
@@ -539,10 +539,10 @@
     </aside>
   </div>
   
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
   
   <!-- ПОДТВЕРЖДЕНИЕ -->
-  <div class="overlay" id="ovConf"><div class="modal">
+  <div class="overlay" id="ovConf" role="dialog" aria-modal="true" aria-labelledby="confT"><div class="modal">
     <h2 id="confT">Подтверждение</h2>
     <p id="confX" style="text-align:center;color:var(--mut);line-height:1.55"></p>
     <div class="modalBtns">
@@ -550,9 +550,20 @@
       <button class="btn" data-close="ovConf">Отмена</button>
     </div>
   </div></div>
-  
+
+  <!-- ВВОД ТЕКСТА (замена нативному prompt) -->
+  <div class="overlay" id="ovInput" role="dialog" aria-modal="true" aria-labelledby="inpT"><div class="modal">
+    <h2 id="inpT">Ввод</h2>
+    <p id="inpX" style="text-align:center;color:var(--mut);line-height:1.55"></p>
+    <input type="text" id="inpField" maxlength="30" style="width:100%;margin-top:12px;padding:12px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:15px;letter-spacing:2px;text-align:center">
+    <div class="modalBtns">
+      <button class="btn primary" id="inpY">ОК</button>
+      <button class="btn" data-close="ovInput">Отмена</button>
+    </div>
+  </div></div>
+
   <!-- ПРОСМОТР ПАРТИИ -->
-  <div class="overlay" id="ovReplay"><div class="modal" style="width:min(92vw,360px)">
+  <div class="overlay" id="ovReplay" role="dialog" aria-modal="true" aria-label="Просмотр партии"><div class="modal" style="width:min(92vw,360px)">
     <h2>↩️ Просмотр партии</h2>
     <div style="display:flex;justify-content:center;margin:10px 0 6px"><div style="width:min(78vw,268px)"><div style="display:grid;grid-template-columns:repeat(8,1fr);border:2px solid #6b5b3f;border-radius:4px;overflow:hidden" id="rvBoard"></div></div></div>
     <div style="text-align:center;color:var(--mut);font-size:12px;margin:4px 0 10px" id="rvInfo">0</div>
@@ -567,7 +578,7 @@
   </div></div>
 
   <!-- ПРЕВРАЩЕНИЕ -->
-  <div class="overlay" id="ovPr"><div class="modal">
+  <div class="overlay" id="ovPr" role="dialog" aria-modal="true" aria-label="Превращение пешки"><div class="modal">
     <h2>Превращение пешки</h2>
     <div id="promoRow">
       <div class="promoP" data-p="q">♕</div>
@@ -578,7 +589,7 @@
   </div></div>
   
   <!-- КОНЕЦ ПАРТИИ -->
-  <div class="overlay" id="ovOver"><div class="modal">
+  <div class="overlay" id="ovOver" role="dialog" aria-modal="true" aria-labelledby="goT"><div class="modal">
     <div id="goT"></div>
     <div id="goS"></div>
     <div id="goStats" class="goStats"></div>
@@ -591,7 +602,7 @@
   </div></div>
 
   <!-- Оверлей: Пожелания -->
-  <div class="overlay" id="ovFeedback"><div class="modal" style="max-width:460px">
+  <div class="overlay" id="ovFeedback" role="dialog" aria-modal="true" aria-label="Обратная связь"><div class="modal" style="max-width:460px">
     <h2 style="margin:0 0 6px">💬 Пожелания и идеи</h2>
     <p style="color:var(--mut);font-size:13px;margin:0 0 14px">Расскажите, что бы вы хотели увидеть в игре: новые режимы, видеомемы, функции...</p>
     <textarea id="feedbackText" class="inputTxt" rows="4" maxlength="500" placeholder="Ваша идея..." style="width:100%;resize:vertical;box-sizing:border-box"></textarea>
@@ -603,7 +614,7 @@
   </div></div>
 
   <!-- Оверлей: Помощь / Как играть -->
-  <div class="overlay" id="ovHelp"><div class="modal" style="max-width:560px;max-height:86vh;overflow-y:auto">
+  <div class="overlay" id="ovHelp" role="dialog" aria-modal="true" aria-label="Помощь"><div class="modal" style="max-width:560px;max-height:86vh;overflow-y:auto">
     <h2 style="margin:0 0 10px">❓ Как играть</h2>
 
     <div class="helpSec">
@@ -669,23 +680,23 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-functions-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
-  <script defer src="js/chess-logic.js?v=0.38.16"></script>
-  <script defer src="js/bot.js?v=0.38.16"></script>
-  <script defer src="js/elo.js?v=0.38.16"></script>
-  <script defer src="js/profile.js?v=0.38.16"></script>
-  <script defer src="js/ui.js?v=0.38.16"></script>
-  <script defer src="js/chat.js?v=0.38.16"></script>
-  <script defer src="js/store.js?v=0.38.16"></script>
-  <script defer src="js/settings.js?v=0.38.16"></script>
-  <script defer src="js/meme/MemeEventBus.js?v=0.38.16"></script>
-  <script defer src="js/meme/MemeConfig.js?v=0.38.16"></script>
-  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.16"></script>
-  <script defer src="js/firebase-config.js?v=0.38.16"></script>
-  <script defer src="js/auth.js?v=0.38.16"></script>
-  <script defer src="js/friends.js?v=0.38.16"></script>
-  <script defer src="js/multiplayer.js?v=0.38.16"></script>
-  <script defer src="js/net-ui.js?v=0.38.16"></script>
-  <script defer src="js/analytics.js?v=0.38.16"></script>
+  <script defer src="js/chess-logic.js?v=0.38.17"></script>
+  <script defer src="js/bot.js?v=0.38.17"></script>
+  <script defer src="js/elo.js?v=0.38.17"></script>
+  <script defer src="js/profile.js?v=0.38.17"></script>
+  <script defer src="js/ui.js?v=0.38.17"></script>
+  <script defer src="js/chat.js?v=0.38.17"></script>
+  <script defer src="js/store.js?v=0.38.17"></script>
+  <script defer src="js/settings.js?v=0.38.17"></script>
+  <script defer src="js/meme/MemeEventBus.js?v=0.38.17"></script>
+  <script defer src="js/meme/MemeConfig.js?v=0.38.17"></script>
+  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.17"></script>
+  <script defer src="js/firebase-config.js?v=0.38.17"></script>
+  <script defer src="js/auth.js?v=0.38.17"></script>
+  <script defer src="js/friends.js?v=0.38.17"></script>
+  <script defer src="js/multiplayer.js?v=0.38.17"></script>
+  <script defer src="js/net-ui.js?v=0.38.17"></script>
+  <script defer src="js/analytics.js?v=0.38.17"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -707,7 +718,7 @@
   <button class="qrBtn" id="qrBtn" title="QR-код для мобильного">📲</button>
 
   <!-- QR Overlay -->
-  <div class="qrOverlay" id="qrOverlay">
+  <div class="qrOverlay" id="qrOverlay" role="dialog" aria-modal="true" aria-label="QR-код входа">
     <div class="qrModal">
       <h3>📲 QR-КОД</h3>
       <img id="qrImg" style="display:block;margin:0 auto 16px;border-radius:8px;background:#fff;padding:8px" width="200" height="200" alt="QR">
@@ -758,45 +769,44 @@
     </div>
   </div>
   
-  <!-- Cheat panel -->
-  <div class="cheatPanel" id="cheatPanel">
-    <div class="cheatTitle">🔧 Dev Tools</div>
+  <!-- Cheat panel (dev only: открывается при ?dev, в проде не работает) -->
+  <div class="cheatPanel" id="cheatPanel" role="dialog" aria-modal="false" aria-label="Инструменты разработчика">
+    <div class="cheatTitle">🔧 Инструменты разработчика <button class="cheatClose" id="cheatClose" aria-label="Закрыть">✕</button></div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddCoins(100)">+100 🪙</button>
-      <button class="cheatAction" onclick="cheatAddCoins(500)">+500 🪙</button>
-      <button class="cheatAction" onclick="cheatAddCoins(9999)">+9999 🪙</button>
+      <button class="cheatAction" data-cheat="cheatAddCoins" data-cheat-arg="100">+100 🪙</button>
+      <button class="cheatAction" data-cheat="cheatAddCoins" data-cheat-arg="500">+500 🪙</button>
+      <button class="cheatAction" data-cheat="cheatAddCoins" data-cheat-arg="9999">+9999 🪙</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddCoins(-100)">-100 🪙</button>
-      <button class="cheatAction" onclick="cheatAddCoins(-500)">-500 🪙</button>
-      <button class="cheatAction" onclick="cheatResetCoins()">=0 🪙</button>
+      <button class="cheatAction" data-cheat="cheatAddCoins" data-cheat-arg="-100">-100 🪙</button>
+      <button class="cheatAction" data-cheat="cheatAddCoins" data-cheat-arg="-500">-500 🪙</button>
+      <button class="cheatAction" data-cheat="cheatResetCoins">=0 🪙</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatUnlockAll()">🔓 Всё купить</button>
-      <button class="cheatAction" onclick="cheatLockAll()">🔒 Всё забрать</button>
+      <button class="cheatAction" data-cheat="cheatUnlockAll">🔓 Всё купить</button>
+      <button class="cheatAction" data-cheat="cheatLockAll">🔒 Всё забрать</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatAddWins(10)">+10 побед</button>
-      <button class="cheatAction" onclick="cheatAddWins(50)">+50 побед</button>
-      <button class="cheatAction" onclick="cheatResetWins()">=0 побед</button>
+      <button class="cheatAction" data-cheat="cheatAddWins" data-cheat-arg="10">+10 побед</button>
+      <button class="cheatAction" data-cheat="cheatAddWins" data-cheat-arg="50">+50 побед</button>
+      <button class="cheatAction" data-cheat="cheatResetWins">=0 побед</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatMaxElo()">↑ Макс Эло</button>
-      <button class="cheatAction" onclick="cheatResetElo()">↓ Сброс Эло</button>
+      <button class="cheatAction" data-cheat="cheatMaxElo">↑ Макс Эло</button>
+      <button class="cheatAction" data-cheat="cheatResetElo">↓ Сброс Эло</button>
     </div>
     <div class="cheatRow">
-      <button class="cheatAction" onclick="cheatToggleSound()">🔊/🔇 Звук</button>
-      <button class="cheatAction" onclick="cheatTestWin()">🏆 Тест победы</button>
-      <button class="cheatAction" onclick="cheatTestLose()">💀 Тест поражения</button>
+      <button class="cheatAction" data-cheat="cheatToggleSound">🔊/🔇 Звук</button>
+      <button class="cheatAction" data-cheat="cheatTestWin">🏆 Тест победы</button>
+      <button class="cheatAction" data-cheat="cheatTestLose">💀 Тест поражения</button>
     </div>
   </div>
   
-  <script defer src="js/main.js?v=0.38.16"></script>
+  <script defer src="js/main.js?v=0.38.17"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>
     :root {
-      --bsz: min(calc(100vh - 150px), 620px, calc(100vw - 588px));
       --sq-l: #f0d9b5;
       --sq-d: #b58863;
       --bg: #161512;
