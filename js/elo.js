@@ -18,6 +18,7 @@ const Elo = {
 
   /* --- Получить лигу по рейтингу --- */
   getLeague(elo) {
+    if(elo < this.leagues[0].min) return this.leagues[0];
     for(const l of this.leagues) {
       if(elo >= l.min && elo <= l.max) return l;
     }

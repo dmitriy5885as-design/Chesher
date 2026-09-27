@@ -5,7 +5,7 @@
 
 /* --- Переменные и базовые настройки --- */
 :root{
-  --bsz:min(calc(100vh - 150px),620px,94vw);
+  --bsz:min(calc(100vh - 150px),620px,calc(100vw - 588px));
   --sq-l:#f0d9b5;--sq-d:#b58863;
   --hl-last:rgba(255,213,79,.55);
   --hl-sel:rgba(130,202,255,.6);
@@ -58,7 +58,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
     radial-gradient(circle at 50% 50%,rgba(16,185,129,.04) 0%,transparent 60%);
   animation:bgShift 20s ease-in-out infinite alternate}
 @keyframes bgShift{0%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}100%{opacity:.6;transform:scale(1)}}
-.scrHead{width:min(560px,94vw);position:relative;margin-bottom:8px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.scrHead{width:min(560px,100%);position:relative;margin-bottom:8px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .backBtn{position:absolute;left:0;top:50%;transform:translateY(-50%);
   background:none;border:1px solid var(--line);color:var(--mut);
   padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
@@ -101,7 +101,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   text-transform:uppercase;margin-top:10px}
 
 /* --- Меню --- */
-.menuCol{width:min(380px,92vw);display:flex;flex-direction:column;gap:11px}
+.menuCol{width:min(380px,100%);display:flex;flex-direction:column;gap:11px}
 .mBtn{padding:17px 18px;border-radius:12px;border:1px solid var(--line);
   background:var(--panel);color:var(--txt);font-size:16px;font-weight:800;
   letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:.15s;width:100%}
@@ -112,7 +112,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .menuFoot{margin-top:auto;padding-top:34px;color:#57534c;font-size:11px;letter-spacing:2px}
 
 /* --- Полоса статистики на главном меню --- */
-.statStrip{display:flex;gap:0;width:min(380px,92vw);margin-top:16px;border:1px solid var(--line);
+.statStrip{display:flex;gap:0;width:min(380px,100%);margin-top:16px;border:1px solid var(--line);
   border-radius:10px;overflow:hidden;background:var(--panel)}
 .statStrip .st{flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--line)}
 .statStrip .st:last-child{border-right:none}
@@ -121,7 +121,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .statStrip .st.win b{color:var(--green)}
 
 /* --- Карточки режимов --- */
-.modeCard{width:min(520px,94vw);display:flex;align-items:center;gap:15px;
+.modeCard{width:min(520px,100%);display:flex;align-items:center;gap:15px;
   background:var(--panel);border:1px solid var(--line);border-radius:13px;
   padding:14px 16px;cursor:pointer;transition:.15s;margin-bottom:10px;text-align:left}
 .modeCard:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
@@ -150,7 +150,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 @keyframes glowPulseEmerald{0%,100%{box-shadow:0 0 16px rgba(16,185,129,.35),0 0 32px rgba(16,185,129,.15)}50%{box-shadow:0 0 22px rgba(16,185,129,.5),0 0 44px rgba(16,185,129,.25)}}
 
 /* --- Групповые заголовки --- */
-.grpTitle{width:min(520px,94vw);color:var(--mut);font-size:11px;font-weight:800;
+.grpTitle{width:min(520px,100%);color:var(--mut);font-size:11px;font-weight:800;
   letter-spacing:2.5px;text-transform:uppercase;margin:16px 2 9px;
   display:flex;align-items:center;gap:10px}
 .grpTitle::after{content:'';flex:1;height:1px;background:var(--line)}
@@ -159,11 +159,90 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 /* --- Основное меню: статистика --- */
 .row2m{display:flex;gap:11px;width:100%}
 .mBtn.half{flex:1;padding:15px 8px;font-size:13.5px}
+.row3m{display:flex;gap:11px;width:100%}
+.mBtn.third{flex:1;min-width:0;padding:12px 4px;font-size:13px;letter-spacing:.5px;
+  line-height:1.3;display:flex;flex-direction:column;align-items:center;gap:2px}
+.mBtn.third span{font-size:12.5px;white-space:nowrap}
+.mBtn.playBig{padding:21px 18px;font-size:20px;letter-spacing:3px;
+  background:linear-gradient(180deg,#8fbe57,var(--green));border-color:#5d8634;color:#fff;
+  box-shadow:0 6px 18px rgba(129,182,76,.22)}
+.mBtn.playBig small{display:block;font-size:11px;font-weight:500;letter-spacing:.5px;
+  text-transform:none;opacity:.85;margin-top:5px}
+.mBtn.playBig:hover{filter:brightness(1.07);transform:translateY(-2px);
+  box-shadow:0 9px 22px rgba(129,182,76,.3);border-color:#7aa64a}
+.mBtn.memeHot{border-color:#10b981;box-shadow:0 0 12px rgba(16,185,129,.18)}
+.mBtn.memeHot:hover{border-color:#10b981;box-shadow:0 0 16px rgba(16,185,129,.3)}
+.mBtn.soft{padding:13px 18px;font-size:13.5px;color:var(--mut);font-weight:700}
+.mBtn.soft:hover{color:var(--txt)}
+
+/* --- Карточка игрока в профиле --- */
+.plCard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.plTop{display:flex;align-items:center;gap:14px}
+.plAva{width:60px;height:60px;flex:0 0 60px;border-radius:50%;background:var(--panel2);
+  border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:30px;overflow:hidden}
+.plId{min-width:0;flex:1}
+.plName{font-size:17px;font-weight:800;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plLeague{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.plElo{font-size:24px;font-weight:900;line-height:1.1;margin-top:2px}
+.plElo span{font-size:11px;font-weight:700;color:var(--mut);letter-spacing:1.5px}
+.plProgRow{margin-top:14px}
+.plProg{height:8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.plProgFill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green),#a8d462);
+  transition:width .4s ease}
+.plProgLabel{color:var(--mut);font-size:11.5px;margin-top:5px;letter-spacing:.3px}
+.plStats{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:14px}
+.plStat{background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+  padding:8px 2px;text-align:center;min-width:0}
+.plStat b{display:block;font-size:16px;font-weight:800;color:var(--txt);line-height:1.2}
+.plStat b.ok{color:var(--green)}
+.plStat b.bad{color:var(--red)}
+.plStat b.gold{color:var(--gold)}
+.plStat span{font-size:10px;color:var(--mut);letter-spacing:.3px;display:block;
+  overflow:hidden;text-overflow:ellipsis}
+
+/* --- Оверлей конца партии: награды --- */
+.goStats{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:2px 0 6px}
+.goStats span{font-size:13px;font-weight:800;padding:4px 10px;border-radius:20px;
+  border:1px solid var(--line);background:var(--panel2)}
+.goStats .gsPos{color:var(--green);border-color:#4c6636}
+.goStats .gsNeg{color:var(--red);border-color:#6e3a37}
+.goStats .gsStreak{color:var(--gold);border-color:#6b5a2a}
+.goStats .gsCoin{color:var(--gold)}
+
+/* --- Магазин: статусы --- */
+.shopItemSt{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  text-align:center;color:var(--mut);margin:-2px 0 4px}
+.shopItemSt.on{color:var(--gold)}
+
+/* --- Достижения --- */
+.achSum{color:var(--mut);font-size:11.5px;letter-spacing:1px;margin-bottom:8px}
+.achRow{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel2);margin-bottom:6px;opacity:.62}
+.achRow.got{opacity:1;border-color:#6b5a2a;background:rgba(247,197,49,.06)}
+.achIc{font-size:17px;flex:0 0 auto}
+.achTx{min-width:0;flex:1}
+.achNm{font-size:13.5px;font-weight:700}
+.achDs{font-size:11.5px;color:var(--mut);line-height:1.3}
+.achRw{font-size:11px;font-weight:800;color:var(--gold);white-space:nowrap}
+
+/* --- Пустые состояния --- */
+.emptyState{text-align:center;color:var(--mut);padding:22px 10px;font-size:13.5px;line-height:1.45}
+.emptyState .esIc{font-size:26px;margin-bottom:6px;opacity:.75}
+.emptyState small{display:block;font-size:11.5px;opacity:.75;margin-top:4px}
+
+/* --- Доступность --- */
+.mBtn:focus-visible,.btn:focus-visible,.shopTab:focus-visible,.modeCard:focus-visible,
+.segBtn:focus-visible,.buyBtn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
 .resumeX{flex:0 0 48px;border:2px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.04);color:var(--mut);font-size:18px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
 .resumeX:hover{border-color:var(--red);color:var(--red);background:rgba(220,38,38,.12)}
 
 /* --- Профиль --- */
-.profBar{width:min(380px,92vw);display:flex;align-items:center;gap:12px;
+.profBar{width:min(380px,100%);display:flex;align-items:center;gap:12px;
   background:var(--panel);border:1px solid var(--line);border-radius:13px;
   padding:10px 12px;margin-top:24px;cursor:pointer;transition:.15s;
   position:relative;z-index:2}
@@ -178,14 +257,14 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .pbSub{color:var(--mut);font-size:11.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pbArrow{color:var(--mut);font-size:20px;padding:0 2px}
 .mAuthBtn{padding:6px 14px!important;font-size:12px!important;min-width:70px;max-width:70px;height:32px;margin-left:4px;background:var(--accent)!important;color:#000!important;font-weight:700;white-space:nowrap;border-radius:8px!important;flex:0 0 70px;display:inline-flex!important;align-items:center;justify-content:center;text-align:center}
-.tipBox{width:min(380px,92vw);background:var(--panel);border:1px dashed var(--line);
+.tipBox{width:min(380px,100%);background:var(--panel);border:1px dashed var(--line);
   border-radius:11px;padding:11px 14px;font-size:12.5px;color:var(--mut);
   margin-top:14px;line-height:1.55;position:relative;z-index:2;cursor:pointer;transition:border-color .2s,background .2s}
 .tipBox:hover{border-color:var(--gold);background:rgba(247,197,49,.05)}
 .tipBox b{color:var(--gold)}
 
 /* --- Экран профиля --- */
-.profRow{width:min(520px,94vw);display:flex;align-items:center;gap:13px;
+.profRow{width:min(520px,100%);display:flex;align-items:center;gap:13px;
   background:var(--panel);border:1px solid var(--line);border-radius:13px;
   padding:12px 14px;cursor:pointer;margin-bottom:9px;transition:.15s}
 .profRow:hover{border-color:var(--green)}
@@ -228,8 +307,6 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 .sq.hintF::after{content:'';position:absolute;inset:0;background:rgba(96,165,250,.6)}
 .sq.hintT::after{content:'';position:absolute;inset:0;background:rgba(96,165,250,.35)}
-.sq.preF::after{content:'';position:absolute;inset:3px;border:3px dashed rgba(250,204,21,.9);border-radius:8px}
-.sq.preT::before{content:'';position:absolute;inset:9px;border-radius:50%;background:rgba(250,204,21,.75)}
 
 /* --- Чат --- */
 .chatBox{flex:1;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;width:100%;overflow:hidden}
@@ -249,11 +326,11 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 @keyframes chatIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* --- Настройки --- */
-.setGroup{width:min(520px,94vw);background:var(--panel);border:1px solid var(--line);
+.setGroup{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);
   border-radius:13px;padding:15px 16px;margin-bottom:12px}
 .setGroup h3{font-size:11px;letter-spacing:2px;color:var(--mut);
   text-transform:uppercase;margin-bottom:9px}
-.setSectionTitle{width:min(520px,94vw);margin:16px auto 10px;font-size:12px;font-weight:800;
+.setSectionTitle{width:min(520px,100%);margin:16px auto 10px;font-size:12px;font-weight:800;
   letter-spacing:2px;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
 .setSectionTitle::after{content:'';flex:1;height:1px;background:var(--line)}
 .seg{display:flex;flex-wrap:wrap;gap:8px}
@@ -295,7 +372,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .swatch.sel{border-color:var(--gold)}
 .swName{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
   font-size:10px;color:var(--mut);white-space:nowrap}
-.applyBar{width:min(520px,94vw);display:flex;gap:10px;margin-top:6px;margin-left:auto;margin-right:auto}
+.applyBar{width:min(520px,100%);display:flex;gap:10px;margin-top:6px;margin-left:auto;margin-right:auto}
 .applyBar .mBtn{flex:1;padding:15px}
 .applyNote{color:var(--mut);font-size:11.5px;margin-top:8px;text-align:center}
 
@@ -538,6 +615,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .btn.primary:hover{filter:brightness(1.07)}
 .btn.warn{background:#4b3433;border-color:#7a4441}
 .btn.warn:hover{border-color:var(--red)}
+.btn.act{border-color:#5d8634;background:rgba(129,182,76,.14)}
+.btn.act:hover{background:rgba(129,182,76,.24);border-color:var(--green)}
 .row2{display:flex;gap:9px}.row2 .btn{flex:1}
 #modeLabel{background:var(--panel);border:1px dashed var(--line);border-radius:9px;
   padding:9px 12px;font-size:12px;color:var(--mut);line-height:1.55}
@@ -822,7 +901,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 /* === DEV BLOG SCREEN === */
 .dbWrap{
-  width:min(560px,94vw);
+  width:min(560px,100%);
 }
 .dbEntry{
   background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -863,6 +942,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 }
 @media(max-width:380px){
   :root{--bsz:98vw}
+  .logoBig h1{letter-spacing:8px;font-size:clamp(38px,11vw,46px)}
   header h1{letter-spacing:3px}
   .btn{font-size:13px;padding:12px 10px}
   .segBtn{min-width:80px}
@@ -870,7 +950,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 /* === BOT SELECTION SCREEN === */
 .botsLayout {
-  width: min(800px, 94vw);
+  width: min(800px, 100%);
   padding: 0 8px;
 }
 .botsCenter {
@@ -1111,7 +1191,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   gap: 6px;
   padding: 8px 12px;
   margin-bottom: 8px;
-  width: min(760px, 94vw);
+  width: min(760px, 100%);
   overflow-x: auto;
   background: var(--panel);
   border-radius: 12px;
@@ -1146,7 +1226,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
   padding: 8px 12px;
-  width: min(760px, 94vw);
+  width: min(760px, 100%);
 }
 .shopItem {
   background: rgba(255,255,255,0.04);
@@ -1196,7 +1276,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .buyBtn:hover{border-color:var(--gold);background:rgba(247,197,49,.1)}
 
 /* === LEADERBOARD === */
-#lbTop { padding: 12px; width: min(520px, 94vw); margin: 0 auto; }
+#lbTop { padding: 12px; width: min(520px, 100%); margin: 0 auto; }
 .lbChamp {
   display: flex;
   align-items: center;
@@ -1212,7 +1292,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .lbChampRating { font-size: 16px; font-weight: 600; margin-top: 4px; }
 .lbChampStats { font-size: 12px; color: var(--mut); margin-top: 4px; }
 
-#lbList { padding: 0 12px; width: min(520px, 94vw); margin: 0 auto; }
+#lbList { padding: 0 12px; width: min(520px, 100%); margin: 0 auto; }
 .lbRow {
   display: flex;
   align-items: center;
@@ -1437,13 +1517,13 @@ body.mobile-mode #statusLine{
 }
 
 /* --- Карточки режимов --- */
-body.mobile-mode .modeCard{width:min(520px,96vw);padding:12px 14px;gap:12px}
+body.mobile-mode .modeCard{width:min(520px,100%);padding:12px 14px;gap:12px}
 body.mobile-mode .modeCard .ic{font-size:26px;width:40px;height:40px;flex:0 0 40px}
 body.mobile-mode .modeCard .nm{font-size:14px}
 body.mobile-mode .modeCard .ds{font-size:11px}
 
 /* --- Меню --- */
-body.mobile-mode .menuCol{width:min(360px,94vw);gap:8px}
+body.mobile-mode .menuCol{width:min(360px,100%);gap:8px}
 body.mobile-mode .mBtn{padding:14px 14px;font-size:14px;letter-spacing:1px}
 body.mobile-mode .logoBig{margin:clamp(10px,4vh,30px) 0 clamp(14px,2vh,20px)}
 body.mobile-mode .logoBig h1{font-size:clamp(36px,10vw,60px);letter-spacing:8px}
@@ -1459,7 +1539,7 @@ body.mobile-mode .modal h2{font-size:16px}
 
 /* --- Экраны --- */
 body.mobile-mode .screen{padding:max(12px,env(safe-area-inset-top)) 10px 30px}
-body.mobile-mode .scrHead{width:min(560px,96vw)}
+body.mobile-mode .scrHead{width:min(560px,100%)}
 body.mobile-mode .scrTitle{font-size:clamp(14px,4vw,18px);letter-spacing:2px}
 body.mobile-mode .backBtn{padding:6px 10px;font-size:12px}
 
@@ -1483,8 +1563,10 @@ body.mobile-mode .setGroup h3{font-size:13px}
 body.mobile-mode .segBtn{font-size:12px;padding:8px 6px;min-width:60px}
 
 /* --- Профиль --- */
-body.mobile-mode .profStats{gap:6px}
-body.mobile-mode .profStat{padding:6px}
+  body.mobile-mode .profStats{gap:6px}
+  body.mobile-mode .profStat{padding:6px}
+  body.mobile-mode .plCard{padding:12px}
+  body.mobile-mode .plStats{grid-template-columns:repeat(3,1fr)}
 
 /* --- Панель друзей --- */
 body.mobile-mode .friendPanel{width:min(340px,96vw);max-height:70vh}

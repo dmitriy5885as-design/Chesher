@@ -15,10 +15,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.38.14">
+  <link rel="stylesheet" href="css/main.css?v=0.38.16">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.38.14">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.16">
 
 </head>
 <body>
@@ -48,20 +48,28 @@
       <div class="pbArrow">›</div>
     </div>
     <div class="menuCol">
-      <button class="mBtn primary" id="mPlay">♟ Играть<br><small style="font-weight:400;opacity:.7;font-size:10px">по сети с другими игроками</small></button>
+      <button class="mBtn playBig" id="mModes">▶ Играть<small>выбрать режим и начать партию</small></button>
       <div style="display:none;gap:8px;align-items:stretch" id="resumeRow">
         <button class="mBtn" id="mResume" style="flex:1">▶ Продолжить</button>
         <button class="resumeX" id="mResumeClose" title="Завершить партию">✕</button>
       </div>
-      <button class="mBtn" id="mModes">☰ Режимы</button>
-      <button class="mBtn" id="mShop">🛍 Магазин</button>
-      <div class="row2m">
-        <button class="mBtn half" id="mLeaderboard">🏆 Таблица лидеров</button>
-        <button class="mBtn half" id="mSettings">⚙ Настройки</button>
+      <div class="row3m">
+        <button class="mBtn third" id="mQuick">⚡<br><span>Быстрая</span></button>
+        <button class="mBtn third memeHot" id="mMeme">🔥<br><span>Мемасия</span></button>
+        <button class="mBtn third" id="mPlay">👥<br><span>С другом</span></button>
       </div>
+      <div class="row2m">
+        <button class="mBtn half" id="mPuzzle">🧩 Задача дня</button>
+        <button class="mBtn half" id="mTournament">🏆 Турнир</button>
+      </div>
+      <div class="row2m">
+        <button class="mBtn half" id="mShop">🛍 Магазин</button>
+        <button class="mBtn half" id="mLeaderboard">🏆 Рейтинг</button>
+      </div>
+      <button class="mBtn soft" id="mSettings">⚙ Настройки</button>
     </div>
     <div class="tipBox" id="tipBox"></div>
-    <div class="menuFoot">CHESHER v0.23.22 alpha</div>
+    <div class="menuFoot">CHESHER v0.24.0 alpha</div>
   </div>
   
   <!-- ================= ЭКРАН: ПРОФИЛЬ ================= -->
@@ -81,8 +89,9 @@
 
     <!-- Вкладка: Главная -->
     <div id="profTabMain" style="width:100%;max-width:520px;margin:0 auto">
-      <div class="profHeader" id="profHeader" style="width:min(520px,94vw);margin:0 auto 14px"></div>
-      <div class="setGroup" id="nickGroup" style="width:min(400px,94vw);margin:0 auto 14px">
+      <div class="plCard" id="plCard" style="width:100%;margin:0 auto 14px"></div>
+      <div class="profHeader" id="profHeader" style="width:100%;margin:0 auto 14px"></div>
+      <div class="setGroup" id="nickGroup" style="width:min(400px,100%);margin:0 auto 14px">
         <h3>✏️ Сменить ник</h3>
         <div style="display:flex;gap:8px;align-items:center">
           <input id="nickInput" class="inputTxt" maxlength="14" placeholder="Новый ник" autocomplete="off" style="flex:3">
@@ -90,7 +99,7 @@
         </div>
         <div id="nickCooldown" style="color:var(--mut);font-size:12px;margin-top:6px"></div>
       </div>
-      <div class="setGroup" id="customAvaGroup" style="width:min(400px,94vw);margin:0 auto 14px">
+      <div class="setGroup" id="customAvaGroup" style="width:min(400px,100%);margin:0 auto 14px">
         <h3>🖼 Своя аватарка</h3>
         <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
           <div id="customAvaPreview" style="width:120px;height:120px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:48px;border:2px solid var(--line);overflow:hidden;flex-shrink:0"></div>
@@ -125,6 +134,10 @@
       <div class="setGroup">
         <h3>📜 История матчей</h3>
         <div id="matchHistory"></div>
+      </div>
+      <div class="setGroup">
+        <h3>🏆 Достижения</h3>
+        <div id="achList"></div>
       </div>
     </div>
 
@@ -187,7 +200,7 @@
       <button class="backBtn" data-back>← Назад</button>
       <span class="scrTitle">Настройка лобби</span>
     </div>
-    <div style="width:min(420px,94vw);margin:0 auto;padding:16px 0">
+      <div style="width:min(420px,100%);margin:0 auto;padding:16px 0">
       <div class="setGroup">
         <h3>🎮 Режим игры</h3>
         <div id="lobbyModeSeg" style="display:flex;gap:6px;flex-wrap:wrap"></div>
@@ -316,11 +329,11 @@
   
   <!-- ================= ЭКРАН: МАГАЗИН ================= -->
   <div class="screen" id="scrShop">
-    <div class="scrHead" style="width:min(760px,94vw)">
+    <div class="scrHead" style="width:min(760px,100%)">
       <button class="backBtn" data-back>← Назад</button>
       <span class="scrTitle">Магазин</span>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;width:min(760px,94vw);margin-bottom:12px">
+    <div style="display:flex;justify-content:flex-end;gap:8px;width:min(760px,100%);margin-bottom:12px">
       <span class="coinChip" id="shopCoins" style="margin-left:0">🪙 0</span>
       <span class="coinChip gemChip" id="shopGems" style="margin-left:0">💎 0</span>
     </div>
@@ -333,7 +346,7 @@
       <button class="shopTab" data-tab="videos">🎬 Видео мемы</button>
     </div>
     <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center">
-      <p class="note" style="width:min(760px,94vw);text-align:left;margin-bottom:12px;color:var(--mut);font-size:12px">
+      <p class="note" style="width:min(760px,100%);text-align:left;margin-bottom:12px;color:var(--mut);font-size:12px">
         Скины меняют вид фигур на доске. Монеты 🪙 — игровая валюта: победы (+10), ничьи (+3),
         серии и ежедневный вход (+25). Кристаллы 💎 — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере.</p>
       <div class="shopGrid" id="shopGrid"></div>
@@ -505,18 +518,20 @@
     
     <aside id="side">
       <div id="modeLabel"></div>
-      <button class="btn primary" id="btnNew">Новая партия</button>
-      <button class="btn" id="btnGoMenu">🏠 Главное меню</button>
-      <button class="btn" id="btnSet">⚙ <span class="btnText">Настройки</span></button>
       <div class="row2">
-        <button class="btn" id="btnHint">💡 <span class="btnText">Ход</span> <span id="hintN">(2)</span></button>
-        <button class="btn" id="btnUndo">↩️ <span class="btnText">Назад</span> <span id="undoN">(3)</span></button>
+        <button class="btn act" id="btnHint">💡 <span class="btnText">Ход</span> <span id="hintN">(2)</span></button>
+        <button class="btn act" id="btnUndo">↩️ <span class="btnText">Назад</span> <span id="undoN">(3)</span></button>
       </div>
       <div class="row2">
-        <button class="btn warn" id="btnRes">Сдаться</button>
         <button class="btn" id="btnDraw">Ничья</button>
+        <button class="btn warn" id="btnRes">Сдаться</button>
       </div>
-      
+      <div class="row2">
+        <button class="btn" id="btnSet">⚙ <span class="btnText">Настройки</span></button>
+        <button class="btn" id="btnGoMenu">🏠 <span class="btnText">Меню</span></button>
+      </div>
+      <button class="btn" id="btnNew">Новая партия</button>
+
       <div id="movesWrap">
         <h3>Ходы</h3>
         <div id="moves"><div id="noMoves">Ходов пока нет</div></div>
@@ -566,11 +581,12 @@
   <div class="overlay" id="ovOver"><div class="modal">
     <div id="goT"></div>
     <div id="goS"></div>
+    <div id="goStats" class="goStats"></div>
     <div class="modalBtns">
-      <button class="btn primary" id="overNew">Новая партия</button>
       <button class="btn primary" id="overRematch" style="display:none">🔁 Реванш</button>
-      <button class="btn" id="overMenu">В главное меню</button>
-      <button class="btn" data-close="ovOver">Посмотреть доску</button>
+      <button class="btn primary" id="overNew">▶ Новая партия</button>
+      <button class="btn" id="overReplay">🎬 Просмотр партии</button>
+      <button class="btn" id="overMenu">🏠 В главное меню</button>
     </div>
   </div></div>
 
@@ -596,7 +612,6 @@
       <ul>
         <li><b>💡</b> — подсказка: показать сильный ход</li>
         <li><b>↩️</b> — вернуть ход (в партии с ботом)</li>
-        <li><b>⚡ Премув</b> — заготовьте ход заранее: он сделает его сразу после ответа соперника</li>
         <li><b>📱</b> — переключатель компактного мобильного вида</li>
       </ul>
     </div>
@@ -604,10 +619,13 @@
     <div class="helpSec">
       <div class="helpH">▶ Режимы</div>
       <ul>
-        <li><b>♟ Играть</b> — сетевая партия: создайте лобби и поделитесь кодом или QR, либо введите код друга</li>
-        <li><b>☰ Режимы</b> — против бота (несколько уровней), Фишер 960, Мемасия, локальный матч вдвоём за одним экраном</li>
+        <li><b>🔥 Мемасия — главный режим</b> — шахматы в стиле мемов: бурные видео-реакции на шах, взятие, зевки и блестящие ходы, пистолеты на доске, мем-боты с характерами, которые отвечают вам в чате. Выберите бота, сторону и контроль времени</li>
+        <li><b>▶ Играть</b> — открывает список режимов: выбирайте и начинайте</li>
+        <li><b>⚡ Быстрая игра</b> — мгновенный матч против рекомендуемого бота</li>
+        <li><b>👥 С другом</b> — сетевая партия: создайте лобби и поделитесь кодом или QR, либо введите код друга</li>
         <li><b>🧩 Задачка дня</b> — решите тактическую загадку и получите монеты</li>
         <li><b>🏆 Турнир</b> — сетка на выбывание против ботов с призами за раунды</li>
+        <li><b>Остальное</b> — Фишер 960, локальный матч вдвоём и рейтинговая игра в списке режимов</li>
       </ul>
     </div>
 
@@ -651,23 +669,23 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-functions-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
-  <script defer src="js/chess-logic.js?v=0.38.14"></script>
-  <script defer src="js/bot.js?v=0.38.14"></script>
-  <script defer src="js/elo.js?v=0.38.14"></script>
-  <script defer src="js/profile.js?v=0.38.14"></script>
-  <script defer src="js/ui.js?v=0.38.14"></script>
-  <script defer src="js/chat.js?v=0.38.14"></script>
-  <script defer src="js/store.js?v=0.38.14"></script>
-  <script defer src="js/settings.js?v=0.38.14"></script>
-  <script defer src="js/meme/MemeEventBus.js?v=0.38.14"></script>
-  <script defer src="js/meme/MemeConfig.js?v=0.38.14"></script>
-  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.14"></script>
-  <script defer src="js/firebase-config.js?v=0.38.14"></script>
-  <script defer src="js/auth.js?v=0.38.14"></script>
-  <script defer src="js/friends.js?v=0.38.14"></script>
-  <script defer src="js/multiplayer.js?v=0.38.14"></script>
-  <script defer src="js/net-ui.js?v=0.38.14"></script>
-  <script defer src="js/analytics.js?v=0.38.14"></script>
+  <script defer src="js/chess-logic.js?v=0.38.16"></script>
+  <script defer src="js/bot.js?v=0.38.16"></script>
+  <script defer src="js/elo.js?v=0.38.16"></script>
+  <script defer src="js/profile.js?v=0.38.16"></script>
+  <script defer src="js/ui.js?v=0.38.16"></script>
+  <script defer src="js/chat.js?v=0.38.16"></script>
+  <script defer src="js/store.js?v=0.38.16"></script>
+  <script defer src="js/settings.js?v=0.38.16"></script>
+  <script defer src="js/meme/MemeEventBus.js?v=0.38.16"></script>
+  <script defer src="js/meme/MemeConfig.js?v=0.38.16"></script>
+  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.16"></script>
+  <script defer src="js/firebase-config.js?v=0.38.16"></script>
+  <script defer src="js/auth.js?v=0.38.16"></script>
+  <script defer src="js/friends.js?v=0.38.16"></script>
+  <script defer src="js/multiplayer.js?v=0.38.16"></script>
+  <script defer src="js/net-ui.js?v=0.38.16"></script>
+  <script defer src="js/analytics.js?v=0.38.16"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -773,12 +791,12 @@
     </div>
   </div>
   
-  <script defer src="js/main.js?v=0.38.14"></script>
+  <script defer src="js/main.js?v=0.38.16"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>
     :root {
-      --bsz: min(calc(100vh - 150px), 620px, 94vw);
+      --bsz: min(calc(100vh - 150px), 620px, calc(100vw - 588px));
       --sq-l: #f0d9b5;
       --sq-d: #b58863;
       --bg: #161512;

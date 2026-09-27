@@ -219,57 +219,7 @@ test.describe('CHESHER — Критические пути', () => {
     await expect(page.locator('#scrMenu')).toBeVisible();
   });
 
-  // ===================== 14. Премув в игре с ботом =====================
-  test('Премув: заготовка хода во время хода бота и исполнение', async ({ page }) => {
-    await page.evaluate(() => {
-      cfg.gameMode = 'bot';
-      cfg.modeId = 'chess';
-      cfg.bot = 'easy';
-      cfg.human = 'w';
-      cfg.memes = false;
-      cfg.timeSec = 0;
-      // отключаем «думающего» бота — ходы делаем сами
-      botMove = function() { window.__botSkipped = true; };
-      newGame();
-      hideAllScreens();
-    });
-    await page.waitForTimeout(400);
-    await expect(page.locator('#boardBox')).toBeVisible();
-
-    // Ходим белыми e2-e4 → теперь ход бота (чёрных)
-    await page.evaluate(() => {
-      const m = S.getLegalMoves(6, 5).find(x => x.tr === 4 && x.tc === 5);
-      if(m) executeMove(m);
-    });
-    await page.waitForTimeout(300);
-
-    // Готовим премув: пешка d2-d4, пока ход соперника
-    const premoved = await page.evaluate(() => {
-      if(S.turn === S.humanColor) return 'not-enemy-turn';
-      const fromEl = document.querySelector('#grid .sq[data-r="6"][data-c="3"]');
-      const toEl = document.querySelector('#grid .sq[data-r="4"][data-c="3"]');
-      if(!fromEl || !toEl) return 'no-squares';
-      _suppressClickTs = 0;
-      _premoveClick({ currentTarget: fromEl });
-      _premoveClick({ currentTarget: toEl });
-      const set = !!(premove && premove.fr === 6 && premove.fc === 3 && premove.tr === 4 && premove.tc === 3);
-      const markedFrom = fromEl.classList.contains('preF');
-      const markedTo = toEl.classList.contains('preT');
-      return set && markedFrom && markedTo;
-    });
-    expect(premoved).toBe(true);
-
-    // Бот (мы реализуем его ход) играет e7-e5 — премув должен исполниться автоматически
-    const executed = await page.evaluate(() => {
-      const bt = S.getLegalMoves(1, 4).find(x => x.tr === 3 && x.tc === 4);
-      if(!bt) return 'no-bot-move';
-      executeMove(bt);
-      return !!( !premove && S.saveState().board[4][3] );
-    });
-    expect(executed).toBe(true);
-  });
-
-  // ===================== 15. PGN: кнопка в истории =====================
+  // ===================== 14. PGN: кнопка в истории =====================
   test('История: кнопка копирования PGN появляется для партий с записью', async ({ page }) => {
     await page.evaluate(() => {
       const cu = ProfilesManager.getCurrent();
@@ -291,7 +241,7 @@ test.describe('CHESHER — Критические пути', () => {
     await expect(btn.first()).toBeVisible();
   });
 
-  // ===================== 16. Турнир: старт против бота =====================
+  // ===================== 15. Турнир: старт против бота =====================
   test('Турнир: открытие и старт первого раунда против бота', async ({ page }) => {
     await page.click('#mModes');
     await page.waitForTimeout(500);

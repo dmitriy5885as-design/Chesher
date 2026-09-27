@@ -103,7 +103,7 @@ function paintMarks() {
   for(let r = 0; r < 8; r++) {
     for(let c = 0; c < 8; c++) {
       const sq = elements.sqEls[r][c];
-      if(sq) sq.classList.remove('last','sel','dot','cap-dot','chk','hintF','hintT','preF','preT');
+      if(sq) sq.classList.remove('last','sel','dot','cap-dot','chk','hintF','hintT');
     }
   }
 
@@ -137,17 +137,6 @@ function paintMarks() {
   if(hintMove && elements.sqEls[hintMove.fr] && elements.sqEls[hintMove.fr][hintMove.fc]) {
     elements.sqEls[hintMove.fr][hintMove.fc].classList.add('hintF');
     elements.sqEls[hintMove.tr][hintMove.tc].classList.add('hintT');
-  }
-
-  // Премув
-  if(typeof premove !== 'undefined' && premove &&
-     elements.sqEls[premove.fr] && elements.sqEls[premove.fr][premove.fc]) {
-    elements.sqEls[premove.fr][premove.fc].classList.add('preF');
-    const tSq = elements.sqEls[premove.tr] && elements.sqEls[premove.tr][premove.tc];
-    if(tSq) tSq.classList.add('preT');
-  } else if(typeof preSel !== 'undefined' && preSel &&
-            elements.sqEls[preSel.r] && elements.sqEls[preSel.r][preSel.c]) {
-    elements.sqEls[preSel.r][preSel.c].classList.add('preF');
   }
 }
 
@@ -358,7 +347,7 @@ function renderProfScr() {
       document.getElementById('profTabHistory').style.display = t === 'history' ? '' : 'none';
       document.getElementById('profTabSettings').style.display = t === 'settings' ? '' : 'none';
       if(t === 'style') renderProfStyleTab();
-      if(t === 'history') renderMatchHistory(cu);
+      if(t === 'history') { renderMatchHistory(cu); renderAchievements(cu); }
       if(t === 'settings') renderProfSettings(cu);
     };
   }
@@ -410,6 +399,56 @@ function renderProfScr() {
   } else {
     if(nickGroup) nickGroup.style.display = '';
     if(avaGroup) avaGroup.style.display = '';
+  }
+
+  // Player card: avatar, name, ELO, league, stats, progress
+  const plCard = document.getElementById('plCard');
+  if(plCard) {
+    if(cu) {
+      const ratings = cu.ratings || {};
+      const elo = (typeof ratings.classic === 'number') ? ratings.classic : 1000;
+      const league = Elo.getLeague(elo);
+      const prog = Elo.getNextLeagueProgress(elo);
+      const st = cu.st || {games: 0, wins: 0, losses: 0, draws: 0, streak: 0};
+      const wr = st.games ? Math.round((st.wins || 0) / st.games * 100) : 0;
+      const isGuestCard = !ChesAuth.user || ChesAuth.user.isAnonymous;
+      let avaHtml;
+      if(!isGuestCard && cu.customAva) {
+        avaHtml = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      } else {
+        avaHtml = cu.ava || '👽';
+      }
+      let progLabel;
+      if(prog.next) {
+        const left = Math.max(prog.next.min - elo, 0);
+        progLabel = 'До лиги «' + prog.next.name + '»: +' + left + ' ELO';
+      } else {
+        progLabel = 'Высшая лига достигнута 🌟';
+      }
+      plCard.innerHTML =
+        '<div class="plTop">' +
+          '<div class="plAva">' + avaHtml + '</div>' +
+          '<div class="plId">' +
+            '<div class="plName">' + (cu.name || 'Гость') + '</div>' +
+            '<div class="plLeague" style="color:' + league.color + '">' + league.emoji + ' ' + league.name + '</div>' +
+            '<div class="plElo">' + elo + ' <span>ELO</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="plProgRow">' +
+          '<div class="plProg"><div class="plProgFill" style="width:' + Math.round(prog.progress) + '%"></div></div>' +
+          '<div class="plProgLabel">' + progLabel + '</div>' +
+        '</div>' +
+        '<div class="plStats">' +
+          '<div class="plStat"><b>' + (st.games || 0) + '</b><span>Партий</span></div>' +
+          '<div class="plStat"><b class="ok">' + (st.wins || 0) + '</b><span>Побед</span></div>' +
+          '<div class="plStat"><b class="bad">' + (st.losses || 0) + '</b><span>Поражений</span></div>' +
+          '<div class="plStat"><b>' + (st.draws || 0) + '</b><span>Ничьих</span></div>' +
+          '<div class="plStat"><b class="gold">' + wr + '%</b><span>Винрейт</span></div>' +
+          '<div class="plStat"><b class="gold">' + (st.streak || 0) + '</b><span>Серия</span></div>' +
+        '</div>';
+    } else {
+      plCard.innerHTML = '';
+    }
   }
 
   // Show playerId in profile header
@@ -639,6 +678,7 @@ document.querySelectorAll('[data-close]').forEach(b => {
 
 document.querySelectorAll('.overlay').forEach(o => {
   o.addEventListener('click', e => {
+    if(o.id === 'ovPr') return; // промо-модалка обязательна — фон не закрывает
     if(e.target === o) o.classList.remove('show');
   });
 });
@@ -650,14 +690,27 @@ function askConfirm(t, x, yes) {
   const confY = document.getElementById('confY');
   if(confT) confT.textContent = t;
   if(confX) confX.textContent = x;
-  const handler = function() {
-    confY.removeEventListener('click', handler);
-    closeOv('ovConf');
-    yes();
-  };
-  confY.addEventListener('click', handler);
+  if(confY) {
+    // onclick вместо addEventListener: повторные вызовы не накапливают обработчики
+    confY.onclick = function() {
+      confY.onclick = null;
+      closeOv('ovConf');
+      yes();
+    };
+  }
   openOv('ovConf');
 }
+
+/* --- ESC закрывает открытую модалку (кроме обязательных) --- */
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  const openOvs = Array.prototype.slice.call(document.querySelectorAll('.overlay.show'));
+  if(!openOvs.length) return;
+  const top = openOvs[openOvs.length - 1];
+  if(top.id === 'ovPr' || top.id === 'ovOver') return; // обязательные: выбор промо / экран конца
+  e.preventDefault();
+  top.classList.remove('show');
+});
 
 /* --- Тост --- */
 let toastT = null;
@@ -755,7 +808,9 @@ function renderMatchHistory(cu) {
   if(!cu) { histBox.innerHTML = ''; return; }
   const history = cu.matchHistory || [];
   if(history.length === 0) {
-    histBox.innerHTML = '<div style="color:var(--mut);text-align:center;padding:20px;font-size:13px">Пока нет сыгранных матчей</div>';
+    histBox.innerHTML = '<div class="emptyState"><div class="esIc">📜</div>' +
+      '<div class="esTx">Пока нет сыгранных партий' +
+      '<small>Нажмите «Играть» на главном экране — первая партия появится здесь</small></div></div>';
     return;
   }
   histBox.innerHTML = history.slice(-30).reverse().map((h, i) => {
@@ -775,6 +830,26 @@ function renderMatchHistory(cu) {
       '<div style="font-size:11px;color:var(--mut);white-space:nowrap">' + time + '</div>' +
     '</div>';
   }).join('');
+}
+
+/* --- Достижения (профиль → История) --- */
+function renderAchievements(cu) {
+  const box = document.getElementById('achList');
+  if(!box) return;
+  const achs = (typeof window !== 'undefined' && window.ACHS) ? window.ACHS : [];
+  if(!cu || !achs.length) { box.innerHTML = ''; return; }
+  const got = cu.ach || {};
+  const done = achs.filter(a => got[a.id]).length;
+  box.innerHTML = '<div class="achSum">Получено ' + done + ' из ' + achs.length + '</div>' +
+    achs.map(a => {
+      const has = !!got[a.id];
+      return '<div class="achRow' + (has ? ' got' : '') + '">' +
+        '<span class="achIc">' + (has ? '🏆' : '🔒') + '</span>' +
+        '<div class="achTx"><div class="achNm">' + a.name + '</div>' +
+        '<div class="achDs">' + a.desc + '</div></div>' +
+        '<span class="achRw">' + (a.coins ? '+' + a.coins + ' 🪙' : '—') + '</span>' +
+      '</div>';
+    }).join('');
 }
 
 /* --- Просмотр партии --- */

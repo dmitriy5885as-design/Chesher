@@ -161,6 +161,8 @@ class Profile {
       const actual = result === 'win' ? 1 : result === 'draw' ? 0.5 : 0;
       this.ratings[modeId] = Math.round(elo + K * (actual - expected));
     }
+    // Legacy-поле cu.elo — единый источник для профиля/лиги (== ratings.classic, как в plCard)
+    if(typeof this.ratings.classic === 'number') this.elo = this.ratings.classic;
     saveProfiles();
   }
 
@@ -247,6 +249,11 @@ const ProfilesManager = {
       }
     } catch(e) {
       console.error('Ошибка загрузки профилей:', e);
+      // Бэкап битых данных до перезаписи новым профилем
+      try {
+        const bad = localStorage.getItem('chesher_profiles');
+        if(bad) localStorage.setItem('chesher_profiles_corrupt', bad);
+      } catch(e2) {}
     }
     
     // Создать первый профиль если пусто
@@ -272,6 +279,7 @@ const ProfilesManager = {
       localStorage.setItem('chesher_profiles', JSON.stringify(data));
     } catch(e) {
       console.error('Ошибка сохранения профилей:', e);
+      if(typeof toast === 'function') toast('⚠️ Не удалось сохранить прогресс: хранилище переполнено');
     }
   },
 

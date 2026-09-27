@@ -394,6 +394,7 @@ const Store = {
           '<i>' + skin.glyph.w.k + '</i><i>' + skin.glyph.w.q + '</i><i>' + skin.glyph.w.r + '</i><i>' + skin.glyph.w.n + '</i>' +
           '</div>' +
           '<div class="shopItemName">' + skin.name + '</div>' +
+          (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
           '<button class="buyBtn" data-type="skin" data-id="' + id + '">' +
           (isActive ? '✓' : (isOwned ? 'Выбрать' : '🪙 ' + skin.price)) + '</button>';
         grid.appendChild(card);
@@ -410,6 +411,7 @@ const Store = {
           '<i>' + skin.glyph.w.k + '</i><i>' + skin.glyph.w.q + '</i><i>' + skin.glyph.w.r + '</i><i>' + skin.glyph.w.n + '</i>' +
           '</div>' +
           '<div class="shopItemName">' + skin.name + '</div>' +
+          (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
           '<button class="buyBtn" data-type="skin" data-id="' + id + '">' +
           (isActive ? '✓' : (isOwned ? 'Выбрать' : '💎 ' + skin.gemPrice)) + '</button>';
         grid.appendChild(card);
@@ -425,6 +427,7 @@ const Store = {
           '<div class="boardMini" style="background:linear-gradient(135deg,' + b.light + ' 25%,' + b.dark + ' 25%,' + b.dark + ' 50%,' + b.light + ' 50%,' + b.light + ' 75%,' + b.dark + ' 75%);background-size:20px 20px"></div>' +
           '</div>' +
           '<div class="shopItemName">' + b.name + '</div>' +
+          (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
           '<button class="buyBtn" data-type="board" data-id="' + id + '">' +
           (isActive ? '✓' : (isOwned ? 'Выбрать' : '🪙 ' + b.price)) + '</button>';
         grid.appendChild(card);
@@ -450,6 +453,7 @@ const Store = {
         card.className = 'shopItem' + (isActive ? ' active' : '');
         card.innerHTML = '<div class="shopItemPreview avatarPrev">' + a.emoji + '</div>' +
           '<div class="shopItemName">' + a.name + '</div>' +
+          (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
           '<button class="buyBtn" data-type="avatar" data-id="' + id + '">' +
           (isActive ? '✓' : (isOwned ? 'Выбрать' : '🪙 ' + a.price)) + '</button>';
         grid.appendChild(card);
@@ -494,6 +498,15 @@ const Store = {
       const profile = Store.getCurrentProfile();
       if(!profile) return;
 
+      const lackCoins = (price) => {
+        const need = Math.max((price || 0) - (profile.coins || 0), 0);
+        toast(need > 0 ? 'Не хватает ' + need + ' 🪙' : 'Не хватает монет!');
+      };
+      const lackGems = (price) => {
+        const need = Math.max((price || 0) - (profile.gems || 0), 0);
+        toast(need > 0 ? 'Не хватает ' + need + ' 💎' : 'Не хватает кристаллов!');
+      };
+
       if(type === 'skin') {
         const skin = SKINS[id];
         if(profile.owned.includes(id)) {
@@ -505,19 +518,19 @@ const Store = {
           return;
         }
         if(skin.gem) {
-          if((profile.gems || 0) < skin.gemPrice) { toast('Не хватает кристаллов!'); return; }
+          if((profile.gems || 0) < skin.gemPrice) { lackGems(skin.gemPrice); return; }
           profile.spendGems(skin.gemPrice);
-          if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
-            Promise.resolve(ChesAuth.updateProfile({ gems: profile.gems, owned: profile.owned })).catch(() => {});
-          }
           if(typeof Analytics !== 'undefined') Analytics.track('purchase_gem_item', { id: id, price: skin.gemPrice });
           renderCoins();
         } else {
-          if(!Store.spendCoins(skin.price)) { toast('Не хватает монет!'); return; }
+          if(!Store.spendCoins(skin.price)) { lackCoins(skin.price); return; }
           if(typeof Analytics !== 'undefined') Analytics.track('purchase_coin_item', { id: id, price: skin.price });
         }
         profile.owned.push(id);
         saveProfiles();
+        if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+          Promise.resolve(ChesAuth.updateProfile({ gems: profile.gems, owned: profile.owned })).catch(() => {});
+        }
         cfg.skin = id;
         saveCfg();
         Store.renderShop();
@@ -537,13 +550,16 @@ const Store = {
         if(Store.spendCoins(board.price)) {
           profile.owned.push(ownedKey);
           saveProfiles();
+          if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+            Promise.resolve(ChesAuth.updateProfile({ owned: profile.owned })).catch(() => {});
+          }
           cfg.board = id;
           saveCfg();
           Store.renderShop();
           toast('Куплена доска "' + board.name + '"!');
           snd.win();
         } else {
-          toast('Не хватает монет!');
+          lackCoins(board.price);
         }
       } else if(type === 'sticker') {
         const sticker = STICKERS[id];
@@ -555,11 +571,14 @@ const Store = {
         if(Store.spendCoins(sticker.price)) {
           profile.owned.push(ownedKey);
           saveProfiles();
+          if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+            Promise.resolve(ChesAuth.updateProfile({ owned: profile.owned })).catch(() => {});
+          }
           Store.renderShop();
           toast('Куплен стикер "' + sticker.name + '"!');
           snd.win();
         } else {
-          toast('Не хватает монет!');
+          lackCoins(sticker.price);
         }
       } else if(type === 'avatar') {
         const avatar = AVATARS[id];
@@ -576,6 +595,9 @@ const Store = {
         if(Store.spendCoins(avatar.price)) {
           profile.owned.push(ownedKey);
           saveProfiles();
+          if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+            Promise.resolve(ChesAuth.updateProfile({ owned: profile.owned })).catch(() => {});
+          }
           profile.ava = avatar.emoji;
           saveProfiles();
           Store.renderShop();
@@ -583,7 +605,7 @@ const Store = {
           toast('Куплена аватарка "' + avatar.name + '"!');
           snd.win();
         } else {
-          toast('Не хватает монет!');
+          lackCoins(avatar.price);
         }
       }
     };

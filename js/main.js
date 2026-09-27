@@ -24,42 +24,25 @@ function G(color, type) {
 }
 
 /* --- Показать экран --- */
-function showScreen(id) {
+let _navStack = [];
+function showScreen(id, opts) {
+  const cur = document.querySelector('.screen.show');
+  if(id === 'scrMenu') {
+    _navStack = [];
+  } else if(!(opts && opts.back) && cur && cur.id !== id) {
+    _navStack.push(cur.id);
+    if(_navStack.length > 12) _navStack.shift();
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
   const el = document.getElementById(id);
   if(el) el.classList.add('show');
 
+  if(id !== 'scrPlay') document.body.classList.remove('chat-open');
   if(id === 'scrMenu') exitFullscreenMobile();
 
   if(typeof Analytics !== 'undefined') Analytics.screen(id);
 
-  // Devblog button only on main menu
-  const cornerFloat = document.getElementById('cornerFloat');
-  if(cornerFloat) cornerFloat.style.display = id === 'scrMenu' ? '' : 'none';
-  const helpBtn = document.getElementById('helpBtn');
-  if(helpBtn) helpBtn.style.display = id === 'scrMenu' ? '' : 'none';
-  const giftBtn = document.getElementById('giftBtn');
-  if(giftBtn) giftBtn.style.display = id === 'scrMenu' ? '' : 'none';
-  const devblogBtnEl = document.getElementById('devblogBtn');
-  if(devblogBtnEl) devblogBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
-  const feedbackBtnEl = document.getElementById('feedbackBtn');
-  if(feedbackBtnEl) feedbackBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
-  const phoneBtnEl = document.getElementById('phoneBtn');
-  if(phoneBtnEl) phoneBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
-  const qrBtnEl = document.getElementById('qrBtn');
-  if(qrBtnEl) qrBtnEl.style.display = id === 'scrMenu' ? '' : 'none';
-  const friendsBtn = document.getElementById('friendsFloatBtn');
-  if(friendsBtn) friendsBtn.style.display = id === 'scrMenu' ? '' : 'none';
-  if(id !== 'scrMenu') {
-    const fp = document.getElementById('friendsPanel');
-    const fc = document.getElementById('friendChatPanel');
-    if(fp) fp.classList.remove('open');
-    if(fc) fc.classList.remove('open');
-  }
-  const chBtn = document.getElementById('cheatBtn');
-  const chPanel = document.getElementById('cheatPanel');
-  if(chBtn && id !== 'scrMenu') chBtn.style.display = 'none';
-  if(chPanel) chPanel.classList.remove('show');
+  applyScreenChrome(id);
 
   // Refresh screen-specific content
   if(id === 'scrMenu') {
@@ -89,6 +72,26 @@ function showScreen(id) {
 }
 window.showScreen = showScreen;
 
+/* --- Плавающие кнопки/панели: видны только в главном меню --- */
+function applyScreenChrome(id) {
+  const isMenu = id === 'scrMenu';
+  const floatIds = ['cornerFloat', 'helpBtn', 'giftBtn', 'devblogBtn', 'feedbackBtn', 'phoneBtn', 'qrBtn', 'friendsFloatBtn'];
+  for(let i = 0; i < floatIds.length; i++) {
+    const el = document.getElementById(floatIds[i]);
+    if(el) el.style.display = isMenu ? '' : 'none';
+  }
+  if(!isMenu) {
+    const fp = document.getElementById('friendsPanel');
+    const fc = document.getElementById('friendChatPanel');
+    if(fp) fp.classList.remove('open');
+    if(fc) fc.classList.remove('open');
+  }
+  const chBtn = document.getElementById('cheatBtn');
+  const chPanel = document.getElementById('cheatPanel');
+  if(chBtn && !isMenu) chBtn.style.display = 'none';
+  if(chPanel) chPanel.classList.remove('show');
+}
+
 /* --- Список режимов --- */
 let selectedModeId = null;
 
@@ -98,6 +101,8 @@ function renderModeList() {
   
   if(!modesBox) return;
   modesBox.innerHTML = '';
+  modesBox.style.display = '';
+  if(modesCfg) modesCfg.style.display = 'none';
   
   MODES.forEach(m => {
     const d = document.createElement('div');
@@ -106,37 +111,42 @@ function renderModeList() {
     d.innerHTML = '<div class="ic">' + m.icon + '</div>' +
       '<div class="tx"><div class="nm">' + m.name + '</div>' +
       '<div class="ds">' + m.desc + '</div></div>' + tag;
-    d.addEventListener('click', () => {
-      selectedModeId = m.id;
-      cfg.modeId = m.id;
-      cfg.gameMode = m.id === 'bot' ? 'bot' : m.id === 'fischer' ? 'fischer' : m.id === 'puzzle' ? 'puzzle' : m.id;
-      if(m.id === 'bot' || m.id === 'fischer') {
-        modesBox.style.display = 'none';
-        showBotSelection();
-      } else if(m.id === 'ranked') {
-        modesBox.style.display = 'none';
-        _lobbyCfg.ranked = true;
-        showRankedScreen();
-      } else if(m.id === 'multiplayer') {
-        modesBox.style.display = 'none';
-        _lobbyCfg.ranked = false;
-        showMultiplayerMenu();
-      } else if(m.id === 'puzzle') {
-        modesBox.style.display = 'none';
-        startPuzzle();
-      } else if(m.id === 'tournament') {
-        modesBox.style.display = 'none';
-        showTournamentScreen();
-      } else {
-        modesBox.style.display = 'none';
-        if(modesCfg) {
-          modesCfg.style.display = '';
-          buildModesCfg(m.id);
-        }
-      }
-    });
+    d.addEventListener('click', () => selectMode(m.id));
     modesBox.appendChild(d);
   });
+}
+
+/* --- Выбор режима (из карточек и из главного меню) --- */
+function selectMode(id) {
+  selectedModeId = id;
+  cfg.modeId = id;
+  cfg.gameMode = id === 'bot' ? 'bot' : id === 'fischer' ? 'fischer' : id === 'puzzle' ? 'puzzle' : id;
+  const modesBox = document.getElementById('modesList');
+  const modesCfg = document.getElementById('modesCfg');
+  if(id === 'bot' || id === 'fischer') {
+    if(modesBox) modesBox.style.display = 'none';
+    showBotSelection();
+  } else if(id === 'ranked') {
+    if(modesBox) modesBox.style.display = 'none';
+    _lobbyCfg.ranked = true;
+    showRankedScreen();
+  } else if(id === 'multiplayer') {
+    if(modesBox) modesBox.style.display = 'none';
+    _lobbyCfg.ranked = false;
+    showMultiplayerMenu();
+  } else if(id === 'puzzle') {
+    if(modesBox) modesBox.style.display = 'none';
+    startPuzzle();
+  } else if(id === 'tournament') {
+    if(modesBox) modesBox.style.display = 'none';
+    showTournamentScreen();
+  } else {
+    if(modesBox) modesBox.style.display = 'none';
+    if(modesCfg) {
+      modesCfg.style.display = '';
+      buildModesCfg(id);
+    }
+  }
 }
 
 /* --- Экран выбора бота --- */
@@ -883,6 +893,8 @@ function hideAllScreens() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
   const dbBtn = document.getElementById('devblogBtn');
   if(dbBtn) dbBtn.style.display = 'none';
+  applyScreenChrome(null);
+  document.body.classList.remove('chat-open');
 }
 
 /* --- Советы на главном экране --- */
@@ -982,7 +994,6 @@ function newGame() {
   legalCache = [];
   hintMove = null;
   pendingPromo = null;
-  _clearPremove();
   takenByW = [];
   takenByB = [];
   gameMoves = [];
@@ -1054,6 +1065,7 @@ function newGame() {
   } else {
     S.clockOn = false;
     S.time = null;
+    stopClock();
   }
   updateClockUI();
   fullscreenOnMobile();
@@ -1160,7 +1172,7 @@ function endGame(reason, winnerColor, drawReason) {
 
   // Турнир — свой поток завершения (без эло/меню)
   if(_tournamentActive && _tournament) {
-    _tournamentOnEnd(result);
+    try { _tournamentOnEnd(result); } catch(e) { console.error('Турнир: ошибка завершения раунда:', e); }
     return;
   }
 
@@ -1218,6 +1230,17 @@ function endGame(reason, winnerColor, drawReason) {
     }
   }
   if(goS) goS.textContent = reasons[drawReason] || reasons[reason] || '';
+  const goStats = document.getElementById('goStats');
+  if(goStats) {
+    const chips = [];
+    if(eloChange > 0) chips.push('<span class="gsPos">+' + eloChange + ' ELO</span>');
+    else if(eloChange < 0) chips.push('<span class="gsNeg">' + eloChange + ' ELO</span>');
+    if(result === 'win' && (cu.streak || 0) > 1) chips.push('<span class="gsStreak">🔥 серия ' + cu.streak + '</span>');
+    if(result === 'win') chips.push('<span class="gsCoin">🪙 +10</span>');
+    else if(result === 'draw') chips.push('<span class="gsCoin">🪙 +3</span>');
+    goStats.innerHTML = chips.join('');
+    goStats.style.display = chips.length ? '' : 'none';
+  }
   openOv('ovOver');
   // Rematch button only for network games with a live lobby
   const rematchBtn = document.getElementById('overRematch');
@@ -1227,7 +1250,6 @@ function endGame(reason, winnerColor, drawReason) {
       (reason === 'checkmate' || reason === 'resign' || reason === 'timeout' || reason === 'stalemate' || reason === 'draw' || reason === 'repetition' || reason === 'insufficient' || reason === '50-move');
     rematchBtn.style.display = canRematch ? '' : 'none';
   }
-  snd[result === 'win' ? 'win' : result === 'loss' ? 'lose' : 'draw']();
   renderStats();
   renderProfBar();
 
@@ -1287,12 +1309,7 @@ function onSquareClick(e) {
   if(_suppressClickTs && Date.now() - _suppressClickTs < 500) return;
   if(!S || S.gameOver) return;
   if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return;
-  if(S.turn !== S.humanColor) {
-    if(cfg.gameMode !== 'local' && ((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') || cfg.bot !== 'off')) {
-      _premoveClick(e);
-    }
-    return;
-  }
+  if(S.turn !== S.humanColor) return;
   if(isBotThinking) return;
 
   const sq = e.currentTarget;
@@ -1348,79 +1365,6 @@ function onSquareClick(e) {
     snd.ui();
     paintMarks();
   }
-}
-
-/* --- Premove (заготовленный ход, когда ход соперника/бота) --- */
-let premove = null;   // {fr, fc, tr, tc, promo}
-let preSel = null;    // {r, c} — выбранная «откуда» фигура в режиме премува
-
-function _canPremove() {
-  if(!S || S.gameOver) return false;
-  if(cfg.gameMode === 'local') return false;
-  if(S.turn === S.humanColor) return false;
-  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return false;
-  return true;
-}
-
-function _uciName(r, c) {
-  const files = 'abcdefgh';
-  return files[c] + (8 - r);
-}
-
-function _premoveClick(e) {
-  const sq = e.currentTarget;
-  const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
-  const piece = S.board[r][c];
-
-  // Тап по уже заготовленному премуву — снять
-  if(premove && ((premove.fr === r && premove.fc === c) || (premove.tr === r && premove.tc === c))) {
-    premove = null;
-    preSel = null;
-    paintMarks();
-    return;
-  }
-
-  // Тап по своей фигуре — выбрать её как «откуда»
-  if(piece && pieceColorStatic(piece) === S.humanColor) {
-    preSel = {r, c};
-    premove = null;
-    snd.ui();
-    paintMarks();
-    return;
-  }
-
-  // Тап по клетке — поставить премув
-  if(preSel) {
-    premove = { fr: preSel.r, fc: preSel.c, tr: r, tc: c, promo: null };
-    preSel = null;
-    snd.ui();
-    paintMarks();
-    toast('⏱ Премув: ' + _uciName(premove.fr, premove.fc) + ' → ' + _uciName(premove.tr, premove.tc));
-  }
-}
-
-function _tryPremove() {
-  if(!premove) return;
-  if(!S || S.gameOver) { premove = null; preSel = null; paintMarks(); return; }
-  if(S.turn !== S.humanColor) return;
-  const p = premove;
-  premove = null;
-  preSel = null;
-  const legal = S.getLegalMoves(p.fr, p.fc);
-  const mv = legal.find(m => m.tr === p.tr && m.tc === p.tc);
-  if(!mv) {
-    paintMarks();
-    toast('Премув не прошёл — позиция изменилась');
-    return;
-  }
-  if(mv.promo) mv.promo = 'q';
-  executeMove(mv);
-}
-
-function _clearPremove() {
-  premove = null;
-  preSel = null;
-  if(typeof paintMarks === 'function') paintMarks();
 }
 
 /* --- Вибро-отклик / полноэкранный режим на мобильном --- */
@@ -1544,11 +1488,11 @@ function startPuzzle() {
   window._mpReplaySkip = 0;
   lastMove = null; selected = null; legalCache = []; hintMove = null; pendingPromo = null;
   hintsLeft = 2; undosLeft = 3;
-  _clearPremove();
   takenByW = []; takenByB = [];
   isBotThinking = false;
   cfg.timeSec = 0;
   S.clockOn = false; S.time = null; S.mpClock = null;
+  stopClock();
 
   if(cfg.board && BOARDS[cfg.board]) {
     const b = BOARDS[cfg.board];
@@ -1594,7 +1538,6 @@ function _puzzleReload() {
   if(S) S.loadFen(fen.fen);
   gameMoves = [];
   lastMove = null; selected = null; legalCache = []; hintMove = null;
-  _clearPremove();
   const movesEl = document.getElementById('moves');
   if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
   fullRender();
@@ -1708,6 +1651,7 @@ function startTournament(size) {
 }
 
 function _tournamentPlayMatch() {
+  if(!_tournamentActive) return;
   const t = _tournament;
   if(!t || !t.cur) return;
   const cur = t.cur;
@@ -1783,6 +1727,13 @@ function _tournamentWinFinal() {
   _tournamentShowEnd('win', 25, 'Финал');
 }
 
+function _tournamentAbort() {
+  if(_tournamentActive) {
+    _tournamentActive = false;
+    _activeBotOverride = null;
+  }
+}
+
 function _tournamentShowEnd(kind, reward, label) {
   const cu = ProfilesManager.getCurrent();
   let gained = 0;
@@ -1847,17 +1798,16 @@ function initBoardPointer() {
   grid.dataset.mdrag = '1';
 
   grid.addEventListener('pointerdown', e => {
-    if(!_canTouchBoard() && !_canPremove()) return;
+    if(!_canTouchBoard()) return;
     const sq = e.target.closest('.sq');
     if(!sq) return;
     const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
     const piece = S.board[r][c];
     const myCol = S.turn === S.humanColor ? S.turn : S.humanColor;
     if(!piece || pieceColorStatic(piece) !== myCol) return;
-    const pm = S.turn !== S.humanColor;
     // Никакого setPointerCapture на тапе: обычный клик должен дойти до onSquareClick
     // (клик-клик: выбрать фигуру -> показать пути -> нажать клетку)
-    _drag = { r, c, x: e.clientX, y: e.clientY, t0: Date.now(), dragging: false, srcEl: _findPieceEl(r, c), ghost: null, pmove: pm };
+    _drag = { r, c, x: e.clientX, y: e.clientY, t0: Date.now(), dragging: false, srcEl: _findPieceEl(r, c), ghost: null };
   });
 
   grid.addEventListener('pointermove', e => {
@@ -1923,16 +1873,6 @@ function initBoardPointer() {
     const sq = el ? el.closest('.sq') : null;
     if(!sq) return;
     const r = parseInt(sq.dataset.r), c = parseInt(sq.dataset.c);
-
-    // Премув драгом (не наш ход) — заготовить ход, не ходить
-    if(drag.pmove) {
-      premove = { fr: drag.r, fc: drag.c, tr: r, tc: c, promo: null };
-      preSel = null;
-      snd.ui();
-      paintMarks();
-      toast('⏱ Премув: ' + _uciName(premove.fr, premove.fc) + ' → ' + _uciName(premove.tr, premove.tc));
-      return;
-    }
 
     const move = legalCache.find(m => m.fr === drag.r && m.fc === drag.c && m.tr === r && m.tc === c);
     if(!move) return;
@@ -2188,9 +2128,6 @@ function executeMove(move) {
 
   fullRender();
 
-  // Premove: авто-ход сразу после хода соперника/бота
-  _tryPremove();
-
   // Save game state
   if(S && !S.gameOver) S.saveToStorage();
 
@@ -2332,18 +2269,22 @@ function undoMove() {
   if(undosLeft <= 0) { toast('Отмены закончились'); return; }
   undosLeft--;
   const hadBot = cfg.bot !== 'off';
+  const beforeLen = S.moveHistory.length;
   S.undoLastMove();
-  if(hadBot && S.moveHistory.length > 0) S.undoLastMove();
-  if(hadBot && S.moveHistory.length > 0) S.undoLastMove();
+  // в игре с ботом откатываем до своего хода (свой + ответ бота, максимум 2 полухода)
+  let guard = 0;
+  while(hadBot && S.turn !== S.humanColor && S.moveHistory.length > 0 && guard < 2) {
+    S.undoLastMove();
+    guard++;
+  }
+  const removed = beforeLen - S.moveHistory.length;
   lastMove = null;
   selected = null;
   legalCache = [];
   hintMove = null;
-  if(typeof _clearPremove === 'function') _clearPremove();
   const movesEl = document.getElementById('moves');
   if(movesEl) {
-    const toRemove = hadBot ? 3 : 1;
-    for(let i = 0; i < toRemove; i++) {
+    for(let i = 0; i < removed; i++) {
       if(movesEl.lastChild && movesEl.lastChild.id !== 'noMoves') {
         movesEl.removeChild(movesEl.lastChild);
       }
@@ -2943,6 +2884,7 @@ hideAllScreens();
     S.clockOn = false;
     S.time = null;
     S.mpClock = null;
+    stopClock();
   }
   updateClockUI();
   fullscreenOnMobile();
@@ -3047,15 +2989,22 @@ function resumeGame() {
   }
   
   // Create engine and restore state
-  S = new ChessEngine(savedGame.state.variant || 'classic');
-  S.restoreState(savedGame.state);
-  
-  // Restore move history
-  if(savedGame.moveHistory) {
-    S.moveHistory = savedGame.moveHistory;
-  }
-  if(savedGame.positionHistory) {
-    S.positionHistory = savedGame.positionHistory;
+  try {
+    S = new ChessEngine(savedGame.state.variant || 'classic');
+    S.restoreState(savedGame.state);
+
+    // Restore move history
+    if(savedGame.moveHistory) {
+      S.moveHistory = savedGame.moveHistory;
+    }
+    if(savedGame.positionHistory) {
+      S.positionHistory = savedGame.positionHistory;
+    }
+  } catch(e) {
+    console.error('Ошибка восстановления сохранённой игры:', e);
+    try { ChessEngine.clearStorage(); } catch(e2) {}
+    toast('⚠️ Сохранённая игра повреждена');
+    return;
   }
   
   lastMove = null;
@@ -3093,6 +3042,14 @@ function resumeGame() {
   hideAllScreens();
   toast('Игра восстановлена');
   refreshModeLabel();
+
+  // Если сохранён ход бота — он должен ответить после восстановления
+  if((cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off' &&
+     S.turn !== S.humanColor && !S.gameOver) {
+    const sl = document.getElementById('statusLine');
+    if(sl) sl.textContent = '🤖 Бот думает...';
+    setTimeout(botMove, 800 + Math.random() * 1200);
+  }
 }
 
 /* --- Восстановление мультиплеерной игры --- */
@@ -3212,6 +3169,7 @@ async function resumeMultiplayer(savedGame) {
     S.clockOn = false;
     S.time = null;
     S.mpClock = null;
+    stopClock();
   }
   updateClockUI();
 
@@ -3482,6 +3440,10 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Партия завершена');
   });
   bind('mModes', () => { showScreen('scrModes'); showModesList(); });
+  bind('mQuick', () => { showScreen('scrModes'); showModesList(); selectMode('bot'); });
+  bind('mMeme', () => { showScreen('scrModes'); showModesList(); selectMode('meme'); });
+  bind('mPuzzle', () => { showScreen('scrModes'); showModesList(); selectMode('puzzle'); });
+  bind('mTournament', () => { showScreen('scrModes'); showModesList(); selectMode('tournament'); });
   bind('mShop', () => showScreen('scrShop'));
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
@@ -3713,6 +3675,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatId = [ChesAuth.getUid(), uid].sort().join('_');
     const chatRef = firebaseRtdb ? firebaseRtdb.ref('friendChats/' + chatId) : null;
 
+    // Отписка от предыдущего чата (переключение между друзьями без закрытия панели)
+    if(_fcChatUnsub) { _fcChatUnsub(); _fcChatUnsub = null; }
+
     if(chatRef) {
       chatRef.limitToLast(50).on('value', snap => {
         const data = snap.val() || {};
@@ -3843,7 +3808,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const spans = deco.querySelectorAll('span');
     if(!spans.length) return;
 
-    const saved = JSON.parse(localStorage.getItem('chesher_deco_pos') || 'null');
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('chesher_deco_pos') || 'null'); } catch(e) { saved = null; }
     const placed = saved || [];
 
     spans.forEach((el, i) => {
@@ -3930,7 +3896,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Game screen
   bind('btnNew', () => { askConfirm('Новая игра?', 'Текущая партия будет потеряна', () => { newGame(); hideAllScreens(); }); });
-  bind('btnGoMenu', () => { backToGame = false; showScreen('scrMenu'); });
+  bind('btnGoMenu', () => { backToGame = false; _tournamentAbort(); showScreen('scrMenu'); });
   bind('btnSet', () => { backToGame = !!(typeof S !== 'undefined' && S && !S.gameOver); showScreen('scrSet'); });
   bind('btnHint', () => showHint());
   bind('btnUndo', () => undoMove());
@@ -3947,7 +3913,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Game over overlay
   bind('overNew', () => { closeAllOverlays(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); newGame(); hideAllScreens(); });
   bind('overRematch', () => { requestRematchGame(); });
-  bind('overMenu', () => { backToGame = false; closeAllOverlays(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); showScreen('scrMenu'); });
+  bind('overReplay', () => {
+    const cu = ProfilesManager.getCurrent();
+    const idx = cu && cu.matchHistory ? cu.matchHistory.length - 1 : -1;
+    closeAllOverlays();
+    if(idx >= 0) openReplay(idx);
+    else toast('Для этой партии нет записи ходов');
+  });
+  bind('overMenu', () => { backToGame = false; closeAllOverlays(); _tournamentAbort(); if(typeof ChesMP !== 'undefined' && typeof ChesMP.leaveLobby === 'function') ChesMP.leaveLobby(); showScreen('scrMenu'); });
 
   // Settings
   bind('setApply', () => { saveCfg(); newGame(); hideAllScreens(); });
@@ -3996,16 +3969,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const currentScreen = document.querySelector('.screen.show');
-      if(currentScreen && currentScreen.id === 'scrBots') {
-        showScreen('scrModes');
-        showModesList();
-      } else {
+      if(currentScreen && currentScreen.id === 'scrModes') {
         const modesCfg = document.getElementById('modesCfg');
         if(modesCfg && modesCfg.style.display !== 'none') {
           showModesList();
         } else {
-          showScreen('scrMenu');
+          const prev = _navStack.pop();
+          if(prev) showScreen(prev, { back: true });
+          else showScreen('scrMenu');
         }
+      } else {
+        const prev = _navStack.pop();
+        if(prev) showScreen(prev, { back: true });
+        else showScreen('scrMenu');
       }
       renderProfBar();
     });
@@ -4187,7 +4163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.14').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.16').catch(() => {});
     });
   }
 });
