@@ -3421,15 +3421,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Build board and start
   showScreen('scrMenu');
 
-  // Daily bonus
-  const _profile = ProfilesManager.getCurrent();
-  if(_profile && _profile.checkDailyBonus) {
-    const got = _profile.checkDailyBonus();
-    if(got) {
+  // Daily bonus — только для вошедших в аккаунт:
+  // гости и анонимы монет не получают, поэтому и тост не показываем
+  function tryDailyBonus() {
+    if(!ChesAuth.user || ChesAuth.user.isAnonymous) return;
+    const p = ProfilesManager.getCurrent();
+    if(p && p.checkDailyBonus && p.checkDailyBonus()) {
       setTimeout(() => toast('🎁 Ежедневный бонус: +25 🪙'), 450);
-      if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('daily', 25);
+      if(ChesAuth.awardCoins) ChesAuth.awardCoins('daily', 25);
     }
   }
+  ChesAuth.onAuthChange(user => {
+    if(user && !user.isAnonymous) tryDailyBonus();
+  });
 
   refreshModeLabel();
   renderProfBar();
@@ -3472,7 +3476,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bind('mShop', () => showScreen('scrShop'));
   bind('mLeaderboard', () => { showScreen('scrLeaderboard'); renderLeaderboard(); });
   bind('mSettings', () => showScreen('scrSet'));
-  bind('helpBtn', () => { toast('Раздел помощи скоро будет доступен!'); });
+  bind('helpBtn', () => openOv('ovHelp'));
 
   // Mobile mode toggle
   const phoneBtn = document.getElementById('phoneBtn');
@@ -4174,7 +4178,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.12').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.13').catch(() => {});
     });
   }
 });

@@ -15,10 +15,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
   
   <!-- Main Styles -->
-  <link rel="stylesheet" href="css/main.css?v=0.38.12">
+  <link rel="stylesheet" href="css/main.css?v=0.38.13">
   
   <!-- Animations -->
-  <link rel="stylesheet" href="css/animations.css?v=0.38.12">
+  <link rel="stylesheet" href="css/animations.css?v=0.38.13">
 
 </head>
 <body>
@@ -61,7 +61,7 @@
       </div>
     </div>
     <div class="tipBox" id="tipBox"></div>
-    <div class="menuFoot">CHESHER v0.23.20 alpha</div>
+    <div class="menuFoot">CHESHER v0.23.21 alpha</div>
   </div>
   
   <!-- ================= ЭКРАН: ПРОФИЛЬ ================= -->
@@ -585,6 +585,63 @@
     </div>
     <div id="feedbackStatus" style="color:var(--green);font-size:12px;margin-top:8px;text-align:center"></div>
   </div></div>
+
+  <!-- Оверлей: Помощь / Как играть -->
+  <div class="overlay" id="ovHelp"><div class="modal" style="max-width:560px;max-height:86vh;overflow-y:auto">
+    <h2 style="margin:0 0 10px">❓ Как играть</h2>
+
+    <div class="helpSec">
+      <div class="helpH">♟ Основы</div>
+      <p>Цель — поставить мат королю соперника. Ходите фигурой: нажмите её, затем клетку (или перетащите). Белые ходят первыми.</p>
+      <ul>
+        <li><b>💡</b> — подсказка: показать сильный ход</li>
+        <li><b>↩️</b> — вернуть ход (в партии с ботом)</li>
+        <li><b>⚡ Премув</b> — заготовьте ход заранее: он сделает его сразу после ответа соперника</li>
+        <li><b>📱</b> — переключатель компактного мобильного вида</li>
+      </ul>
+    </div>
+
+    <div class="helpSec">
+      <div class="helpH">▶ Режимы</div>
+      <ul>
+        <li><b>♟ Играть</b> — сетевая партия: создайте лобби и поделитесь кодом или QR, либо введите код друга</li>
+        <li><b>☰ Режимы</b> — против бота (несколько уровней), Фишер 960, Мемасия, локальный матч вдвоём за одним экраном</li>
+        <li><b>🧩 Задачка дня</b> — решите тактическую загадку и получите монеты</li>
+        <li><b>🏆 Турнир</b> — сетка на выбывание против ботов с призами за раунды</li>
+      </ul>
+    </div>
+
+    <div class="helpSec">
+      <div class="helpH">🌐 Сетевая игра и друзья</div>
+      <ul>
+        <li>«Создать лобби» → отправьте другу код из 6 символов или покажите QR-код</li>
+        <li>«Присоединиться» → введите код, который прислал друг</li>
+        <li><b>Друзья:</b> найдите игрока по нику или ID (вида CHS-XXXX), отправьте заявку — и общайтесь в чате, и приглашайте в партии</li>
+        <li><b>Вход через Google</b> — прогресс, рейтинг и покупки сохраняются на всех устройствах. Гости и анонимные игроки играют локально: прогресс хранится только на этом устройстве</li>
+      </ul>
+    </div>
+
+    <div class="helpSec">
+      <div class="helpH">🪙 Валюты и награды</div>
+      <ul>
+        <li><b>🪙 Монеты</b> — игровая валюта: победы, ничьи, задачки, достижения, ежедневный бонус и подарок (для вошедших в аккаунт). Тратятся на скины и доски в магазине</li>
+        <li><b>💎 Кристаллы</b> — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере</li>
+        <li><b>🏆 Рейтинг (ELO)</b> растёт за победы и отображается в таблице лидеров</li>
+      </ul>
+    </div>
+
+    <div class="helpSec">
+      <div class="helpH">💡 Советы</div>
+      <ul>
+        <li>Забирайте ежедневный подарок 🎁 на главном экране</li>
+        <li>Серия побед открывает достижения с наградами</li>
+        <li>В настройках можно включить звуки, тему и подсказки</li>
+        <li>Не уверены в ходе — откройте подсказку 💡 или отмените последний ход ↩️</li>
+      </ul>
+    </div>
+
+    <button class="btn primary" data-close="ovHelp" style="width:100%;margin-top:14px">Понятно, играю!</button>
+  </div></div>
   
   <!-- Firebase SDK -->
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
@@ -594,23 +651,23 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-functions-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
-  <script defer src="js/chess-logic.js?v=0.38.12"></script>
-  <script defer src="js/bot.js?v=0.38.12"></script>
-  <script defer src="js/elo.js?v=0.38.12"></script>
-  <script defer src="js/profile.js?v=0.38.12"></script>
-  <script defer src="js/ui.js?v=0.38.12"></script>
-  <script defer src="js/chat.js?v=0.38.12"></script>
-  <script defer src="js/store.js?v=0.38.12"></script>
-  <script defer src="js/settings.js?v=0.38.12"></script>
-  <script defer src="js/meme/MemeEventBus.js?v=0.38.12"></script>
-  <script defer src="js/meme/MemeConfig.js?v=0.38.12"></script>
-  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.12"></script>
-  <script defer src="js/firebase-config.js?v=0.38.12"></script>
-  <script defer src="js/auth.js?v=0.38.12"></script>
-  <script defer src="js/friends.js?v=0.38.12"></script>
-  <script defer src="js/multiplayer.js?v=0.38.12"></script>
-  <script defer src="js/net-ui.js?v=0.38.12"></script>
-  <script defer src="js/analytics.js?v=0.38.12"></script>
+  <script defer src="js/chess-logic.js?v=0.38.13"></script>
+  <script defer src="js/bot.js?v=0.38.13"></script>
+  <script defer src="js/elo.js?v=0.38.13"></script>
+  <script defer src="js/profile.js?v=0.38.13"></script>
+  <script defer src="js/ui.js?v=0.38.13"></script>
+  <script defer src="js/chat.js?v=0.38.13"></script>
+  <script defer src="js/store.js?v=0.38.13"></script>
+  <script defer src="js/settings.js?v=0.38.13"></script>
+  <script defer src="js/meme/MemeEventBus.js?v=0.38.13"></script>
+  <script defer src="js/meme/MemeConfig.js?v=0.38.13"></script>
+  <script defer src="js/meme/MemeThreatHandler.js?v=0.38.13"></script>
+  <script defer src="js/firebase-config.js?v=0.38.13"></script>
+  <script defer src="js/auth.js?v=0.38.13"></script>
+  <script defer src="js/friends.js?v=0.38.13"></script>
+  <script defer src="js/multiplayer.js?v=0.38.13"></script>
+  <script defer src="js/net-ui.js?v=0.38.13"></script>
+  <script defer src="js/analytics.js?v=0.38.13"></script>
   <!-- ================= ЭКРАН: ДЕВ-БЛОГ ================= -->
   <div class="screen" id="scrDevblog">
     <div class="scrHead">
@@ -716,7 +773,7 @@
     </div>
   </div>
   
-  <script defer src="js/main.js?v=0.38.12"></script>
+  <script defer src="js/main.js?v=0.38.13"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>
