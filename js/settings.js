@@ -512,11 +512,12 @@ function buildMemeSegInner(box, group) {
   resetBtn.className = 'mBtn';
   resetBtn.textContent = '↺ Сбросить все видео';
   resetBtn.addEventListener('click', function() {
-    if(!confirm('Сбросить все назначенные видео?')) return;
-    MemeConfig.resetVideoPresets();
-    renderCards();
-    renderDetail();
-    toast('Видео сброшены');
+    askConfirm('Сбросить все видео?', 'Все назначенные мем-видео вернутся к стандартным.', function() {
+      MemeConfig.resetVideoPresets();
+      renderCards();
+      renderDetail();
+      toast('Видео сброшены');
+    }, 'Сбросить');
   });
   btnsRow.appendChild(resetBtn);
 
@@ -748,24 +749,25 @@ function loadCfg() {
 
 /* --- Сброс всех данных --- */
 function resetAllData() {
-  if(confirm('Сбросить ВСЁ данные?\n- Профили\n- Статистику\n- Монеты\n- Настройки\n- Сохраненные игры')) {
-    localStorage.removeItem('chesher_profiles');
-    localStorage.removeItem('chesher_cfg');
-    localStorage.removeItem('chesher_save');
-    localStorage.removeItem('chesher_guest_id');
-    localStorage.removeItem('chesher_pending_fns');
-    localStorage.removeItem('chesher_daily_gift');
-    localStorage.removeItem('chesher_guest_name_changed');
-    localStorage.removeItem('chesher_meme_cfg');
-    localStorage.removeItem('chesher_deco_pos');
-    localStorage.removeItem('chesher_mobile');
-    localStorage.removeItem('chesher_visited');
-    if(ChesAuth && typeof ChesAuth.logout === 'function') {
-      ChesAuth.logout().then(() => location.reload());
-    } else {
-      location.reload();
-    }
-  }
+  askConfirm('Сбросить ВСЁ?', 'Будут удалены профили, статистика, монеты, настройки и сохранённые игры. Отменить это будет нельзя.',
+    function() {
+      localStorage.removeItem('chesher_profiles');
+      localStorage.removeItem('chesher_cfg');
+      localStorage.removeItem('chesher_save');
+      localStorage.removeItem('chesher_guest_id');
+      localStorage.removeItem('chesher_pending_fns');
+      localStorage.removeItem('chesher_daily_gift');
+      localStorage.removeItem('chesher_guest_name_changed');
+      localStorage.removeItem('chesher_meme_cfg');
+      localStorage.removeItem('chesher_deco_pos');
+      localStorage.removeItem('chesher_mobile');
+      localStorage.removeItem('chesher_visited');
+      if(ChesAuth && typeof ChesAuth.logout === 'function') {
+        ChesAuth.logout().then(() => location.reload());
+      } else {
+        location.reload();
+      }
+    }, 'Сбросить всё');
 }
 
 /* --- Автозагрузка --- */

@@ -63,7 +63,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   background:none;border:1px solid var(--line);color:var(--mut);
   padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
 .backBtn:hover{color:var(--txt);border-color:var(--gold)}
-.scrTitle{font-size:clamp(17px,3vw,21px);letter-spacing:3px;font-weight:800;text-transform:uppercase}
+.scrTitle{font-size:clamp(17px,3vw,21px);letter-spacing:3px;font-weight:800;text-transform:uppercase;
+  max-width:calc(100% - 220px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* --- Декоративные фигуры на главном меню --- */
 .deco{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden;z-index:0}
@@ -630,7 +631,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 
 /* --- Fade-in анимации для overlay'ов --- */
 .overlay{position:fixed;inset:0;background:rgba(8,8,7,.8);backdrop-filter:blur(3px);
-  display:flex;align-items:center;justify-content:center;z-index:1100;padding:16px;
+  display:flex;align-items:center;justify-content:center;z-index:1350;padding:16px;
   opacity:0;visibility:hidden;transition:.2s}
 .overlay.show{opacity:1;visibility:visible}
 .modal{background:var(--panel);border:1px solid var(--line);border-radius:13px;
@@ -646,15 +647,17 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .promoP:hover{border-color:var(--gold);transform:scale(1.06)}
 #goT{font-size:24px;text-align:center;font-weight:800;letter-spacing:1px;margin-bottom:6px}
 #goS{text-align:center;color:var(--mut);font-size:14.5px;line-height:1.5;margin-bottom:6px}
-.modalBtns{display:flex;gap:9px;margin-top:15px}
-.modalBtns .btn{flex:1;padding:12px}
+.modalBtns{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.modalBtns .btn{flex:1 1 auto;width:auto;min-width:min(100%,132px);padding:12px}
 
 /* --- Тост --- */
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);
   background:var(--panel2);border:1px solid var(--gold);color:var(--txt);
-  padding:10px 18px;border-radius:9px;font-weight:600;font-size:13.5px;z-index:1300;
+  padding:10px 18px;border-radius:9px;font-weight:600;font-size:13.5px;z-index:1400;
   opacity:0;transition:.28s;pointer-events:none;max-width:92vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* В мобильном режиме модалки прижаты к низу — тост уводим наверх, чтобы не перекрывать кнопки */
+body.mobile-mode #toast{bottom:auto;top:14px}
 
 /* === HELP BUTTON === */
 .helpBtn{
@@ -878,15 +881,18 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   background:var(--accent,#f7c531);border:none;border-radius:8px;
   width:32px;cursor:pointer;font-size:14px;color:#000;display:flex;align-items:center;justify-content:center;
 }
-.cheatBtn{right:76px!important;background:#2a2a3a;border-color:#666}
+.cheatBtn{position:fixed;top:16px;right:76px!important;z-index:1400;background:#2a2a3a;border-color:#666}
 .cheatBtn:hover{border-color:#f44336;background:rgba(244,67,54,.15)}
 .cheatPanel{
-  display:none;position:fixed;bottom:76px;right:20px;z-index:1100;
+  display:none;position:fixed;bottom:76px;right:20px;z-index:1400;
   background:var(--panel);border:1px solid var(--line);border-radius:12px;
   padding:12px;width:220px;max-height:70vh;overflow-y:auto;
   box-shadow:0 8px 32px rgba(0,0,0,.6)}
 .cheatPanel.show{display:block}
-.cheatTitle{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold);text-align:center}
+.cheatTitle{position:relative;font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold);text-align:center}
+.cheatClose{position:absolute;top:-3px;right:0;background:none;border:none;color:var(--mut);
+  font-size:13px;cursor:pointer;padding:3px 7px;border-radius:6px;line-height:1}
+.cheatClose:hover{color:var(--txt);background:rgba(255,255,255,.08)}
 .cheatRow{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap}
 .cheatAction{
   flex:1;min-width:60px;padding:6px 4px;border-radius:6px;border:1px solid var(--line);
@@ -963,6 +969,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .botsRow .botsGrid {
   flex: 1;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 .botsRight {
   width: 260px;
@@ -1070,9 +1078,10 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 /* Bot grid */
 .botsGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   padding: 12px;
+  max-width: 100%;
 }
 .botCard {
   background: rgba(255,255,255,0.05);
@@ -1113,6 +1122,9 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .botRating {
   font-size: 13px;
@@ -1283,7 +1295,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 }
 .lbChampAva { font-size: 48px; }
 .lbChampInfo { flex: 1; }
-.lbChampName { font-size: 20px; font-weight: 700; }
+.lbChampName { font-size: 20px; font-weight: 700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lbChampRating { font-size: 16px; font-weight: 600; margin-top: 4px; }
 .lbChampStats { font-size: 12px; color: var(--mut); margin-top: 4px; }
 
@@ -1298,10 +1310,11 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 }
 .lbRow:hover { background: rgba(255,255,255,0.04); }
 .lbRow.me { background: rgba(255,136,0,0.1); border-radius: 8px; border-bottom: none; margin-bottom: 4px; }
-.lbRank { width: 28px; text-align: center; font-weight: 700; color: var(--mut); font-size: 14px; }
+.lbRank { width: 28px; text-align: center; font-weight: 700; color: var(--mut); font-size: 14px; flex:0 0 28px; }
+.lbRank.top1 { color:#f7c531 } .lbRank.top2 { color:#c8ccd2 } .lbRank.top3 { color:#d08a4e }
 .lbAva { font-size: 24px; }
-.lbInfo { flex: 1; }
-.lbName { font-size: 14px; font-weight: 600; }
+.lbInfo { flex: 1; min-width: 0; }
+.lbName { font-size: 14px; font-weight: 600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lbStats { font-size: 11px; color: var(--mut); }
 .lbMeTag { font-size: 10px; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; }
 .lbRating { font-size: 16px; font-weight: 700; }
@@ -1314,9 +1327,14 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   margin-top: 4px;
 }
 
+@media(max-width:560px){
+  /* Инфо-панель переезжает под сетку ботов, иначе grid сжимается до 24px и карточки лезут на панель */
+  .botsRow{flex-direction:column}
+  .botsRight{width:100%}
+}
 @media(max-width:480px){
   .botsGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
   .botEmoji { font-size: 24px; }
@@ -1328,6 +1346,9 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   .lbChampName { font-size: 16px; }
   .botsLayout { width: 100%; }
   .botsRight { position: static; width: 100%; margin-top: 16px; }
+}
+@media(max-width:400px){
+  .botsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* --- Friends & Network --- */
@@ -1348,6 +1369,7 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 #scrLobby{background:var(--bg)}
 #profTabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 0;
   margin-bottom: 14px;
@@ -1355,6 +1377,8 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   max-width: 520px;
   overflow-x: visible;
 }
+/* Табы рейтинга совпадают по ширине со списком (оба 520px), а то табы свисают на 120px */
+#lbTabs { max-width: 520px; }
 #profTabMain #customAvaSave, #profTabMain #customAvaClear { font-size: 13px; padding: 10px 16px; border-radius: 8px; }
 #customAvaSave { background: var(--green); color: #fff; border-color: var(--green); }
 #customAvaSave:hover { background: #6ea03e; border-color: #6ea03e; transform: translateY(-1px); }
@@ -1535,12 +1559,12 @@ body.mobile-mode .modal h2{font-size:16px}
 /* --- Экраны --- */
 body.mobile-mode .screen{padding:max(12px,env(safe-area-inset-top)) 10px 30px}
 body.mobile-mode .scrHead{width:min(560px,100%)}
-body.mobile-mode .scrTitle{font-size:clamp(14px,4vw,18px);letter-spacing:2px}
+  body.mobile-mode .scrTitle{font-size:clamp(14px,4vw,18px);letter-spacing:2px;max-width:calc(100% - 170px)}
 body.mobile-mode .backBtn{padding:6px 10px;font-size:12px}
 
 /* --- Выбор ботов --- */
 body.mobile-mode .botsLayout{width:100%;padding:0 4px}
-body.mobile-mode .botsGrid{grid-template-columns:repeat(3,1fr);gap:6px}
+body.mobile-mode .botsGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 body.mobile-mode .botCard{padding:6px}
 body.mobile-mode .botEmoji{font-size:22px}
 body.mobile-mode .botNm{font-size:11px}
@@ -1595,7 +1619,14 @@ body.mobile-mode .feedbackBtn{
 body.mobile-mode .sq{min-height:12px}
 body.mobile-mode .btn{min-height:44px}
 body.mobile-mode .mBtn{min-height:48px}
-body.mobile-mode .segBtn{min-height:40px}
+body.mobile-mode .segBtn{min-height:44px}
+body.mobile-mode .shopTab,
+body.mobile-mode .backBtn,
+body.mobile-mode .fpAccept,
+body.mobile-mode .fpReject,
+body.mobile-mode .fpAddBtn,
+body.mobile-mode .fpChatBtn,
+body.mobile-mode .fpRemoveBtn{min-height:44px}
 
 /* === Мобильный: упрощение элементов === */
 body.mobile-mode .btn .btnText{display:none}

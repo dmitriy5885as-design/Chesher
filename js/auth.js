@@ -255,15 +255,19 @@ const ChesAuth = {
       name: localProfile.name || 'Игрок',
       ava: localProfile.ava || '🐣',
       elo: localProfile.elo || 0,
-      friends: localProfile.friends || [],
-      friendRequests: localProfile.friendRequests || [],
       owned: localProfile.owned || ['classic'],
       lastNickChange: localProfile.lastNickChange || 0,
       customAva: localProfile.customAva || null,
       playerId: localProfile.playerId || null
     };
+    // Друзья/заявки живут только в облаке (у локального Profile этих полей нет) —
+    // никогда не затираем их пустым массивом при синхронизации
+    if(Array.isArray(localProfile.friends)) payload.friends = localProfile.friends;
+    if(Array.isArray(localProfile.friendRequests)) payload.friendRequests = localProfile.friendRequests;
     if(!snap.exists) {
       // Создание документа: полная инициализация (create разрешает всё кроме gems > 0)
+      payload.friends = payload.friends || [];
+      payload.friendRequests = payload.friendRequests || [];
       payload.coins = localProfile.coins || 0;
       payload.gems = 0;
       payload.ratings = localProfile.ratings || { classic: 0, bot: 0, fischer: 0, meme: 0, ranked: 0 };
@@ -281,6 +285,8 @@ const ChesAuth = {
       // local > cloud: прирост (напр. офлайн) не пишем — его делает submitResult/awardCoins
       if(cloud.ratings && typeof cloud.ratings === 'object') {
         localProfile.ratings = cloud.ratings;
+        // legacy-поле elo согласовано с ratings.classic (см. Profile constructor)
+        if(typeof cloud.ratings.classic === 'number') localProfile.elo = cloud.ratings.classic;
       }
     }
     await ref.set(payload, { merge: true });

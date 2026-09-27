@@ -66,6 +66,9 @@ class Profile {
     ['classic','bot','fischer','meme','ranked'].forEach(m => {
       if(typeof this.ratings[m] !== 'number') this.ratings[m] = 0;
     });
+    // Legacy-поле elo — всегда == ratings.classic (источник правды), иначе
+    // экран выбора ботов/рейтинг показывают 0 при рейтинге 1000
+    if(typeof data.elo !== 'number' || data.elo !== this.ratings.classic) this.elo = this.ratings.classic;
   }
 
   /* --- Статистика --- */
@@ -75,7 +78,7 @@ class Profile {
   }
 
   get statsString() {
-    return `${this.winrate}% winrate · ${this.st.games} партий · ${this.st.wins}/${this.st.losses}/${this.st.draws}`;
+    return `${this.winrate}% винрейт · ${this.st.games} ${pluralRu(this.st.games, ['партия', 'партии', 'партий'])} · ${this.st.wins}/${this.st.losses}/${this.st.draws}`;
   }
 
   /* --- Монеты --- */

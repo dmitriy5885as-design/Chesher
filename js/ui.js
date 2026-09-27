@@ -199,7 +199,7 @@ function refreshBars() {
   const elNmBot = document.getElementById('nmBot');
   if(elAvaBot) {
     if(!isGuest && cu.customAva) {
-      elAvaBot.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      elAvaBot.innerHTML = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
       elAvaBot.textContent = myAva;
     }
@@ -276,9 +276,8 @@ function refreshModeLabel() {
 /* --- Монеты --- */
 function renderCoins() {
   const cu = ProfilesManager.getCurrent();
-  const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
-  const c = isGuest ? 0 : (cu ? (cu.coins || 0) : 0);
-  const g = isGuest ? 0 : (cu ? (cu.gems || 0) : 0);
+  const c = cu ? (cu.coins || 0) : 0;
+  const g = cu ? (cu.gems || 0) : 0;
   const a = document.getElementById('pbCoins');
   const b = document.getElementById('shopCoins');
   const ag = document.getElementById('pbGems');
@@ -314,7 +313,7 @@ function renderProfBar() {
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
   if(pbAva) {
     if(!isGuest && cu.customAva) {
-      pbAva.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      pbAva.innerHTML = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
       pbAva.textContent = cu.ava || '👽';
     }
@@ -324,8 +323,8 @@ function renderProfBar() {
     if(pbName) pbName.textContent = (cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
     if(pbSub) pbSub.innerHTML = '<span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span>';
   } else {
-    if(pbName) pbName.innerHTML = (cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
-    if(pbSub) pbSub.innerHTML = (cu.playerId ? '<span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span> · ' : '') + (cu.winrate || 0) + '% winrate · ' + (cu.st.games || 0) + ' партий';
+    if(pbName) pbName.innerHTML = escapeHtml(cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
+    if(pbSub) pbSub.innerHTML = (cu.playerId ? '<span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span> · ' : '') + (cu.winrate || 0) + '% винрейт · ' + (cu.st.games || 0) + ' ' + pluralRu(cu.st.games || 0, ['партия', 'партии', 'партий']);
   }
 }
 
@@ -414,7 +413,7 @@ function renderProfScr() {
       const isGuestCard = !ChesAuth.user || ChesAuth.user.isAnonymous;
       let avaHtml;
       if(!isGuestCard && cu.customAva) {
-        avaHtml = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+        avaHtml = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
       } else {
         avaHtml = cu.ava || '👽';
       }
@@ -429,7 +428,7 @@ function renderProfScr() {
         '<div class="plTop">' +
           '<div class="plAva">' + avaHtml + '</div>' +
           '<div class="plId">' +
-            '<div class="plName">' + (cu.name || 'Гость') + '</div>' +
+            '<div class="plName">' + escapeHtml(cu.name || 'Гость') + '</div>' +
             '<div class="plLeague" style="color:' + league.color + '">' + league.emoji + ' ' + league.name + '</div>' +
             '<div class="plElo">' + elo + ' <span>ELO</span></div>' +
           '</div>' +
@@ -497,19 +496,26 @@ function renderProfScr() {
       const name = nickInput.value.trim();
       if(!name) { toast('Введите ник'); return; }
       if(name.length < 2) { toast('Минимум 2 символа'); return; }
-      if(isGuestProfile && !confirm('Вы уверены? Имя можно задать только ОДИН раз!')) return;
-      if(cu.changeNick(name)) {
-        if(isGuestProfile) {
-          localStorage.setItem('chesher_guest_name_changed', '1');
+      const applyNick = () => {
+        if(cu.changeNick(name)) {
+          if(isGuestProfile) {
+            localStorage.setItem('chesher_guest_name_changed', '1');
+          }
+          saveProfiles();
+          if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
+            ChesAuth.updateProfile({ name: name });
+          }
+          renderProfScr();
+          renderProfBar();
+          toast('Имя задано: "' + name + '"');
+          nickInput.value = '';
         }
-        saveProfiles();
-        if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
-          ChesAuth.updateProfile({ name: name });
-        }
-        renderProfScr();
-        renderProfBar();
-        toast('Имя задано: "' + name + '"');
-        nickInput.value = '';
+      };
+      // Гостевое имя задаётся один раз — подтверждаем в фирменной модалке, а не системным confirm()
+      if(isGuestProfile) {
+        askConfirm('Задать имя?', 'Имя можно задать только ОДИН раз — изменить его больше не получится.', applyNick, 'Задать имя');
+      } else {
+        applyNick();
       }
     };
   }
@@ -524,7 +530,7 @@ function renderProfScr() {
 
   if(cu && avaInput) {
     if(cu.customAva) {
-      avaPreview.innerHTML = '<img src="' + cu.customAva + '" style="width:100%;height:100%;object-fit:cover">';
+      avaPreview.innerHTML = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover">';
       avaClear.style.display = '';
     } else {
       avaPreview.innerHTML = cu.ava || '👽';
@@ -586,7 +592,7 @@ function renderProfScr() {
           ctx.drawImage(img, 0, 0, w, h);
           const quality = file.size > 1024 * 1024 ? 0.5 : 0.7;
           pendingAva = canvas.toDataURL('image/jpeg', quality);
-          avaPreview.innerHTML = '<img src="' + pendingAva + '" style="width:100%;height:100%;object-fit:cover">';
+          avaPreview.innerHTML = '<img src="' + escapeHtml(pendingAva) + '" style="width:100%;height:100%;object-fit:cover">';
           avaSave.style.display = '';
           avaClear.style.display = '';
         };
@@ -657,40 +663,64 @@ document.querySelectorAll('.promoP').forEach(el => {
 });
 
 /* --- Overlays --- */
+// Оверлеи, которые закрываются только кнопками (критичные: выбор фигуры,
+// результат партии, подтверждение рискованного действия)
+const OV_CRITICAL = ['ovPr', 'ovOver', 'ovConf'];
+let _ovPrevFocus = null;
+
 function closeAllOverlays() {
   document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
+  _ovRestoreFocus();
 }
 
 function closeOv(id) {
   const ov = document.getElementById(id);
   if(ov) ov.classList.remove('show');
+  if(!document.querySelector('.overlay.show')) _ovRestoreFocus();
 }
 
 function openOv(id) {
   closeAllOverlays();
   const ov = document.getElementById(id);
-  if(ov) ov.classList.add('show');
+  if(!ov) return;
+  _ovPrevFocus = document.activeElement;
+  ov.classList.add('show');
+  // Переносим фокус внутрь модалки, чтобы Tab уходил из фонового экрана
+  setTimeout(() => {
+    const f = ov.querySelector('.modal button:not([disabled]), .modal input, .modal [tabindex]');
+    if(f && ov.classList.contains('show')) { try { f.focus(); } catch(e) {} }
+  }, 60);
+}
+
+function _ovRestoreFocus() {
+  if(_ovPrevFocus && document.contains(_ovPrevFocus)) {
+    try { _ovPrevFocus.focus(); } catch(e) {}
+  }
+  _ovPrevFocus = null;
 }
 
 document.querySelectorAll('[data-close]').forEach(b => {
   b.addEventListener('click', () => closeOv(b.dataset.close));
 });
 
-document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => {
-    if(o.id === 'ovPr') return; // промо-модалка обязательна — фон не закрывает
-    if(e.target === o) o.classList.remove('show');
-  });
+// Делегирование: закрытие по фону работает и для динамических оверлеев (ovTour, ovPuzzle…)
+document.addEventListener('click', e => {
+  const t = e.target;
+  if(!t || !t.classList || !t.classList.contains('overlay')) return;
+  if(OV_CRITICAL.indexOf(t.id) !== -1) return;
+  t.classList.remove('show');
+  if(!document.querySelector('.overlay.show')) _ovRestoreFocus();
 });
 
 /* --- Подтверждение --- */
-function askConfirm(t, x, yes) {
+function askConfirm(t, x, yes, yesLabel) {
   const confT = document.getElementById('confT');
   const confX = document.getElementById('confX');
   const confY = document.getElementById('confY');
   if(confT) confT.textContent = t;
   if(confX) confX.textContent = x;
   if(confY) {
+    confY.textContent = yesLabel || 'Подтвердить'; // глагол действия вместо безличного «Подтвердить»
     // onclick вместо addEventListener: повторные вызовы не накапливают обработчики
     confY.onclick = function() {
       confY.onclick = null;
@@ -701,15 +731,68 @@ function askConfirm(t, x, yes) {
   openOv('ovConf');
 }
 
-/* --- ESC закрывает открытую модалку (кроме обязательных) --- */
+/* --- Ввод текста (замена нативному prompt) --- */
+function askInput(t, x, placeholder, cb) {
+  const inpT = document.getElementById('inpT');
+  const inpX = document.getElementById('inpX');
+  const inpY = document.getElementById('inpY');
+  const field = document.getElementById('inpField');
+  if(inpT) inpT.textContent = t;
+  if(inpX) {
+    inpX.textContent = x || '';
+    inpX.style.display = x ? '' : 'none';
+  }
+  if(field) { field.value = ''; field.placeholder = placeholder || ''; }
+  if(inpY) {
+    const submit = () => {
+      const v = field ? field.value.trim() : '';
+      inpY.onclick = null;
+      closeOv('ovInput');
+      if(v) cb(v);
+    };
+    inpY.onclick = submit;
+    if(field) {
+      field.onkeydown = (e => {
+        if(e.key === 'Enter') { e.preventDefault(); submit(); }
+      });
+    }
+  }
+  openOv('ovInput');
+  setTimeout(() => { if(field) { try { field.focus(); } catch(e) {} } }, 90);
+}
+
+/* --- ESC/Tab: единая клавиатурная модель для модалок и панелей --- */
 document.addEventListener('keydown', e => {
-  if(e.key !== 'Escape') return;
   const openOvs = Array.prototype.slice.call(document.querySelectorAll('.overlay.show'));
-  if(!openOvs.length) return;
-  const top = openOvs[openOvs.length - 1];
-  if(top.id === 'ovPr' || top.id === 'ovOver') return; // обязательные: выбор промо / экран конца
-  e.preventDefault();
-  top.classList.remove('show');
+  if(e.key === 'Escape') {
+    if(openOvs.length) {
+      const top = openOvs[openOvs.length - 1];
+      if(top.id === 'ovPr' || top.id === 'ovOver') return; // обязательные: выбор промо / экран конца
+      e.preventDefault();
+      top.classList.remove('show');
+      if(!document.querySelector('.overlay.show')) _ovRestoreFocus();
+      return;
+    }
+    // Панели и QR живут вне .overlay — закрываем их той же клавишей
+    const qr = document.getElementById('qrOverlay');
+    if(qr && qr.classList.contains('show')) { qr.classList.remove('show'); return; }
+    const fc = document.getElementById('friendChatPanel');
+    if(fc && fc.classList.contains('open')) { const b = document.getElementById('fcClose') || document.getElementById('fcBack'); if(b) b.click(); return; }
+    const fp = document.getElementById('friendsPanel');
+    if(fp && fp.classList.contains('open')) { const b = document.getElementById('fpClose'); if(b) b.click(); return; }
+    return;
+  }
+  // Tab-ловушка: фокус не уходит из открытой модалки в фоновый экран
+  if(e.key === 'Tab' && openOvs.length) {
+    const top = openOvs[openOvs.length - 1];
+    const items = top.querySelectorAll('button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])');
+    if(!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    const active = document.activeElement;
+    if(e.shiftKey) {
+      if(active === first || !top.contains(active)) { e.preventDefault(); last.focus(); }
+    } else if(active === last || !top.contains(active)) { e.preventDefault(); first.focus(); }
+  }
 });
 
 /* --- Тост --- */
@@ -731,6 +814,73 @@ window.initDOMrefs = initDOMrefs;
 window.refreshBars = refreshBars;
 window.refreshModeLabel = refreshModeLabel;
 window.renderCoins = renderCoins;
+
+/* --- Русская плюрализация: pluralRu(5, ['партия','партии','партий']) --- */
+function pluralRu(n, forms) {
+  n = Math.abs(Math.floor(Number(n) || 0)) % 100;
+  const n1 = n % 10;
+  if(n > 10 && n < 20) return forms[2];
+  if(n1 > 1 && n1 < 5) return forms[1];
+  if(n1 === 1) return forms[0];
+  return forms[2];
+}
+window.pluralRu = pluralRu;
+
+/* --- Экранирование HTML для имён/текстов извне (защита от XSS) --- */
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
+/* --- Человекочитаемые ошибки вместо сырых e.message --- */
+function humanError(e) {
+  const code = (e && (e.code || (e.error && e.error.code))) || '';
+  const msg = String((e && e.message) || e || '');
+  const map = {
+    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
+    'auth/invalid-email': 'Некорректный email',
+    'auth/weak-password': 'Слишком простой пароль (минимум 6 символов)',
+    'auth/user-not-found': 'Пользователь с таким email не найден',
+    'auth/wrong-password': 'Неверный пароль',
+    'auth/invalid-credential': 'Неверный email или пароль',
+    'auth/too-many-requests': 'Слишком много попыток. Попробуйте позже',
+    'auth/network-request-failed': 'Нет связи с сервером. Проверьте интернет',
+    'auth/popup-closed-by-user': 'Окно входа закрыто',
+    'auth/cancelled-popup-request': 'Окно входа закрыто',
+    'auth/unauthorized-domain': 'Вход с этого домена запрещён',
+    'auth/operation-not-allowed': 'Этот способ входа отключён',
+    'auth/admin-restricted-operation': 'Вход гостями отключён',
+    'auth/configuration-not-found': 'Вход настроен неправильно — сообщите администратору',
+    'auth/invalid-api-key': 'Ошибка конфигурации приложения (неверный ключ API)',
+    'permission-denied': 'Нет прав для этого действия',
+    'unauthenticated': 'Нужно войти в аккаунт',
+    'functions/unauthenticated': 'Нужно войти в аккаунт',
+    'unavailable': 'Сервер недоступен. Попробуйте позже',
+    'functions/unavailable': 'Сервис недоступен. Попробуйте позже',
+    'deadline-exceeded': 'Сервер не ответил вовремя. Попробуйте позже',
+    'functions/deadline-exceeded': 'Сервис не ответил вовремя. Попробуйте позже',
+    'not-found': 'Данные не найдены',
+    'already-exists': 'Такая запись уже есть',
+    'resource-exhausted': 'Лимит запросов исчерпан. Попробуйте позже',
+    'functions/resource-exhausted': 'Лимит запросов исчерпан. Попробуйте позже',
+    'failed-precondition': 'Действие нельзя выполнить сейчас',
+    'internal': 'Внутренняя ошибка сервера',
+    'functions/internal': 'Внутренняя ошибка сервера'
+  };
+  if(code && map[code]) return map[code];
+  const authCode = (msg.match(/auth\/[a-z-]+/) || [])[0];
+  if(authCode && map[authCode]) return map[authCode];
+  if(/network|fetch|load failed|offline/i.test(msg)) return 'Нет связи с сервером. Проверьте интернет';
+  if(!msg) return 'Что-то пошло не так';
+  const short = msg.split('\n')[0].replace(/\s*\(auth\/[a-z-]+\)\s*$/i, '').slice(0, 140).trim();
+  return short.charAt(0).toUpperCase() + short.slice(1);
+}
+window.humanError = humanError;
 
 /* --- Вкладка: Стилизация --- */
 function applyBoardTheme(id) {
@@ -779,7 +929,7 @@ function renderProfStyleTab() {
     skinRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px';
     Object.keys(SKINS).forEach(id => {
       const s = SKINS[id];
-      const isOwned = owned.includes('skin_' + id) || s.price === 0;
+      const isOwned = owned.includes(id) || (!s.gem && (s.price || 0) === 0);
       const isActive = cfg.skin === id || (!cfg.skin && id === 'classic');
       const btn = document.createElement('button');
       btn.className = 'mBtn' + (isActive ? ' primary' : '');
@@ -822,8 +972,8 @@ function renderMatchHistory(cu) {
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--line)">' +
       '<span style="font-size:20px">' + icon + '</span>' +
       '<div style="flex:1">' +
-        '<div style="font-size:14px;font-weight:600;color:' + color + '">' + (h.opponent || '—') + '</div>' +
-        '<div style="font-size:12px;color:var(--mut)">' + (h.mode || 'Классика') + (h.reason ? ' · ' + h.reason : '') + '</div>' +
+        '<div style="font-size:14px;font-weight:600;color:' + color + '">' + escapeHtml(h.opponent || '—') + '</div>' +
+        '<div style="font-size:12px;color:var(--mut)">' + escapeHtml(h.mode || 'Классика') + (h.reason ? ' · ' + escapeHtml(h.reason) : '') + '</div>' +
       '</div>' +
       (hasReplay ? '<button class="btn" onclick="openReplay(' + idx + ')" title="Просмотр партии">▶</button>' : '') +
       (hasReplay ? '<button class="btn" onclick="copyMatchPGN(' + idx + ')" title="Скопировать PGN">📋</button>' : '') +
@@ -981,55 +1131,40 @@ function renderProfSettings(cu) {
   if(!cu) return;
   const infoBox = document.getElementById('profSettingsInfo');
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const c = cu ? (cu.coins || 0) : 0;
+  const g = cu ? (cu.gems || 0) : 0;
   if(infoBox) {
-    if(isGuest) {
-      const gId = ChesAuth.guestPlayerId || '—';
-      infoBox.innerHTML =
-        '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + gId + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">—</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">0%</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 0</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">0</b></div>' +
-        '</div>';
-    } else {
-      const st = cu.st || {};
-      const league = Elo.getLeague(cu.elo || 0);
-      infoBox.innerHTML =
-        '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + (cu.name || 'Игрок') + '</b></div>' +
-          (cu.playerId ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + cu.playerId + '</b></div>' : '') +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">' + (cu.elo || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">' + league.name + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">' + (st.games || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">' + (st.wins || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">' + (st.losses || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">' + (cu.winrate || 0) + '%</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">' + (st.streak || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 ' + (cu.coins || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 ' + (cu.gems || 0) + '</b></div>' +
-          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">' + (cu.owned ? cu.owned.length : 0) + '</b></div>' +
-        '</div>';
-    }
+    // Один блок для гостя и вошедшего: честные реальные значения профиля
+    const st = cu.st || {};
+    const league = Elo.getLeague(cu.elo || 0);
+    const gId = isGuest ? (ChesAuth.guestPlayerId || '') : (cu.playerId || '');
+    infoBox.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Имя</span><b style="color:var(--txt)">' + ((cu.name && cu.name !== 'Гость') ? cu.name : 'Гость') + '</b></div>' +
+        (gId ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">ID</span><b style="color:var(--accent)">#' + gId + '</b></div>' : '') +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Эло</span><b style="color:var(--txt)">' + (cu.elo || 0) + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Лига</span><b style="color:var(--txt)">' + league.name + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Партий</span><b style="color:var(--txt)">' + (st.games || 0) + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Побед</span><b style="color:var(--txt)">' + (st.wins || 0) + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Поражений</span><b style="color:var(--txt)">' + (st.losses || 0) + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Винрейт</span><b style="color:var(--txt)">' + (cu.winrate || 0) + '%</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Серия</span><b style="color:var(--txt)">' + (st.streak || 0) + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Монеты</span><b style="color:var(--txt)">🪙 ' + c + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Кристаллы</span><b style="color:var(--txt)">💎 ' + g + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between"><span style="color:var(--mut)">Предметов</span><b style="color:var(--txt)">' + (cu.owned ? cu.owned.length : 0) + '</b></div>' +
+      '</div>';
   }
 
   const logoutBtn2 = document.getElementById('profLogoutBtn2');
   if(logoutBtn2) {
-    logoutBtn2.onclick = async () => {
-      if(confirm('Выйти из аккаунта?')) {
+    logoutBtn2.onclick = () => {
+      askConfirm('Выйти из аккаунта?', 'Профиль и статистика останутся на этом устройстве.', async () => {
         await ChesAuth.logout();
         renderProfBar();
         renderProfScr();
         showScreen('scrMenu');
         toast('Вы вышли из аккаунта');
-      }
+      }, 'Выйти');
     };
   }
 }
@@ -1042,6 +1177,7 @@ window.closeOv = closeOv;
 window.openOv = openOv;
 window.openPromoModal = openPromoModal;
 window.askConfirm = askConfirm;
+window.askInput = askInput;
 window.spawnPiece = spawnPiece;
 window.updateClockUI = updateClockUI;
 window.openReplay = openReplay;

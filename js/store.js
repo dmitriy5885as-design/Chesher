@@ -344,6 +344,7 @@ const Store = {
   /* --- Рендер магазина --- */
   renderShop(tab) {
     if(tab) cfg.shopTab = tab;
+    if(typeof renderCoins === 'function') renderCoins();
     const grid = document.getElementById('shopGrid');
     const tabs = document.getElementById('shopTabs');
     if(!grid) return;
