@@ -549,19 +549,6 @@ function buildModesCfg(modeId) {
       var evNames = typeof MEME_EVENT_NAMES !== 'undefined' ? MEME_EVENT_NAMES : {check:'Шах',capture:'Взятие',threat:'Угроза'};
       var evIcons = {check:'♔',capture:'⚔',threat:'👁',defense:'🛡'};
 
-      var colorTabs = document.createElement('div');
-      colorTabs.className = 'memeColorTabs';
-      var activeColor = 'w';
-      var tabW = document.createElement('button');
-      tabW.className = 'memeColorTab sel';
-      tabW.textContent = '⚪ Белые';
-      var tabB = document.createElement('button');
-      tabB.className = 'memeColorTab';
-      tabB.textContent = '⚫ Чёрные';
-      colorTabs.appendChild(tabW);
-      colorTabs.appendChild(tabB);
-      memeBox.appendChild(colorTabs);
-
       var pieceGrid = document.createElement('div');
       pieceGrid.className = 'memePieceGrid memePieceGrid--events';
       memeBox.appendChild(pieceGrid);
@@ -599,7 +586,7 @@ function buildModesCfg(modeId) {
           nm.className = 'mpName';
           nm.textContent = evNames[k] || k;
           var vl = document.createElement('div');
-          var arr = presets[k] ? (presets[k][activeColor] || []) : [];
+          var arr = presets[k] ? (presets[k].w || []) : [];
           var cnt = Array.isArray(arr) ? arr.length : 0;
           vl.className = 'mpVideo' + (cnt ? '' : ' none');
           vl.textContent = cnt ? cnt + ' видео' : 'не назначено';
@@ -619,11 +606,11 @@ function buildModesCfg(modeId) {
         detailBox.innerHTML = '';
         if(!activeEvent) return;
         var presets = MemeConfig.get('videoPresets') || {};
-        var arr = (presets[activeEvent] && presets[activeEvent][activeColor]) || [];
+        var arr = (presets[activeEvent] && presets[activeEvent].w) || [];
 
         var head = document.createElement('div');
         head.className = 'memeDetailHead';
-        head.textContent = (evIcons[activeEvent]||'') + ' ' + (evNames[activeEvent]||activeEvent) + ' — ' + (activeColor === 'w' ? 'Белые' : 'Чёрные');
+        head.textContent = (evIcons[activeEvent]||'') + ' ' + (evNames[activeEvent]||activeEvent);
         detailBox.appendChild(head);
 
         if(arr.length) {
@@ -654,8 +641,12 @@ function buildModesCfg(modeId) {
             rm.addEventListener('click', function(e) {
               e.stopPropagation();
               var p = MemeConfig.get('videoPresets') || {};
-              var a = p[activeEvent][activeColor];
-              a.splice(idx, 1);
+              ['w','b'].forEach(function(c) {
+                var a = p[activeEvent] && p[activeEvent][c];
+                if(!Array.isArray(a)) return;
+                var i = a.indexOf(file);
+                if(i >= 0) a.splice(i, 1);
+              });
               MemeConfig.set('videoPresets', p);
               renderDetail();
               renderPCards();
@@ -703,8 +694,10 @@ function buildModesCfg(modeId) {
               item.addEventListener('click', function() {
                 var p = MemeConfig.get('videoPresets') || {};
                 if(!p[activeEvent]) p[activeEvent] = {w:[],b:[]};
-                if(!p[activeEvent][activeColor]) p[activeEvent][activeColor] = [];
-                p[activeEvent][activeColor].push(vid.file);
+                ['w','b'].forEach(function(c) {
+                  if(!Array.isArray(p[activeEvent][c])) p[activeEvent][c] = [];
+                  if(p[activeEvent][c].indexOf(vid.file) < 0) p[activeEvent][c].push(vid.file);
+                });
                 MemeConfig.set('videoPresets', p);
                 renderDetail();
                 renderPCards();
@@ -737,15 +730,6 @@ function buildModesCfg(modeId) {
         previewEl.style.display = 'none';
         previewEl.innerHTML = '';
       }
-
-      tabW.addEventListener('click', function() {
-        activeColor = 'w'; tabW.classList.add('sel'); tabB.classList.remove('sel');
-        renderDetail(); renderPCards();
-      });
-      tabB.addEventListener('click', function() {
-        activeColor = 'b'; tabB.classList.add('sel'); tabW.classList.remove('sel');
-        renderDetail(); renderPCards();
-      });
 
       renderPCards();
 

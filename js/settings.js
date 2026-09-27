@@ -286,19 +286,6 @@ function buildMemeSegInner(box, group) {
   var evNames = typeof MEME_EVENT_NAMES !== 'undefined' ? MEME_EVENT_NAMES : {check:'Шах',capture:'Взятие',threat:'Угроза'};
   var evIcons = {check:'♔',capture:'⚔',threat:'👁',defense:'🛡',promotion:'👑',sacrifice:'💀',blunder:'😱',brilliant:'✨'};
 
-  var colorTabs = document.createElement('div');
-  colorTabs.className = 'memeColorTabs';
-  var activeColor = 'w';
-  var tabW = document.createElement('button');
-  tabW.className = 'memeColorTab sel';
-  tabW.textContent = '⚪ Белые';
-  var tabB = document.createElement('button');
-  tabB.className = 'memeColorTab';
-  tabB.textContent = '⚫ Чёрные';
-  colorTabs.appendChild(tabW);
-  colorTabs.appendChild(tabB);
-  box.appendChild(colorTabs);
-
   var pieceGrid = document.createElement('div');
   pieceGrid.className = 'memePieceGrid memePieceGrid--events';
   box.appendChild(pieceGrid);
@@ -336,7 +323,7 @@ function buildMemeSegInner(box, group) {
       name.className = 'mpName';
       name.textContent = evNames[k] || k;
       var vidLabel = document.createElement('div');
-      var arr = presets[k] ? (presets[k][activeColor] || []) : [];
+      var arr = presets[k] ? (presets[k].w || []) : [];
       var cnt = Array.isArray(arr) ? arr.length : 0;
       vidLabel.className = 'mpVideo' + (cnt ? '' : ' none');
       vidLabel.textContent = cnt ? cnt + ' видео' : 'не назначено';
@@ -354,7 +341,7 @@ function buildMemeSegInner(box, group) {
 
   var activePiece = null;
 
-  function renderVideoList(targetBox, arr, eventType, color, pieceLabel) {
+  function renderVideoList(targetBox, arr, eventType, pieceLabel) {
     if(arr.length) {
       var selTitle = document.createElement('div');
       selTitle.className = 'memeDetailLabel';
@@ -381,15 +368,20 @@ function buildMemeSegInner(box, group) {
         rm.addEventListener('click', function(e) {
           e.stopPropagation();
           var p = MemeConfig.get('videoPresets') || {};
+          var removeFrom = function(slot) {
+            if(!slot) return;
+            var i = slot.indexOf(file);
+            if(i >= 0) slot.splice(i, 1);
+          };
           if(pieceLabel) {
             var pt = pieceLabel.toLowerCase().charAt(0);
-            if(p[eventType] && p[eventType][pt] && p[eventType][pt][color]) {
-              p[eventType][pt][color].splice(idx, 1);
+            if(p[eventType] && p[eventType][pt]) {
+              removeFrom(p[eventType][pt].w);
+              removeFrom(p[eventType][pt].b);
             }
-          } else {
-            if(p[eventType] && p[eventType][color]) {
-              p[eventType][color].splice(idx, 1);
-            }
+          } else if(p[eventType]) {
+            removeFrom(p[eventType].w);
+            removeFrom(p[eventType].b);
           }
           MemeConfig.set('videoPresets', p);
           renderDetail();
@@ -433,16 +425,20 @@ function buildMemeSegInner(box, group) {
         if(!already) {
           item.addEventListener('click', function() {
             var p = MemeConfig.get('videoPresets') || {};
+            var addTo = function(slot) {
+              if(!Array.isArray(slot)) return;
+              if(slot.indexOf(vid.file) < 0) slot.push(vid.file);
+            };
             if(pieceLabel) {
               var pt = pieceLabel.toLowerCase().charAt(0);
               if(!p[eventType]) p[eventType] = {};
               if(!p[eventType][pt]) p[eventType][pt] = {w:[],b:[]};
-              if(!p[eventType][pt][color]) p[eventType][pt][color] = [];
-              p[eventType][pt][color].push(vid.file);
+              addTo(p[eventType][pt].w);
+              addTo(p[eventType][pt].b);
             } else {
               if(!p[eventType]) p[eventType] = {w:[],b:[]};
-              if(!p[eventType][color]) p[eventType][color] = [];
-              p[eventType][color].push(vid.file);
+              addTo(p[eventType].w);
+              addTo(p[eventType].b);
             }
             MemeConfig.set('videoPresets', p);
             renderDetail();
@@ -463,7 +459,7 @@ function buildMemeSegInner(box, group) {
 
     var head = document.createElement('div');
     head.className = 'memeDetailHead';
-    head.textContent = (evIcons[activeEvent]||'') + ' ' + (evNames[activeEvent]||activeEvent) + ' — ' + (activeColor === 'w' ? 'Белые' : 'Чёрные');
+    head.textContent = (evIcons[activeEvent]||'') + ' ' + (evNames[activeEvent]||activeEvent);
     detailBox.appendChild(head);
 
     if(isAdv) {
@@ -474,13 +470,13 @@ function buildMemeSegInner(box, group) {
         pieceHead.className = 'memePieceSectionHead';
         pieceHead.textContent = PIECE_ICONS[pk] + ' ' + PIECE_NAMES[pk];
         pieceSection.appendChild(pieceHead);
-        var pArr = (presets[activeEvent] && presets[activeEvent][pk] && presets[activeEvent][pk][activeColor]) || [];
-        renderVideoList(pieceSection, pArr, activeEvent, activeColor, PIECE_NAMES[pk]);
+        var pArr = (presets[activeEvent] && presets[activeEvent][pk] && presets[activeEvent][pk].w) || [];
+        renderVideoList(pieceSection, pArr, activeEvent, PIECE_NAMES[pk]);
         detailBox.appendChild(pieceSection);
       });
     } else {
-      var arr = (presets[activeEvent] && presets[activeEvent][activeColor]) || [];
-      renderVideoList(detailBox, arr, activeEvent, activeColor, null);
+      var arr = (presets[activeEvent] && presets[activeEvent].w) || [];
+      renderVideoList(detailBox, arr, activeEvent, null);
     }
   }
 
@@ -505,21 +501,6 @@ function buildMemeSegInner(box, group) {
     previewEl.style.display = 'none';
     previewEl.innerHTML = '';
   }
-
-  tabW.addEventListener('click', function() {
-    activeColor = 'w';
-    tabW.classList.add('sel');
-    tabB.classList.remove('sel');
-    renderDetail();
-    renderCards();
-  });
-  tabB.addEventListener('click', function() {
-    activeColor = 'b';
-    tabB.classList.add('sel');
-    tabW.classList.remove('sel');
-    renderDetail();
-    renderCards();
-  });
 
   renderCards();
 

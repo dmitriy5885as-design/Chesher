@@ -68,3 +68,33 @@ test('user-customized presets are NOT touched', async ({ page }) => {
   expect(r.check).toBe('video/sho-opyat.mp4');   // правка юзера сохранена
   expect(r.capture).toBe('video/eto-chto-takoe-a.mp4'); // чужие не тронуты (isLegacyDefault=false)
 });
+
+test('unify: different w/b lists are merged into one shared list', async ({ page }) => {
+  const seed = JSON.parse(JSON.stringify(LEGACY_VP));
+  seed.check = { w: ['video/net.mp4'], b: ['video/sho-opyat.mp4'] };
+  await boot(page, { enabled: true, videoPresets: seed });
+  const r = await page.evaluate(() => {
+    const vp = MemeConfig.get('videoPresets');
+    return { w: vp.check.w, b: vp.check.b,
+             persisted: JSON.parse(localStorage.getItem('chesher_meme_cfg')).videoPresets.check };
+  });
+  expect(r.w).toEqual(r.b);
+  expect(r.w).toContain('video/net.mp4');
+  expect(r.w).toContain('video/sho-opyat.mp4');
+  expect(r.persisted.w).toEqual(r.persisted.b);
+});
+
+test('settings UI: no color tabs, one shared list per event', async ({ page }) => {
+  await boot(page, null);
+  await page.evaluate(() => {
+    cfg.gameMode = 'meme'; cfg.modeId = 'meme';
+    showScreen('scrSet');
+  });
+  await page.waitForSelector('#memeOpts .memePieceCard', { timeout: 10000 });
+  const r = await page.evaluate(() => ({
+    tabs: !!document.querySelector('.memeColorTabs'),
+    cards: document.querySelectorAll('#memeOpts .memePieceCard').length
+  }));
+  expect(r.tabs, 'вкладки Белые/Чёрные должны быть убраны').toBe(false);
+  expect(r.cards).toBe(8);
+});

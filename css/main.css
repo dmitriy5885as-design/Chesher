@@ -382,11 +382,6 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 /* Meme settings */
 .memeSectionTitle{font-size:11px;letter-spacing:1.5px;color:var(--mut);
   text-transform:uppercase;margin:14px 0 6px;font-weight:700}
-.memeColorTabs{display:flex;gap:6px;margin-bottom:8px}
-.memeColorTab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);
-  background:var(--panel2);color:var(--mut);font-weight:700;font-size:12px;
-  cursor:pointer;text-align:center;transition:.15s}
-.memeColorTab.sel{border-color:var(--gold);color:var(--txt);background:rgba(212,175,55,.1)}
 .memePieceGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .memePieceGrid--events{grid-template-columns:repeat(2,1fr)}
 .memePieceCard{display:flex;flex-direction:column;align-items:center;gap:4px;
