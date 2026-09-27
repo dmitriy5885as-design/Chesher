@@ -772,6 +772,13 @@ function resetAllData() {
     localStorage.removeItem('chesher_cfg');
     localStorage.removeItem('chesher_save');
     localStorage.removeItem('chesher_guest_id');
+    localStorage.removeItem('chesher_pending_fns');
+    localStorage.removeItem('chesher_daily_gift');
+    localStorage.removeItem('chesher_guest_name_changed');
+    localStorage.removeItem('chesher_meme_cfg');
+    localStorage.removeItem('chesher_deco_pos');
+    localStorage.removeItem('chesher_mobile');
+    localStorage.removeItem('chesher_visited');
     if(ChesAuth && typeof ChesAuth.logout === 'function') {
       ChesAuth.logout().then(() => location.reload());
     } else {

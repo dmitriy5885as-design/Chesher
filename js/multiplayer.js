@@ -218,7 +218,14 @@ const ChesMP = {
   listenInvites(callback) {
     if(!firebaseRtdb || !ChesAuth.user) return;
     const uid = ChesAuth.getUid();
-    firebaseRtdb.ref('invites/' + uid).on('child_added', snap => {
+    // от прошлого слушателя — иначе приглашения дублируются после переподключения
+    if(this._invitesRef) {
+      try { this._invitesRef.off('child_added'); } catch(e) {}
+      this._invitesRef = null;
+    }
+    const ref = firebaseRtdb.ref('invites/' + uid);
+    this._invitesRef = ref;
+    ref.on('child_added', snap => {
       const inv = snap.val();
       inv._key = snap.key;
       callback(inv);
@@ -236,6 +243,13 @@ const ChesMP = {
   /* --- Слушать изменения в лобби --- */
   _listenGame() {
     if(!this.lobbyId) return;
+    // отписаться от предыдущей партии — без этого обработчики накапливаются
+    try {
+      if(this._gameRef) this._gameRef.off();
+      if(this._movesRef) this._movesRef.off();
+      if(this._drawRef) this._drawRef.off();
+      if(this._drawRespRef) this._drawRespRef.off();
+    } catch(e) {}
     const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
     this._gameRef = ref;
     const movesRef = ref.child('moves');

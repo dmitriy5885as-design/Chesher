@@ -20,6 +20,7 @@ const MemeThreatHandler = (() => {
   var _safetyTimers = [];
   var gunAudio = null;
   var _seenVideos = {};
+  var _gen = 0;
 
   function getSquarePos(row, col) {
     var b = document.getElementById('boardBox');
@@ -47,6 +48,7 @@ const MemeThreatHandler = (() => {
   }
 
   function clearAll() {
+    _gen++; // инвалидирует отложенные setTimeout(checkMove, 200) после конца партии
     clearGuns();
     clearSafetyTimers();
     _locked = false;
@@ -365,7 +367,11 @@ const MemeThreatHandler = (() => {
       _pendingMemeData = event.data;
     });
     MemeEventBus.subscribe('MOVE', function(event) {
-      setTimeout(function() { checkMove(event.data); }, 200);
+      var g = _gen;
+      setTimeout(function() {
+        if(g !== _gen) return; // партия закончилась/сброшена — не навешиваем пистолеты постфактум
+        checkMove(event.data);
+      }, 200);
     });
   }
 
