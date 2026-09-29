@@ -634,6 +634,9 @@ function renderProfScr() {
       };
     }
   }
+
+  // Цели дня — блок в основной вкладке профиля
+  if(typeof Quests !== 'undefined') Quests.render();
 }
 
 /* --- Модалка превращения --- */
@@ -949,6 +952,42 @@ function renderProfStyleTab() {
     });
     segSkinProf.appendChild(skinRow);
   }
+
+  // Премиум-косметика: цвет ника, рамка профиля, эффект победы
+  const cosGroups = [
+    { el: 'segNickCos',  list: (typeof NICK_COLORS !== 'undefined' ? NICK_COLORS : []),  field: 'nickColor' },
+    { el: 'segFrameCos', list: (typeof PROFILE_FRAMES !== 'undefined' ? PROFILE_FRAMES : []), field: 'profileFrame' },
+    { el: 'segFxCos',    list: (typeof WIN_FX !== 'undefined' ? WIN_FX : []),    field: 'winFx' }
+  ];
+  cosGroups.forEach(g => {
+    const box = document.getElementById(g.el);
+    if(!box) return;
+    box.innerHTML = '';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px';
+    g.list.forEach(item => {
+      const isOwned = owned.includes(item.id);
+      const isActive = cu && cu[g.field] === item.id;
+      const btn = document.createElement('button');
+      btn.className = 'mBtn' + (isActive ? ' primary' : '');
+      btn.style.cssText = 'flex:0 0 auto;padding:8px 12px;font-size:12.5px;opacity:' + (isOwned ? '1' : '0.5');
+      const swatch = item.color
+        ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + item.color + ';margin-right:6px;vertical-align:middle"></span>'
+        : '';
+      btn.innerHTML = swatch + item.name + (isOwned ? '' : '<div style="font-size:10px;color:var(--gold)">💎 ' + item.gemPrice + '</div>');
+      btn.addEventListener('click', () => {
+        if(!isOwned) { toast('Купить можно в магазине: вкладка «💎 Премиум»'); return; }
+        cu[g.field] = item.id;
+        saveProfiles();
+        if(typeof applyCosmetics === 'function') applyCosmetics();
+        snd.ui();
+        renderProfStyleTab();
+        toast('Выбрано: ' + item.name);
+      });
+      row.appendChild(btn);
+    });
+    box.appendChild(row);
+  });
 }
 
 /* --- Вкладка: История матчей --- */
@@ -1057,7 +1096,7 @@ function renderReplayBoard(fen) {
   }
 }
 
-function openReplay(matchIdx) {
+function openReplay(matchIdx, startIdx) {
   const cu = ProfilesManager.getCurrent();
   if(!cu) return;
   const h = (cu.matchHistory || [])[matchIdx];
@@ -1071,8 +1110,8 @@ function openReplay(matchIdx) {
     rvFens.push(m.fen);
     rvNotes.push(m.notation || '');
   }
-  rvIdx = 0;
-  renderReplayBoard(rvFens[0]);
+  rvIdx = (typeof startIdx === 'number' && startIdx > 0 && startIdx < rvFens.length) ? startIdx : 0;
+  renderReplayBoard(rvFens[rvIdx]);
   openOv('ovReplay');
 }
 

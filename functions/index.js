@@ -2,6 +2,7 @@
  * CHESHER — Cloud Functions
  * - submitResult: серверная запись результата партии (античит: лимиты, капы, ELO)
  * - awardCoins:   серверная выдача монет за события (ежедневный бонус, подарок и т.д.)
+ * - awardGems:     выдача кристаллов 💎 за вехи/достижения (дневные капы)
  * - grantGems:     выдача донатных кристаллов (только сервер: admin-claim / верификация платежа)
  *
  * Правила: клиент НЕ может увеличить coins/ratings/wins/games/gems в Firestore (firestore.rules).
@@ -31,6 +32,12 @@ const AWARD_CAPS = {
   puzzle: { max: 10, perDay: 10 },
   tournament: { max: 100, perDay: 100 },
   achievement: { max: 150, perDay: 300 }
+};
+
+// Капы на выдачу кристаллов 💎 (вехи/достижения; платежи — через grantGems)
+const GEM_CAPS = {
+  achievement: { max: 15, perDay: 30 },
+  milestone: { max: 25, perDay: 50 }
 };
 
 function todayKey(ms) {
@@ -168,6 +175,63 @@ exports.awardCoins = onCall(async (request) => {
     }, { merge: true });
 
     return { granted: grant, coins: (user.coins || 0) + grant };
+  });
+});
+
+/**
+ * Выдача кристаллов 💎 за вехи/достижения. Клиент шлёт { reason, amount }.
+ * amount обрезается до per-reason дневного капа. Возвращает { granted, gems }.
+ * (grantGems выше — для платежей/admin; эта — для игровых наград.)
+ */
+exports.awardGems = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const data = request.data || {};
+
+  const reason = data.reason;
+  const capCfg = GEM_CAPS[reason];
+  if (!capCfg) throw new HttpsError('invalid-argument', 'bad reason');
+
+  let amount = Math.floor(Number(data.amount));
+  if (!Number.isFinite(amount) || amount <= 0) throw new HttpsError('invalid-argument', 'bad amount');
+  amount = Math.min(amount, capCfg.max);
+
+  const now = Date.now();
+  const day = todayKey(now);
+  const userRef = db.collection('users').doc(uid);
+  const limRef = userRef.collection('meta').doc('limits');
+
+  return db.runTransaction(async (tx) => {
+    const [userSnap, limSnap] = await Promise.all([tx.get(userRef), tx.get(limRef)]);
+    if (!userSnap.exists) throw new HttpsError('failed-precondition', 'profile not found');
+    const user = userSnap.data();
+    const lim = limSnap.exists ? limSnap.data() : {};
+
+    const awardAts = cleanRecent(lim.awardAts, now, 3600000);
+    if (awardAts.length >= AWARD_HOURLY_LIMIT) {
+      throw new HttpsError('resource-exhausted', 'award rate limit');
+    }
+    awardAts.push(now);
+
+    const used = (lim.gemDay === day && lim.gemByReason && typeof lim.gemByReason === 'object')
+      ? { ...lim.gemByReason }
+      : {};
+    const usedToday = used[reason] || 0;
+    const grant = Math.max(0, Math.min(amount, capCfg.perDay - usedToday));
+    used[reason] = usedToday + grant;
+
+    if (grant > 0) {
+      tx.update(userRef, {
+        gems: admin.firestore.FieldValue.increment(grant),
+        lastAwardAt: now
+      });
+    }
+    tx.set(limRef, {
+      awardAts,
+      gemDay: day,
+      gemByReason: used
+    }, { merge: true });
+
+    return { granted: grant, gems: (user.gems || 0) + grant };
   });
 });
 

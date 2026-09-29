@@ -211,6 +211,17 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .goStats .gsStreak{color:var(--gold);border-color:#6b5a2a}
 .goStats .gsCoin{color:var(--gold)}
 
+/* --- Оверлей конца партии: разбор --- */
+#goAnalysis{margin:4px 0 8px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel2);text-align:left}
+.goAnTitle{font-size:13px;font-weight:800;margin-bottom:6px;text-align:center}
+.goAnRow{display:flex;align-items:center;gap:8px;justify-content:space-between;
+  padding:5px 0;font-size:13px;border-top:1px solid var(--line)}
+.goAnRow:first-of-type{border-top:none}
+.goAnTx{min-width:0;line-height:1.4}
+.goAnTx b{color:var(--red)}
+.goAnBtn{flex:0 0 auto;font-size:12px;padding:5px 10px;min-height:32px}
+
 /* --- Магазин: статусы --- */
 .shopItemSt{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
   text-align:center;color:var(--mut);margin:-2px 0 4px}
@@ -226,6 +237,53 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
 .achNm{font-size:13.5px;font-weight:700}
 .achDs{font-size:11.5px;color:var(--mut);line-height:1.3}
 .achRw{font-size:11px;font-weight:800;color:var(--gold);white-space:nowrap}
+
+/* --- Цели дня --- */
+.questRow{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel2);margin-bottom:6px}
+.questRow.done{border-color:#4c6636;background:rgba(76,102,54,.10)}
+.qIcon{font-size:17px;flex:0 0 auto}
+.qBody{flex:1;min-width:0}
+.qTitle{font-size:13px;font-weight:700;margin-bottom:5px}
+.qTitle .qOk{color:var(--green)}
+.qBar{height:6px;border-radius:4px;background:var(--panel);overflow:hidden;border:1px solid var(--line)}
+.qBar i{display:block;height:100%;background:var(--gold);border-radius:4px;transition:width .3s}
+.questRow.done .qBar i{background:var(--green)}
+.qReward{font-size:11px;font-weight:800;color:var(--gold);white-space:nowrap;flex:0 0 auto}
+.questRow.done .qReward{color:var(--green)}
+
+/* --- Премиум-косметика: цвет ника --- */
+#pbName,.plName{color:var(--nick-cos,inherit)}
+
+/* --- Премиум-косметика: рамка профиля --- */
+body[data-frame="frame_gold"] #plCard{border-color:#f7c531;box-shadow:0 0 10px rgba(247,197,49,.30)}
+body[data-frame="frame_violet"] #plCard{border-color:#b48ee8;box-shadow:0 0 10px rgba(180,142,232,.30)}
+body[data-frame="frame_green"] #plCard{border-color:#67c26b;box-shadow:0 0 10px rgba(103,194,107,.30)}
+body[data-frame="frame_flame"] #plCard{border-color:#e86a5a;box-shadow:0 0 10px rgba(232,106,90,.30)}
+body[data-frame="frame_gold"] #pbAva{box-shadow:0 0 6px #f7c531}
+body[data-frame="frame_violet"] #pbAva{box-shadow:0 0 6px #b48ee8}
+body[data-frame="frame_green"] #pbAva{box-shadow:0 0 6px #67c26b}
+body[data-frame="frame_flame"] #pbAva{box-shadow:0 0 6px #e86a5a}
+
+/* --- Премиум-косметика: эффект победы --- */
+#ovOver .modal{position:relative;overflow:hidden}
+.confetti{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;
+  opacity:0;pointer-events:none;animation:confettiFall linear forwards;z-index:5}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(420px) rotate(540deg);opacity:0}
+}
+#ovOver .modal.fxRays::after{content:'';position:absolute;inset:-40%;pointer-events:none;
+  background:radial-gradient(circle,rgba(247,197,49,.35) 0%,rgba(247,197,49,0) 65%);
+  animation:fxRaysPulse 2.2s ease-out forwards;z-index:0}
+@keyframes fxRaysPulse{0%{transform:scale(.5);opacity:0}30%{opacity:1}100%{transform:scale(1.4);opacity:0}}
+
+/* --- Магазин: заголовки секций премиума --- */
+.shopSectionTitle{grid-column:1/-1;font-size:12px;font-weight:800;letter-spacing:1px;
+  text-transform:uppercase;color:var(--mut);margin:10px 0 2px;text-align:center}
+.nickPrev{font-size:17px !important;font-weight:800}
+.framePrev{font-size:20px !important;border-width:3px !important;border-style:solid !important;border-radius:50% !important}
+.fxPrev{font-size:20px !important}
 
 /* --- Пустые состояния --- */
 .emptyState{text-align:center;color:var(--mut);padding:22px 10px;font-size:13.5px;line-height:1.45}

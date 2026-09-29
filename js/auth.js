@@ -214,6 +214,13 @@ const ChesAuth = {
     return data;
   },
 
+  /* --- Выдача кристаллов 💎 -> awardGems (серверные капы) --- */
+  async awardGems(reason, amount) {
+    const data = await this.callFn('awardGems', { reason: reason, amount: amount });
+    if(!data && this.user && amount > 0) this._queuePending({ type: 'gem', payload: { reason: reason, amount: amount }, ts: Date.now() });
+    return data;
+  },
+
   /* --- Очередь неотправленных наград (офлайн) --- */
   _queuePending(item) {
     try {
@@ -236,6 +243,7 @@ const ChesAuth = {
       let ok = null;
       if(item && item.type === 'result') ok = await this.callFn('submitResult', item.payload);
       else if(item && item.type === 'award') ok = await this.callFn('awardCoins', item.payload);
+      else if(item && item.type === 'gem') ok = await this.callFn('awardGems', item.payload);
       if(!ok && item) remain.push(item);
       else if(ok) this.applyServerCoins(ok);
     }
@@ -258,7 +266,11 @@ const ChesAuth = {
       owned: localProfile.owned || ['classic'],
       lastNickChange: localProfile.lastNickChange || 0,
       customAva: localProfile.customAva || null,
-      playerId: localProfile.playerId || null
+      playerId: localProfile.playerId || null,
+      // Стрик входа и цели дня — бэкап в облако (правила update их не ограничивают)
+      giftStreak: localProfile.giftStreak || 0,
+      giftLast: localProfile.giftLast || '',
+      quests: localProfile.quests || null
     };
     // Друзья/заявки живут только в облаке (у локального Profile этих полей нет) —
     // никогда не затираем их пустым массивом при синхронизации
