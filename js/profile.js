@@ -38,6 +38,12 @@ class Profile {
     this.owned = data.owned || ['classic', 'board_classic'];
     this.ach = data.ach || {};
     this.lastBonus = data.lastBonus || '';
+    this.giftStreak = data.giftStreak || 0;
+    this.giftLast = data.giftLast || '';
+    this.quests = data.quests || null;
+    this.nickColor = data.nickColor || '';
+    this.profileFrame = data.profileFrame || '';
+    this.winFx = data.winFx || '';
     this.lastNickChange = data.lastNickChange || 0;
     this.customAva = data.customAva || null;
     this.admin = data.admin || false;
@@ -199,6 +205,12 @@ class Profile {
       owned: this.owned,
       ach: this.ach,
       lastBonus: this.lastBonus,
+      giftStreak: this.giftStreak,
+      giftLast: this.giftLast,
+      quests: this.quests,
+      nickColor: this.nickColor,
+      profileFrame: this.profileFrame,
+      winFx: this.winFx,
       lastNickChange: this.lastNickChange,
       customAva: this.customAva,
       admin: this.admin,
@@ -222,6 +234,12 @@ class Profile {
       owned: data.owned,
       ach: data.ach,
       lastBonus: data.lastBonus,
+      giftStreak: data.giftStreak,
+      giftLast: data.giftLast,
+      quests: data.quests,
+      nickColor: data.nickColor,
+      profileFrame: data.profileFrame,
+      winFx: data.winFx,
       lastNickChange: data.lastNickChange,
       customAva: data.customAva,
       admin: data.admin,

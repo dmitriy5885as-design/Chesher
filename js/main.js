@@ -1216,6 +1216,7 @@ function endGame(reason, winnerColor, drawReason) {
   Store.checkAchievements();
   renderCoins();
   renderProfBar();
+  if(typeof Quests !== 'undefined') Quests.onEvent('game', { result: result, vsBot: cfg.bot !== 'off' });
 
   // Calculate ELO change
   const eloAfter = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
@@ -1249,7 +1250,12 @@ function endGame(reason, winnerColor, drawReason) {
     goStats.innerHTML = chips.join('');
     goStats.style.display = chips.length ? '' : 'none';
   }
+  // Секция разбора очищается при каждом конце партии (заполняется асинхронно)
+  const gaBox = document.getElementById('goAnalysis');
+  if(gaBox) { gaBox.innerHTML = ''; gaBox.style.display = 'none'; }
   openOv('ovOver');
+  // Эффект победы (премиум-косметика)
+  if(result === 'win' && typeof applyWinFx === 'function') applyWinFx();
   // Rematch button only for network games with a live lobby
   const rematchBtn = document.getElementById('overRematch');
   if(rematchBtn) {
@@ -1293,6 +1299,15 @@ function endGame(reason, winnerColor, drawReason) {
   gameMoves = [];
   if(cu.matchHistory.length > 50) cu.matchHistory = cu.matchHistory.slice(-50);
   saveProfiles();
+
+  // Разбор партии после поражения: 1-2 хода с наибольшей просадкой оценки
+  if(result === 'loss' && cfg.gameMode !== 'local' && typeof ChesAnalysis !== 'undefined') {
+    const histEntry = cu.matchHistory[cu.matchHistory.length - 1];
+    setTimeout(() => {
+      const found = ChesAnalysis.analyze(histEntry, cfg.human || S.humanColor || 'w');
+      renderGameAnalysis(found, histEntry);
+    }, 350);
+  }
 
   // Sync profile to Firebase
   if(ChesAuth && ChesAuth.user && !ChesAuth.user.isAnonymous) {
@@ -1573,6 +1588,7 @@ function _puzzleSolveDone() {
     localStorage.setItem(key, String(reward));
     if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('puzzle', reward);
   }
+  if(typeof Quests !== 'undefined') Quests.onEvent('puzzle');
 
   const old = document.getElementById('ovPuzzle');
   if(old) old.remove();
@@ -3394,6 +3410,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCfg();
   if(typeof normalizeSkin === 'function') normalizeSkin();
   initStore();
+  if(typeof applyCosmetics === 'function') applyCosmetics();
   initDOMrefs();
   initBoardPointer();
   syncThemeUI();
@@ -3542,13 +3559,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const today = new Date().toISOString().slice(0, 10);
     const lastClaim = localStorage.getItem('chesher_daily_gift');
+    const cuG = ProfilesManager.getCurrent();
+    const streakG = (cuG && cuG.giftStreak) || 0;
     if(lastClaim === today) {
       btn.classList.add('claimed');
       btn.classList.remove('disabled');
-      btn.title = 'Уже получено сегодня!';
+      btn.title = 'Уже получено сегодня!' + (streakG > 1 ? ' · серия ' + streakG + ' ' + pluralRu(streakG, ['день', 'дня', 'дней']) + ' 🔥' : '');
     } else {
       btn.classList.remove('claimed', 'disabled');
-      btn.title = 'Забрать ежедневный подарок!';
+      btn.title = 'Забрать подарок!' + (streakG > 0 ? ' · серия ' + streakG + ' ' + pluralRu(streakG, ['день', 'дня', 'дней']) + ' 🔥' : '');
     }
   }
   window.updateGiftBtn = updateGiftBtn;
@@ -3561,19 +3580,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const lastClaim = localStorage.getItem('chesher_daily_gift');
     if(lastClaim === today) { toast('Уже получено сегодня!'); return; }
 
-    const coins = 25 + Math.floor(Math.random() * 26);
+    const yest = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const cu = ProfilesManager.getCurrent();
+    // Стрик: вчера был забран → серия растёт, иначе начинается заново
+    let streak = 1;
+    if(cu && cu.giftLast === today) streak = cu.giftStreak || 1;
+    else if(cu && cu.giftLast === yest) streak = (cu.giftStreak || 0) + 1;
+    const milestone = streak % 7 === 0;
+    const coins = 25 + Math.floor(Math.random() * 26) + Math.min(30, (streak - 1) * 5) + (milestone ? 100 : 0);
 
     localStorage.setItem('chesher_daily_gift', today);
-    const cu = ProfilesManager.getCurrent();
     if(cu) {
+      cu.giftStreak = streak;
+      cu.giftLast = today;
       cu.coins = (cu.coins || 0) + coins;
       saveProfiles();
     }
     renderCoins();
     updateGiftBtn();
-    toast('🎁 Ежедневный подарок: +' + coins + ' 🪙');
+    toast('🎁 Ежедневный подарок: +' + coins + ' 🪙 · серия ' + streak + ' ' + pluralRu(streak, ['день', 'дня', 'дней']) + ' 🔥');
+    if(typeof Quests !== 'undefined') Quests.onEvent('gift');
     if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('gift', coins);
-    if(typeof Analytics !== 'undefined') Analytics.track('daily_gift', { coins: coins });
+    if(typeof Analytics !== 'undefined') Analytics.track('daily_gift', { coins: coins, streak: streak });
   });
 
   // === Friends panel ===
@@ -3913,8 +3941,16 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('scrFriends');
     NetUI._loadFriends();
   });
-  bind('mpRandomBtn', () => {
-    toast('⏱ СКОРО: «Случайный матч» ещё в работе');
+  bind('mpRandomBtn', async () => {
+    if(typeof ChesMM === 'undefined') return;
+    if(ChesMM.active) {
+      ChesMM.cancel('Поиск отменён');
+      toast('Поиск отменён');
+      return;
+    }
+    const ok = await ensureAuth();
+    if(!ok) { toast('Нужна авторизация'); return; }
+    ChesMM.start();
   });
 
   // Game screen
@@ -4236,7 +4272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.17').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.18').catch(() => {});
     });
   }
 });

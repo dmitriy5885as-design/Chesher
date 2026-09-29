@@ -42,6 +42,13 @@
       }
     },
 
+    "matchmaking": {
+      ".read": "auth != null",
+      "$key": {
+        ".write": "auth != null && (newData.child('uid').val() === auth.uid || data.child('uid').val() === auth.uid)"
+      }
+    },
+
     "feedback": {
       ".write": true,
       ".read": false

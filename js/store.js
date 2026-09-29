@@ -276,6 +276,25 @@ const AVATARS = {
   alien: {name: 'Пришелец', price: 300, emoji: '👽'}
 };
 
+/* --- Премиум-косметика (покупается за кристаллы 💎) --- */
+const NICK_COLORS = [
+  { id: 'nick_gold',   name: 'Золотой',    color: '#f7c531', gemPrice: 20 },
+  { id: 'nick_amber',  name: 'Янтарный',   color: '#f0a830', gemPrice: 20 },
+  { id: 'nick_violet', name: 'Фиолетовый', color: '#b48ee8', gemPrice: 30 },
+  { id: 'nick_green',  name: 'Изумрудный', color: '#67c26b', gemPrice: 30 },
+  { id: 'nick_red',    name: 'Алый',       color: '#e86a5a', gemPrice: 30 }
+];
+const PROFILE_FRAMES = [
+  { id: 'frame_gold',   name: 'Золотая рамка',    color: '#f7c531', gemPrice: 40 },
+  { id: 'frame_violet', name: 'Сиреневая рамка',  color: '#b48ee8', gemPrice: 40 },
+  { id: 'frame_green',  name: 'Изумрудная рамка', color: '#67c26b', gemPrice: 40 },
+  { id: 'frame_flame',  name: 'Пламенная рамка',  color: '#e86a5a', gemPrice: 60 }
+];
+const WIN_FX = [
+  { id: 'fx_confetti', name: 'Конфетти', gemPrice: 50 },
+  { id: 'fx_rays',     name: 'Сияние',   gemPrice: 50 }
+];
+
 /* --- Текущая вкладка магазина --- */
 // shopTab now stored in cfg.shopTab
 
@@ -285,7 +304,8 @@ const ACHS = [
   {id:'ten_wins', name:'Десятка', desc:'10 побед всего', coins:50, chk:p=>p.st.wins>=10},
   {id:'streak3', name:'В огне', desc:'3 победы подряд', coins:30, chk:p=>(p.st.streak||0)>=3},
   {id:'slayer', name:'Убийца машин', desc:'5 побед над ботом', coins:40, chk:p=>(p.winsBot||0)>=5},
-  {id:'rich', name:'Богач', desc:'Накопить 500 монет', coins:0, chk:p=>p.coins>=500}
+  {id:'rich', name:'Богач', desc:'Накопить 500 монет', coins:0, gems:10, chk:p=>p.coins>=500},
+  {id:'gift_streak_7', name:'Постоялец', desc:'Серия входов 7 дней', coins:50, gems:15, chk:p=>(p.giftStreak||0)>=7}
 ];
 
 /* --- Менеджмент магазина --- */
@@ -416,6 +436,34 @@ const Store = {
           '<button class="buyBtn" data-type="skin" data-id="' + id + '">' +
           (isActive ? '✓' : (isOwned ? 'Выбрать' : '💎 ' + skin.gemPrice)) + '</button>';
         grid.appendChild(card);
+      });
+      // Премиум-косметика: цвет ника, рамка профиля, эффект победы
+      const cosSections = [
+        { title: '✨ Цвет ника', type: 'nick', list: NICK_COLORS, field: 'nickColor' },
+        { title: '🖼 Рамка профиля', type: 'frame', list: PROFILE_FRAMES, field: 'profileFrame' },
+        { title: '🎉 Эффект победы', type: 'fx', list: WIN_FX, field: 'winFx' }
+      ];
+      cosSections.forEach(sec => {
+        const head = document.createElement('div');
+        head.className = 'shopSectionTitle';
+        head.textContent = sec.title;
+        grid.appendChild(head);
+        sec.list.forEach(item => {
+          const isOwned = owned.includes(item.id);
+          const isActive = profile && profile[sec.field] === item.id;
+          const card = document.createElement('div');
+          card.className = 'shopItem premiumItem' + (isActive ? ' active' : '');
+          let prev = '';
+          if(sec.type === 'nick') prev = '<div class="shopItemPreview nickPrev" style="color:' + item.color + '">Игрок</div>';
+          else if(sec.type === 'frame') prev = '<div class="shopItemPreview framePrev" style="border-color:' + item.color + '">🖼</div>';
+          else prev = '<div class="shopItemPreview fxPrev">🎉</div>';
+          card.innerHTML = prev +
+            '<div class="shopItemName">' + item.name + '</div>' +
+            (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
+            '<button class="buyBtn" data-type="' + sec.type + '" data-id="' + item.id + '">' +
+            (isActive ? '✓' : (isOwned ? 'Выбрать' : '💎 ' + item.gemPrice)) + '</button>';
+          grid.appendChild(card);
+        });
       });
     } else if(cfg.shopTab === 'boards') {
       Object.keys(BOARDS).forEach(id => {
@@ -608,6 +656,33 @@ const Store = {
         } else {
           lackCoins(avatar.price);
         }
+      } else if(type === 'nick' || type === 'frame' || type === 'fx') {
+        const list = type === 'nick' ? NICK_COLORS : type === 'frame' ? PROFILE_FRAMES : WIN_FX;
+        const item = list.find(x => x.id === id);
+        if(!item) return;
+        const field = type === 'nick' ? 'nickColor' : type === 'frame' ? 'profileFrame' : 'winFx';
+        const equip = () => {
+          profile[field] = item.id;
+          saveProfiles();
+          if(typeof applyCosmetics === 'function') applyCosmetics();
+          Store.renderShop();
+          toast('Выбрано: ' + item.name);
+        };
+        if(profile.owned.includes(item.id)) { equip(); return; }
+        if((profile.gems || 0) < item.gemPrice) { lackGems(item.gemPrice); return; }
+        profile.spendGems(item.gemPrice);
+        profile.owned.push(item.id);
+        profile[field] = item.id;
+        saveProfiles();
+        if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+          Promise.resolve(ChesAuth.updateProfile({ gems: profile.gems, owned: profile.owned })).catch(() => {});
+        }
+        if(typeof applyCosmetics === 'function') applyCosmetics();
+        renderCoins();
+        Store.renderShop();
+        if(typeof Analytics !== 'undefined') Analytics.track('purchase_gem_item', { id: id, price: item.gemPrice });
+        toast('Куплено: ' + item.name + ' ✨');
+        snd.win();
       }
     };
   },
@@ -675,12 +750,16 @@ const Store = {
     ACHS.forEach(ach => {
       if(!profile.ach[ach.id] && ach.chk(profile)) {
         profile.ach[ach.id] = Date.now();
-        const msg = '🏆 "' + ach.name + '" · +' + ach.coins + ' 🪙';
+        const msg = '🏆 "' + ach.name + '" · +' + ach.coins + ' 🪙' + (ach.gems ? ' +' + ach.gems + ' 💎' : '');
         setTimeout(() => {
           toast(msg);
           if(ach.coins) {
             Store.addCoins(ach.coins);
             if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('achievement', ach.coins);
+          }
+          if(ach.gems) {
+            profile.gems = (profile.gems || 0) + ach.gems;
+            if(typeof ChesAuth !== 'undefined' && ChesAuth.user && ChesAuth.awardGems) ChesAuth.awardGems('achievement', ach.gems);
           }
           saveProfiles();
         }, 650);
@@ -743,6 +822,46 @@ function initStore() {
 
 // Инициализация перенесена в main.js
 // (document.addEventListener('DOMContentLoaded', initStore) — удалено, чтобы избежать конфликта)
+
+/* --- Применение премиум-косметики профиля --- */
+function applyCosmetics() {
+  const cu = ProfilesManager.getCurrent();
+  const root = document.documentElement;
+  const nc = NICK_COLORS.find(x => x.id === (cu && cu.nickColor));
+  if(nc && nc.color) root.style.setProperty('--nick-cos', nc.color);
+  else root.style.removeProperty('--nick-cos');
+  const fr = PROFILE_FRAMES.find(x => x.id === (cu && cu.profileFrame));
+  document.body.dataset.frame = (fr && fr.id) || '';
+}
+window.applyCosmetics = applyCosmetics;
+
+/* --- Эффект победы на оверлее конца партии --- */
+function applyWinFx() {
+  const cu = ProfilesManager.getCurrent();
+  const fx = cu && cu.winFx;
+  if(!fx) return;
+  const modal = document.querySelector('#ovOver .modal');
+  if(!modal) return;
+  if(fx === 'fx_confetti') {
+    const colors = ['#f7c531', '#f0a830', '#67c26b', '#b48ee8', '#e86a5a'];
+    for(let i = 0; i < 26; i++) {
+      const s = document.createElement('span');
+      s.className = 'confetti';
+      s.style.left = Math.round(Math.random() * 100) + '%';
+      s.style.background = colors[i % colors.length];
+      s.style.animationDelay = (Math.random() * 0.5).toFixed(2) + 's';
+      s.style.animationDuration = (1.2 + Math.random() * 0.9).toFixed(2) + 's';
+      modal.appendChild(s);
+    }
+    setTimeout(() => modal.querySelectorAll('.confetti').forEach(el => el.remove()), 2600);
+  } else if(fx === 'fx_rays') {
+    modal.classList.remove('fxRays');
+    void modal.offsetWidth; // рестарт анимации
+    modal.classList.add('fxRays');
+    setTimeout(() => modal.classList.remove('fxRays'), 2200);
+  }
+}
+window.applyWinFx = applyWinFx;
 
 if(typeof window !== 'undefined') {
   window.SKINS = SKINS;
