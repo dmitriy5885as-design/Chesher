@@ -35,7 +35,7 @@
 
     "friendChats": {
       "$chatId": {
-        ".read": "auth != null && (chatId.matches(auth.uid + '_.*') || chatId.matches('.*_' + auth.uid))",
+        ".read": "auth != null && ($chatId.contains(auth.uid + '_') || $chatId.contains('_' + auth.uid))",
         "$msgKey": {
           ".write": "auth != null && (newData.child('by').val() === auth.uid || data.child('by').val() === auth.uid)"
         }

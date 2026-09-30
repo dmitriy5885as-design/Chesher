@@ -4272,7 +4272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.18').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.19').catch(() => {});
     });
   }
 });
