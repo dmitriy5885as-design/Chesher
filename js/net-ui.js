@@ -481,6 +481,14 @@ const NetUI = {
     // Listen for lobby updates (guest joining, ready status)
     const self = this;
     ChesMP.onLobbyUpdate(data => { self._onLobbyUpdate(data); });
+
+    // Событие могло прийти до подписки (гость подключается раньше показа экрана) —
+    // дорисуем текущее состояние лобби одним чтением
+    if(ChesMP.lobbyId && typeof firebaseRtdb !== 'undefined' && firebaseRtdb) {
+      firebaseRtdb.ref('lobbies/' + ChesMP.lobbyId).once('value')
+        .then(snap => { if(snap && snap.exists()) self._onLobbyUpdate(snap.val()); })
+        .catch(() => {});
+    }
   },
 
   _onLobbyUpdate(data) {

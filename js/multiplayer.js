@@ -114,7 +114,7 @@ const ChesMP = {
       guestReady: false,
       status: 'waiting',
       mode: mode,
-      ranked: !!settings.ranked,
+      ranked: !!cfg.ranked,
       timeSec: timeSec,
       timeInc: timeInc,
       color: isWhite ? 'b' : 'w',
@@ -147,17 +147,20 @@ const ChesMP = {
   async joinLobby(identifier) {
     if(!firebaseRtdb || !ChesAuth.user) return false;
     const uid = ChesAuth.getUid();
-    const id = String(identifier || '').trim().toUpperCase();
-    if(!id) return false;
+    const raw = String(identifier || '').trim();
+    if(!raw) return false;
+    // Короткий код (6 символов) → нормализуем регистр; push-id лобби не трогаем
+    const isCode = /^[A-Za-z2-9]{6}$/.test(raw);
+    const id = isCode ? raw.toUpperCase() : raw;
 
     // Короткий код → ищем лобби в codes/
     let lobbyId = id;
-    if(/^[A-Z2-9]{6}$/.test(id)) {
+    if(isCode) {
       const codeSnap = await firebaseRtdb.ref('codes/' + id).once('value');
       const val = codeSnap.val();
       if(val && val.lobbyId) lobbyId = val.lobbyId;
     }
-    this.lobbyCode = /^[A-Z2-9]{6}$/.test(id) ? id : null;
+    this.lobbyCode = isCode ? id : null;
 
     const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
     const guestProfile = ProfilesManager.getCurrent();
