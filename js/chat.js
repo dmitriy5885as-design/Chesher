@@ -97,6 +97,11 @@ function filterSwears(text) {
 /* --- Статус мьюта --- */
 let opponentMuted = false;
 
+/* --- Мультиплеер? --- */
+function isMpGame() {
+  return typeof cfg !== 'undefined' && cfg && (cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked');
+}
+
 /* --- Добавить сообщение в чат --- */
 function appendChat(sender, text) {
   if(sender === 'opp' && opponentMuted) return;
@@ -114,7 +119,10 @@ function appendChat(sender, text) {
   const filtered = filterSwears(text);
   let author = 'Вы';
   if(sender !== 'me') {
-    if(cfg.bot !== 'off') {
+    if(isMpGame() && typeof ChesMP !== 'undefined' && ChesMP.opponent) {
+      const opp = ChesMP.opponent;
+      author = ((opp.ava || '') + ' ' + (opp.name || 'Соперник')).trim();
+    } else if(cfg.bot !== 'off') {
       const cu = ProfilesManager.getCurrent();
       const botId = cu ? (cu.botId || 1) : 1;
       const bot = BOT_LIST.find(b => b.id === botId);
@@ -141,6 +149,11 @@ function sendChat() {
   appendChat('me', txt);
   inp.value = '';
   
+  if(isMpGame()) {
+    // Мультиплеер: уходим в RTDB-чат лобби (бот не отвечает)
+    if(typeof ChesMP !== 'undefined' && ChesMP.sendChat) ChesMP.sendChat(txt);
+    return;
+  }
   if(cfg.bot !== 'off') {
     setTimeout(() => botReply(txt), 600 + Math.random() * 1000);
   }
@@ -178,10 +191,26 @@ function sendEmoji(side, emoji) {
   }
   
   flyEmoji(emoji);
-  
+
+  if(isMpGame()) {
+    // Мультиплеер: отправить летящее эмодзи сопернику
+    if(typeof ChesMP !== 'undefined' && ChesMP.sendEmote) ChesMP.sendEmote(emoji);
+    return;
+  }
+
   if(side === 'bot') {
     setTimeout(botReactEmoji, 800 + Math.random() * 1200);
   }
+}
+
+/* --- Входящее из MP-чата (сообщение или эмоция соперника) --- */
+function handleIncomingMp(msg) {
+  if(!msg) return;
+  if(msg.emoji) {
+    if(!opponentMuted) flyEmoji(msg.emoji);
+    return;
+  }
+  if(msg.text) appendChat('opp', String(msg.text));
 }
 
 /* --- Летящий эмодзи --- */
@@ -261,7 +290,10 @@ function initChat() {
       muteBtn.textContent = opponentMuted ? '🔇' : '🔊';
       muteBtn.classList.toggle('muted', opponentMuted);
       let muteName = 'Соперник';
-      if(cfg.bot !== 'off') {
+      if(isMpGame() && typeof ChesMP !== 'undefined' && ChesMP.opponent) {
+        const opp = ChesMP.opponent;
+        muteName = ((opp.ava || '') + ' ' + (opp.name || 'Соперник')).trim();
+      } else if(cfg.bot !== 'off') {
         const cu = ProfilesManager.getCurrent();
         const botId = cu ? (cu.botId || 1) : 1;
         const bot = BOT_LIST.find(b => b.id === botId);
@@ -283,5 +315,5 @@ function initChat() {
 document.addEventListener('DOMContentLoaded', initChat);
 
 if(typeof window !== 'undefined') {
-  window.Chat = {appendChat, sendChat, botReply, sendEmoji, flyEmoji, botReactEmoji, buildEmotions, filterSwears, get opponentMuted() { return opponentMuted; }};
+  window.Chat = {appendChat, sendChat, botReply, sendEmoji, flyEmoji, botReactEmoji, buildEmotions, filterSwears, handleIncomingMp, get opponentMuted() { return opponentMuted; }};
 }

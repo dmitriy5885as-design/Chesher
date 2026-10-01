@@ -13,6 +13,7 @@ const MemeThreatHandler = (() => {
   var SPIN_MS = 800;
   var GUN_FADE_MS = 400;
   var guns = [];
+  var _gunAnchors = [];
   var fadeTimer = null;
   var _locked = false;
   var _pendingMemeData = null;
@@ -34,12 +35,24 @@ const MemeThreatHandler = (() => {
     return { x: rect.left + c * sq, y: rect.top + r * sq, sq: sq };
   }
 
+  /* Проценты внутри #boardBox — позиция НЕ зависит от скролла/resize/zoom,
+     потому что оверлей лежит в самом боксе и едет вместе с доской */
+  function getSquarePct(row, col) {
+    var b = document.getElementById('boardBox');
+    if(!b) return null;
+    var f = b.classList.contains('flipped');
+    var r = f ? (7 - row) : row;
+    var c = f ? (7 - col) : col;
+    return { x: c * 12.5, y: r * 12.5, s: 12.5 };
+  }
+
   function clearGuns() {
     if(fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
     for(var i = 0; i < guns.length; i++) {
       if(guns[i] && guns[i].parentNode) guns[i].parentNode.removeChild(guns[i]);
     }
     guns = [];
+    _gunAnchors = [];
   }
 
   function clearSafetyTimers() {
@@ -61,6 +74,18 @@ const MemeThreatHandler = (() => {
   function unlock() { _locked = false; _activeEls = []; clearSafetyTimers(); }
   function isVideoLocked() { return _locked; }
 
+  /* Пропустить всю текущую анимацию (видео/пистолеты) по тапу */
+  function skipAnimation() {
+    if(!_locked && !_activeEls.length && !guns.length) return;
+    clearSafetyTimers();
+    if(fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+    for(var i = 0; i < _activeEls.length; i++) removeEl(_activeEls[i]);
+    _activeEls = [];
+    clearGuns();
+    _pendingMemeData = null;
+    _locked = false;
+  }
+
   function removeEl(el) {
     if(el && el.parentNode) {
       var v = el.querySelector('video');
@@ -74,39 +99,26 @@ const MemeThreatHandler = (() => {
     var tgt = getSquarePos(tgtR, tgtC);
     if(!att || !tgt) return;
 
-    var cx = att.x + att.sq / 2;
-    var cy = att.y + att.sq / 2;
-    var dx = (tgt.x + tgt.sq / 2) - cx;
-    var dy = (tgt.y + tgt.sq / 2) - cy;
-    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-    var targetLeft = dx < 0;
-    var src = targetLeft ? GUN_LEFT : GUN_RIGHT;
-    var rotate = targetLeft ? (angle + 180) : angle;
-
-    var rad = angle * Math.PI / 180;
-    var dist = att.sq / 2 + 6;
-    var perpRad = (rad + Math.PI / 2);
-    var offset = (gunIndex || 0) * 14 - 7;
-    var gx = cx + Math.cos(rad) * dist + Math.cos(perpRad) * offset;
-    var gy = cy + Math.sin(rad) * dist + Math.sin(perpRad) * offset;
-
     var el = document.createElement('div');
     el.className = 'memeGun memeGun--spin';
-    el.style.left = (gx - GUN_SIZE / 2) + 'px';
-    el.style.top = (gy - GUN_SIZE / 2) + 'px';
-    el.style.width = GUN_SIZE + 'px';
-    el.style.height = GUN_SIZE + 'px';
-    el.style.setProperty('--ta', rotate + 'deg');
+    el.addEventListener('click', function(ev) { ev.stopPropagation(); skipAnimation(); });
 
     var img = document.createElement('img');
-    img.src = src;
+    img.src = (function() {
+      var cx0 = att.x + att.sq / 2, cy0 = att.y + att.sq / 2;
+      var dx0 = (tgt.x + tgt.sq / 2) - cx0;
+      return dx0 < 0 ? GUN_LEFT : GUN_RIGHT;
+    })();
     img.alt = 'gun';
     img.draggable = false;
 
     el.appendChild(img);
     document.body.appendChild(el);
     guns.push(el);
+
+    var anchor = { attR: attR, attC: attC, tgtR: tgtR, tgtC: tgtC, gunIndex: gunIndex || 0, el: el };
+    _gunAnchors.push(anchor);
+    _positionGun(anchor);
 
     try {
       if(!gunAudio) {
@@ -119,35 +131,101 @@ const MemeThreatHandler = (() => {
     } catch(e) {}
 
     setTimeout(function() {
+      if(!el.parentNode) return;
       el.classList.remove('memeGun--spin');
-      el.style.transform = 'rotate(' + rotate + 'deg)';
+      var a = _gunAnchors.filter(function(x) { return x.el === el; })[0];
+      if(a) el.style.transform = 'rotate(' + _gunAngle(a) + 'deg)';
     }, SPIN_MS);
   }
 
+  function _gunAngle(a) {
+    var att = getSquarePos(a.attR, a.attC);
+    var tgt = getSquarePos(a.tgtR, a.tgtC);
+    if(!att || !tgt) return 0;
+    var cx = att.x + att.sq / 2;
+    var cy = att.y + att.sq / 2;
+    var dx = (tgt.x + tgt.sq / 2) - cx;
+    var dy = (tgt.y + tgt.sq / 2) - cy;
+    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    return dx < 0 ? (angle + 180) : angle;
+  }
+
+  function _positionGun(a) {
+    var att = getSquarePos(a.attR, a.attC);
+    var tgt = getSquarePos(a.tgtR, a.tgtC);
+    if(!att || !tgt || !a.el || !a.el.parentNode) return;
+
+    var cx = att.x + att.sq / 2;
+    var cy = att.y + att.sq / 2;
+    var dx = (tgt.x + tgt.sq / 2) - cx;
+    var dy = (tgt.y + tgt.sq / 2) - cy;
+    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    var targetLeft = dx < 0;
+    var rotate = targetLeft ? (angle + 180) : angle;
+    var gunSize = Math.min(GUN_SIZE, Math.max(26, att.sq * 0.9));
+
+    var rad = angle * Math.PI / 180;
+    var dist = att.sq / 2 + 6;
+    var perpRad = (rad + Math.PI / 2);
+    var offset = a.gunIndex * 14 - 7;
+    var gx = cx + Math.cos(rad) * dist + Math.cos(perpRad) * offset;
+    var gy = cy + Math.sin(rad) * dist + Math.sin(perpRad) * offset;
+
+    a.el.style.left = (gx - gunSize / 2) + 'px';
+    a.el.style.top = (gy - gunSize / 2) + 'px';
+    a.el.style.width = gunSize + 'px';
+    a.el.style.height = gunSize + 'px';
+    a.el.style.setProperty('--ta', rotate + 'deg');
+  }
+
+  /* Пистолеты висят в viewport — при скролле/resize пересчитываем их позицию */
+  function _repositionGuns() {
+    if(!guns.length) return;
+    for(var i = 0; i < _gunAnchors.length; i++) _positionGun(_gunAnchors[i]);
+  }
+
+  /* FNV-1a: детерминированный выбор — оба игрока MP видят ОДНО И ТО ЖЕ видео
+     (сид = FEN позиции после хода + тип события) */
+  function _seedIndex(str, len) {
+    var h = 2166136261;
+    for(var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % len;
+  }
+
   function pickVideo(eventType, color, pieceType) {
+    var fen = '';
+    try { if(typeof S !== 'undefined' && S && S.toFen) fen = S.toFen(); } catch(e) {}
+    var seed = fen + '|' + eventType + '|' + color + '|' + (pieceType || '');
     if(MemeConfig.getVideoForEvent) {
-      var src = MemeConfig.getVideoForEvent(eventType, color, pieceType);
+      var src = MemeConfig.getVideoForEvent(eventType, color, pieceType, seed);
       if(src) return src;
     }
     var presets = MemeConfig.get('videoPresets');
     if(!presets || !presets[eventType]) return null;
     var arr = presets[eventType][color];
     if(!arr || !arr.length) return null;
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[_seedIndex(seed, arr.length)];
   }
 
   function showVideoAt(row, col, videoSrc, muted) {
     if(!videoSrc) return null;
-    var pos = getSquarePos(row, col);
-    if(!pos) return null;
+    var b = document.getElementById('boardBox');
+    var pos = getSquarePct(row, col);
+    if(!b || !pos) return null;
 
     var el = document.createElement('div');
     el.className = 'memeCheckVideo';
-    el.style.left = pos.x + 'px';
-    el.style.top = pos.y + 'px';
-    el.style.width = pos.sq + 'px';
-    el.style.height = pos.sq + 'px';
-    el.style.pointerEvents = 'none';
+    el.style.left = pos.x + '%';
+    el.style.top = pos.y + '%';
+    el.style.width = pos.s + '%';
+    el.style.height = pos.s + '%';
+    // тап по видео пропускает анимацию и разблокирует ход
+    el.addEventListener('pointerdown', function(ev) { ev.stopPropagation(); skipAnimation(); });
+    el.addEventListener('click', function(ev) { ev.stopPropagation(); skipAnimation(); });
 
     var vid = document.createElement('video');
     vid.src = encodeURI(videoSrc);
@@ -158,7 +236,7 @@ const MemeThreatHandler = (() => {
     vid.playsInline = true;
 
     el.appendChild(vid);
-    document.body.appendChild(el);
+    b.appendChild(el);
     _activeEls.push(el);
 
     vid.volume = muted ? 0 : (MemeConfig.get('volume') || 0.7);
@@ -214,8 +292,8 @@ const MemeThreatHandler = (() => {
     var piece = S.board[data.toRow] && S.board[data.toRow][data.toCol];
     if(!piece) return [];
     var movedColor = (piece === piece.toUpperCase()) ? 'w' : 'b';
-    var isHuman = data.isHumanMove;
-    var targetColor = isHuman ? (movedColor === 'w' ? 'b' : 'w') : S.humanColor;
+    // цель события — всегда цвет соперника ходящей фигуры: одинаково на клиентах обоих игроков
+    var targetColor = movedColor === 'w' ? 'b' : 'w';
 
     var seq = [];
 
@@ -363,6 +441,14 @@ const MemeThreatHandler = (() => {
 
   function init() {
     warmup();
+    if(typeof window !== 'undefined') {
+      var reposition = function() { _repositionGuns(); };
+      window.addEventListener('scroll', reposition, true);
+      window.addEventListener('resize', reposition);
+      try {
+        if(window.visualViewport) window.visualViewport.addEventListener('resize', reposition);
+      } catch(e) {}
+    }
     MemeEventBus.subscribe('MEME_EVENTS', function(event) {
       _pendingMemeData = event.data;
     });
@@ -380,7 +466,7 @@ const MemeThreatHandler = (() => {
     clearAll();
   }
 
-  return { showGun: showGun, clearAll: clearAll, clearGuns: clearGuns, init: init, warmup: warmup, isVideoLocked: isVideoLocked, forceUnlock: forceUnlock };
+  return { showGun: showGun, clearAll: clearAll, clearGuns: clearGuns, init: init, warmup: warmup, isVideoLocked: isVideoLocked, forceUnlock: forceUnlock, skipAnimation: skipAnimation };
 })();
 
 if(typeof window !== 'undefined') {

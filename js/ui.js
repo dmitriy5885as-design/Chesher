@@ -160,15 +160,15 @@ function refreshBars() {
     if(elNameTop) elNameTop.textContent = oppLabel;
     if(elAvaTop) elAvaTop.textContent = topCol === 'w' ? '⚪' : '⚫';
     if(elNmTop) elNmTop.textContent = oppLabel;
-  } else if(cfg.bot !== 'off' && bot) {
-    if(elNameTop) elNameTop.textContent = bot.emoji + ' ' + bot.name;
-    if(elAvaTop) elAvaTop.textContent = bot.emoji;
-    if(elNmTop) elNmTop.textContent = bot.name;
-  } else if(cfg.gameMode === 'multiplayer' && typeof ChesMP !== 'undefined' && ChesMP.opponent) {
+  } else if((cfg.gameMode === 'multiplayer' || cfg.gameMode === 'ranked') && typeof ChesMP !== 'undefined' && ChesMP.opponent) {
     const opp = ChesMP.opponent;
     if(elNameTop) elNameTop.textContent = (opp.ava || '❓') + ' ' + (opp.name || 'Соперник');
     if(elAvaTop) elAvaTop.textContent = opp.ava || '❓';
     if(elNmTop) elNmTop.textContent = opp.name || 'Соперник';
+  } else if(cfg.bot !== 'off' && bot) {
+    if(elNameTop) elNameTop.textContent = bot.emoji + ' ' + bot.name;
+    if(elAvaTop) elAvaTop.textContent = bot.emoji;
+    if(elNmTop) elNmTop.textContent = bot.name;
   } else {
     const oppName = (topCol === 'w' ? 'Белые' : 'Чёрные') + ' · Соперник';
     const oppId = (typeof S !== 'undefined' && S && S.opponentPlayerId) ? '  #' + S.opponentPlayerId : '';
@@ -266,11 +266,21 @@ function updateClockUI() {
 
 /* --- Обновление метки режима --- */
 function refreshModeLabel() {
+  const modeLabel = document.getElementById('modeLabel');
+  if(!modeLabel) return;
+  // Сетевая партия: не показываем «против бота» — играем против человека
+  if(cfg.gameMode === 'ranked') {
+    modeLabel.innerHTML = '<b>🏆 Рейтинговая</b><br>Против игрока · за ELO';
+    return;
+  }
+  if(cfg.gameMode === 'multiplayer') {
+    modeLabel.innerHTML = '<b>🌐 По сети</b><br>Против игрока';
+    return;
+  }
   const modeId = cfg.modeId || 'classic';
   const m = (MODES || []).find(x => x.id === modeId) || MODES[0];
   if(!m) return;
-  const modeLabel = document.getElementById('modeLabel');
-  if(modeLabel) modeLabel.innerHTML = '<b>' + m.icon + ' ' + m.name + '</b><br>' + m.desc;
+  modeLabel.innerHTML = '<b>' + m.icon + ' ' + m.name + '</b><br>' + m.desc;
 }
 
 /* --- Монеты --- */

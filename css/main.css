@@ -531,7 +531,7 @@ body[data-frame="frame_flame"] #pbAva{box-shadow:0 0 6px #e86a5a}
   border-radius:9px;border:1px solid var(--line)}
 .pbar .who{display:flex;flex-direction:column;min-width:0}
 .pbar .name{font-weight:700;font-size:14px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pbar .taken{font-size:13px;color:#cbc7bd;line-height:1.15;letter-spacing:-1px;max-width:60%;overflow:hidden;white-space:nowrap}
+.pbar .taken{font-size:13px;color:#cbc7bd;line-height:1.15;letter-spacing:0;max-width:60%;overflow:hidden;white-space:nowrap}
 .pbar .adv{color:var(--mut);font-size:12px;margin-left:4px}
 .clock{background:var(--panel2);border-radius:7px;padding:4px 12px;
   font-size:clamp(15px,2.4vw,20px);font-weight:700;font-variant-numeric:tabular-nums;
@@ -994,10 +994,34 @@ body.mobile-mode #toast{bottom:auto;top:14px}
   #leftCol .pCard{padding:4px;min-width:auto;flex:0 0 auto}
   .pbar,.pbarTop,.pbarBot{margin:0;width:100%;max-width:var(--bsz)}
   header{display:block;text-align:center}
-  #statusLine{grid-column:auto;margin:2px auto 0;width:100%;max-width:var(--bsz)}
+  #statusLine{grid-column:auto;margin:2px auto 0;width:100%;max-width:var(--bsz);font-size:12px;padding:2px 8px}
   #side{max-width:var(--bsz)}
   #moves{max-height:120px}
   .segBtn{flex:1 1 calc(33% - 8px)}
+
+  /* Чат убран сверху на мобильных — доступ через FAB-выдвижную панель */
+  #leftCol .chatBox{display:none}
+  body #btnChat{
+    display:flex!important;align-items:center;justify-content:center;
+    position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));left:auto;
+    width:46px;height:46px;z-index:1250;border-radius:50%;
+    background:linear-gradient(180deg,#3a6ea5,var(--green));border:1px solid var(--line);
+    color:#fff;font-size:20px;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);
+  }
+  body.chat-open #btnChat{bottom:calc(44vh + 12px);right:12px;left:auto}
+  body.chat-open #leftCol .chatBox{
+    display:flex!important;flex-direction:column;pointer-events:auto;
+    position:fixed;left:0;right:0;bottom:0;height:44vh;max-height:44vh;z-index:1300;
+    border-radius:14px 14px 0 0;padding:8px 10px;
+    background:var(--panel);border:1px solid var(--line);border-bottom:none;
+    box-shadow:0 -8px 26px rgba(0,0,0,.55);
+    min-height:0;max-width:none;width:auto;flex:none;
+  }
+  body.chat-open #chatMsgs{flex:1;overflow-y:auto;min-height:60px}
+  body.chat-open .chatInput{display:flex;gap:6px}
+  body.chat-open .chatInput input{flex:1;min-width:0;font-size:14px;min-height:42px}
+  body.chat-open .chatSend{flex:0 0 56px;min-height:42px}
 }
 @media(max-width:380px){
   :root{--bsz:98vw}
