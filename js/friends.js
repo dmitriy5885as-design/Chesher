@@ -38,6 +38,23 @@ const ChesFriends = {
       } catch(e) {}
     }
 
+    // Search by playerId (формат CHS-XXXX — как в помощи «найдите по ID»)
+    const pid = query.trim().toUpperCase();
+    if(/^CHS-[A-Z0-9]{4}$/.test(pid)) {
+      try {
+        const pidSnap = await firebaseDB.collection('users')
+          .where('playerId', '==', pid)
+          .limit(5)
+          .get();
+        pidSnap.forEach(doc => {
+          if(seen.has(doc.id)) return;
+          seen.add(doc.id);
+          const d = doc.data();
+          results.unshift({ uid: doc.id, name: d.name, ava: d.ava || '👽', elo: d.elo || 0, playerId: d.playerId || null });
+        });
+      } catch(e) {}
+    }
+
     return results;
   },
 

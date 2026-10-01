@@ -1,5 +1,5 @@
 /* CHESHER — Service Worker (PWA) */
-const CACHE = 'chesher-v10';
+const CACHE = 'chesher-v11';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
