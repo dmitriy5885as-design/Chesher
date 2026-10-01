@@ -247,17 +247,29 @@ const MemeConfig = (() => {
     save();
   }
 
-  function getVideoForEvent(eventType, color, pieceType) {
+  /* FNV-1a: если передан seed — выбор детерминированный (оба клиента MP
+     получают одно и то же видео), без seed — как раньше, Math.random */
+  function _seedIdx(seed, len) {
+    var h = 2166136261;
+    for(var i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % len;
+  }
+
+  function getVideoForEvent(eventType, color, pieceType, seed) {
     var vp = config.videoPresets;
     if(!vp || !vp[eventType]) return null;
+    var pick = function(arr) {
+      if(!arr || !arr.length) return null;
+      if(seed) return arr[_seedIdx(seed, arr.length)];
+      return arr[Math.floor(Math.random() * arr.length)];
+    };
     if(config.advancedPerPiece && pieceType && vp[eventType][pieceType]) {
-      var arr = vp[eventType][pieceType][color];
-      if(arr && arr.length) return arr[Math.floor(Math.random() * arr.length)];
-      return null;
+      return pick(vp[eventType][pieceType][color]);
     }
-    var arr = vp[eventType][color];
-    if(arr && arr.length) return arr[Math.floor(Math.random() * arr.length)];
-    return null;
+    return pick(vp[eventType][color]);
   }
 
   function setPieceVideo(eventType, pieceType, color, videos) {

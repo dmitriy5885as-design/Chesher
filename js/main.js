@@ -1342,7 +1342,11 @@ function endGame(reason, winnerColor, drawReason) {
 function onSquareClick(e) {
   if(_suppressClickTs && Date.now() - _suppressClickTs < 500) return;
   if(!S || S.gameOver) return;
-  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) return;
+  if(MemeConfig.isMemeMode && MemeConfig.isMemeMode() && typeof MemeThreatHandler !== 'undefined' && MemeThreatHandler.isVideoLocked()) {
+    // тап по доске пропускает видео/пистолеты; следующий тап сделает ход
+    MemeThreatHandler.skipAnimation();
+    return;
+  }
   if(S.turn !== S.humanColor) return;
   if(isBotThinking) return;
 
@@ -2943,6 +2947,9 @@ hideAllScreens();
     endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
   });
   registerMpDraw();
+  // MP-чат: входящие сообщения/эмоции соперника
+  if(ChesMP.onChat) ChesMP.onChat(m => { if(typeof Chat !== 'undefined' && Chat.handleIncomingMp) Chat.handleIncomingMp(m); });
+  refreshModeLabel();
 
   // Fetch opponent's playerId
   if(ChesMP.opponent && ChesMP.opponent.uid && firebaseDB) {
@@ -3225,6 +3232,7 @@ async function resumeMultiplayer(savedGame) {
     endGame(reason === 'resign' ? 'resign' : reason === 'timeout' ? 'timeout' : 'checkmate', winner);
   });
   registerMpDraw();
+  if(ChesMP.onChat) ChesMP.onChat(m => { if(typeof Chat !== 'undefined' && Chat.handleIncomingMp) Chat.handleIncomingMp(m); });
   // Skip the child_added replay events already reflected in the restored board
   window._mpReplaySkip = (savedGame.state && savedGame.state.plyCount) || 0;
   ChesMP._listenGame();
@@ -3511,7 +3519,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mobile mode toggle
   const phoneBtn = document.getElementById('phoneBtn');
   if(phoneBtn) {
-    if(localStorage.getItem('chesher_mobile') === 'on') {
+    const storedMobile = localStorage.getItem('chesher_mobile');
+    // Авто-включение на телефоне/планшете: только если пользователь сам ничего не выбирал
+    const autoMobile = (storedMobile === null &&
+      typeof matchMedia === 'function' &&
+      matchMedia('(pointer: coarse)').matches &&
+      window.innerWidth <= 1024);
+    if(storedMobile === 'on' || autoMobile) {
       document.body.classList.add('mobile-mode');
       phoneBtn.title = 'Десктопный режим';
     }
@@ -4292,7 +4306,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.20').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.21').catch(() => {});
     });
   }
 });

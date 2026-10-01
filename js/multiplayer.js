@@ -17,6 +17,8 @@ const ChesMP = {
   _lobbyUpdateCallback: null,
   _drawCallback: null,
   _drawRespCallback: null,
+  _chatCallback: null,
+  _chatRef: null,
   _isHost: false,
   _started: false,
   _ended: false,
@@ -252,15 +254,18 @@ const ChesMP = {
       if(this._movesRef) this._movesRef.off();
       if(this._drawRef) this._drawRef.off();
       if(this._drawRespRef) this._drawRespRef.off();
+      if(this._chatRef) this._chatRef.off();
     } catch(e) {}
     const ref = firebaseRtdb.ref('lobbies/' + this.lobbyId);
     this._gameRef = ref;
     const movesRef = ref.child('moves');
     const drawRef = ref.child('draw');
     const drawRespRef = ref.child('drawResp');
+    const chatRef = ref.child('chat');
     this._movesRef = movesRef;
     this._drawRef = drawRef;
     this._drawRespRef = drawRespRef;
+    this._chatRef = chatRef;
 
     ref.on('value', snap => {
       const data = snap.val();
@@ -332,6 +337,37 @@ const ChesMP = {
         this._drawRespCallback(r);
       }
     });
+
+    // Чат лобби: входящие сообщения/эмоции соперника
+    chatRef.on('child_added', snap => {
+      const m = snap.val();
+      if(!m || m.by === ChesAuth.getUid()) return;
+      if(this._chatCallback) this._chatCallback(m);
+    });
+  },
+
+  /* --- Отправить сообщение в чат партии --- */
+  sendChat(text) {
+    if(!firebaseRtdb || !this.lobbyId || !text) return false;
+    const uid = ChesAuth.getUid();
+    firebaseRtdb.ref('lobbies/' + this.lobbyId + '/chat').push({
+      by: uid,
+      text: String(text).slice(0, 300),
+      ts: Date.now()
+    });
+    return true;
+  },
+
+  /* --- Отправить летящее эмодзи сопернику --- */
+  sendEmote(emoji) {
+    if(!firebaseRtdb || !this.lobbyId || !emoji) return false;
+    const uid = ChesAuth.getUid();
+    firebaseRtdb.ref('lobbies/' + this.lobbyId + '/chat').push({
+      by: uid,
+      emoji: String(emoji).slice(0, 8),
+      ts: Date.now()
+    });
+    return true;
   },
 
   /* --- Отправить ход (с очередью и повторами) --- */
@@ -479,6 +515,10 @@ const ChesMP = {
       this._drawRespRef.off();
       this._drawRespRef = null;
     }
+    if(this._chatRef) {
+      this._chatRef.off();
+      this._chatRef = null;
+    }
     this.lobbyId = null;
     this.lobbyCode = null;
     this.myColor = null;
@@ -489,6 +529,7 @@ const ChesMP = {
     this._lobbyUpdateCallback = null;
     this._drawCallback = null;
     this._drawRespCallback = null;
+    this._chatCallback = null;
     this._isHost = false;
     this._started = false;
     this._ended = false;
@@ -555,6 +596,7 @@ const ChesMP = {
       moves: null,
       draw: null,
       drawResp: null,
+      chat: null,
       status: 'playing',
       round: (data.round || 0) + 1
     });
@@ -566,5 +608,6 @@ const ChesMP = {
   onStart(fn) { this._startCallback = fn; },
   onLobbyUpdate(fn) { this._lobbyUpdateCallback = fn; },
   onDraw(fn) { this._drawCallback = fn; },
-  onDrawResp(fn) { this._drawRespCallback = fn; }
+  onDrawResp(fn) { this._drawRespCallback = fn; },
+  onChat(fn) { this._chatCallback = fn; }
 };
