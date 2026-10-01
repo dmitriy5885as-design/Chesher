@@ -6,6 +6,7 @@
  * FEN и хода между страницами.
  *
  * Запуск:  node scripts/quickmatch-e2e.js
+ *          BASE_URL=https://dmitriy5885as-design.github.io/Chesher/ node scripts/quickmatch-e2e.js (прод)
  * Нужно:   интернет (реальный Firebase SDK) + выкаченные правила
  *          database.rules.json (узел matchmaking) и вход firebase login.
  *          localhost:8000 поднимется автоматически, если не запущен.
@@ -17,7 +18,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const { chromium } = require('@playwright/test');
 
-const BASE = 'http://127.0.0.1:8000/';
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:8000/';
 const ROOT = path.resolve(__dirname, '..');
 const T = ms => new Date(ms).toISOString().slice(11, 23);
 const log = (...a) => console.log('[' + T(Date.now()) + ']', ...a);
@@ -94,7 +95,8 @@ async function waitScreen(page, sel, timeout, name) {
 
 async function main() {
   const t0 = Date.now();
-  await ensureServer();
+  if(process.env.BASE_URL) log('боевой URL:', BASE);
+  else await ensureServer();
 
   const browser = await chromium.launch({ headless: true });
   try {

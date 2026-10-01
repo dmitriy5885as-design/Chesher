@@ -979,6 +979,8 @@ function newGame() {
 
   // Handle random color
   let humanColor = cfg.human;
+  // Локальный матч: игрок 1 всегда белые (снимает зависимость от прошлого cfg.human)
+  if(cfg.gameMode === 'local') humanColor = 'w';
   if(humanColor === 'random') {
     humanColor = Math.random() < 0.5 ? 'w' : 'b';
   }
@@ -1078,6 +1080,12 @@ function newGame() {
   updateClockUI();
   fullscreenOnMobile();
 
+  // Статус на старте партии — иначе остаётся «Загрузка…»/устаревший текст до первого хода
+  if(cfg.gameMode !== 'multiplayer' && cfg.gameMode !== 'ranked') {
+    const sl0 = document.getElementById('statusLine');
+    if(sl0) sl0.textContent = S.turn === 'w' ? 'Ход белых' : 'Ход чёрных';
+  }
+
   // If human plays black, bot moves first
   if(humanColor === 'b' && (cfg.gameMode === 'bot' || cfg.gameMode === 'meme') && cfg.bot !== 'off') {
     const sl = document.getElementById('statusLine');
@@ -1168,7 +1176,10 @@ function endGame(reason, winnerColor, drawReason) {
   if(!cu) return;
 
   let result;
-  if(reason === 'resign') {
+  if(cfg.gameMode === 'local') {
+    // Общий профиль: результат с точки зрения игрока 1 (белые)
+    result = !winnerColor ? 'draw' : (winnerColor === 'w' ? 'win' : 'loss');
+  } else if(reason === 'resign') {
     result = winnerColor === S.humanColor ? 'win' : 'loss';
   } else if(reason === 'timeout') {
     result = winnerColor === S.humanColor ? 'win' : 'loss';
@@ -2157,6 +2168,8 @@ function executeMove(move) {
 
   // Local 2-player: flip board and show "pass device" between turns
   if(cfg.gameMode === 'local' && !S.gameOver) {
+    // Ход перешёл — активный игрок теперь тот, чья очередь
+    S.humanColor = S.turn;
     const boardBox = document.getElementById('boardBox');
     if(boardBox) boardBox.classList.toggle('flipped', S.turn === 'b');
     refreshBars();
@@ -2319,6 +2332,13 @@ function undoMove() {
     }
   }
   if(MemeConfig.isMemeMode()) MemeThreatHandler.clearAll();
+  // Локальный матч: после отмены очередь снова у текущей стороны
+  if(cfg.gameMode === 'local') {
+    S.humanColor = S.turn;
+    const bb = document.getElementById('boardBox');
+    if(bb) bb.classList.toggle('flipped', S.turn === 'b');
+    refreshBars();
+  }
   updateCounters();
   fullRender();
   toast('Ход отменён');
@@ -4272,7 +4292,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PWA: регистрируем service worker только на https (Pages), вне localhost
   if('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.startsWith('localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=0.38.19').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=0.38.20').catch(() => {});
     });
   }
 });
