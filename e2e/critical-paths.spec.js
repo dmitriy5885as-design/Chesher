@@ -200,15 +200,18 @@ test.describe('CHESHER — Критические пути', () => {
     const sl = await page.locator('#statusLine').textContent();
     expect(sl).toContain('🧩');
 
-    // Решаем: берём заготовленный ответ движка из стартовой позиции задачки
+    // Решаем: идём по ходам решения, пока задача не завершится (поддержка многоходовок)
     const solved = await page.evaluate(() => {
-      const eng = new ChessEngine('classic');
-      eng.loadFen(_puzzle.fen);
-      const m = _uciPiece(eng, _puzzle.answer);
-      if(!m) return false;
-      S.loadFen(_puzzle.fen);
-      executeMove(m);
-      return true;
+      let guard = 0;
+      while(guard++ < 40) {
+        if(document.getElementById('ovPuzzle')) return true;
+        const uci = _puzzleNextAnswerUci();
+        if(!uci) return false;
+        const m = _uciPiece(S, uci);
+        if(!m) return false;
+        executeMove(m);
+      }
+      return !!document.getElementById('ovPuzzle');
     });
     expect(solved).toBe(true);
 

@@ -133,10 +133,16 @@ function renderModeList() {
     d.addEventListener('click', () => selectMode(m.id));
     modesBox.appendChild(d);
   });
+
+  if(typeof Puzzles !== 'undefined') Puzzles.renderDayCard();
 }
 
 /* --- Выбор режима (из карточек и из главного меню) --- */
 function selectMode(id) {
+  if(id !== 'puzzle') {
+    if(typeof Puzzles !== 'undefined') Puzzles.abort();
+    _memeRestore();
+  }
   selectedModeId = id;
   cfg.modeId = id;
   cfg.gameMode = id === 'bot' ? 'bot' : id === 'fischer' ? 'fischer' : id === 'puzzle' ? 'puzzle' : id;
@@ -1098,8 +1104,8 @@ function newGame() {
     MemeThreatHandler.warmup();
   }
 
-  // Save fresh game so it's always resumable/abandonable from the menu
-  if(typeof S !== 'undefined' && S) S.saveToStorage();
+  // Save fresh game so it's always resumable/abandonable from the menu (без чекпоинта для задач)
+  if(typeof S !== 'undefined' && S && cfg.gameMode !== 'puzzle') S.saveToStorage();
 
   refreshModeLabel();
 }
@@ -1209,8 +1215,10 @@ function endGame(reason, winnerColor, drawReason) {
 
   // Capture ELO before recordResult
   const eloBefore = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
+  const playerColor = (cfg.gameMode === 'local') ? 'w' : (cfg.human || S.humanColor || 'w');
 
-  cu.recordResult(result, cfg.bot !== 'off', cfg.modeId, opponentRating);
+  cu.recordResult(result, cfg.bot !== 'off', cfg.modeId, opponentRating,
+    { color: playerColor, checkmate: (result === 'win' && reason === 'checkmate') });
   // Серверная запись результата (античит: лимиты, капы, авторитетный баланс/ELO)
   if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
     ChesAuth.submitGameResult({ result: result, mode: cfg.modeId, opponentElo: opponentRating, vsBot: cfg.bot !== 'off' })
@@ -1228,6 +1236,17 @@ function endGame(reason, winnerColor, drawReason) {
   renderCoins();
   renderProfBar();
   if(typeof Quests !== 'undefined') Quests.onEvent('game', { result: result, vsBot: cfg.bot !== 'off' });
+
+  // XP за партию (единый сервис прогресса; не влияет на ELO)
+  let xpGain = 0;
+  if(typeof Progress !== 'undefined') {
+    const G = Progress.GAIN;
+    xpGain = G.gameFinish + (result === 'win' ? G.win : result === 'draw' ? G.draw : G.loss);
+    if(result === 'win' && reason === 'checkmate') xpGain += G.checkmate;
+    if(result === 'win' && (cu.streak || 0) > 1) xpGain += Math.min(G.winStreak * (cu.streak - 1), G.winStreakCap);
+    if(cfg.gameMode === 'meme' && result === 'win') xpGain += G.memeWin;
+    Progress.addXp(xpGain, 'game');
+  }
 
   // Calculate ELO change
   const eloAfter = cu.ratings ? (cu.ratings[cfg.modeId] || 1000) : 1000;
@@ -1258,6 +1277,15 @@ function endGame(reason, winnerColor, drawReason) {
     if(result === 'win' && (cu.streak || 0) > 1) chips.push('<span class="gsStreak">🔥 серия ' + cu.streak + '</span>');
     if(result === 'win') chips.push('<span class="gsCoin">🪙 +10</span>');
     else if(result === 'draw') chips.push('<span class="gsCoin">🪙 +3</span>');
+    if(xpGain > 0) chips.push('<span class="gsXp">⭐ +' + xpGain + ' XP</span>');
+    // Прогресс уровня (сводка после партии)
+    if(typeof Progress !== 'undefined') {
+      const sum = Progress.summary();
+      chips.push('<div class="goXpRow">' +
+        '<div class="goXpBar"><i style="width:' + sum.pct + '%"></i></div>' +
+        '<span class="goXpLbl">Lv ' + sum.level + ' · ' + sum.cur + '/' + sum.need + ' XP</span>' +
+        '</div>');
+    }
     goStats.innerHTML = chips.join('');
     goStats.style.display = chips.length ? '' : 'none';
   }
@@ -1451,14 +1479,9 @@ function notifyYourTurn() {
   if(cfg.sound) { try { snd.notify(); } catch(e) {} }
 }
 
-/* --- Задачка дня (M1, движок валидирует решение) --- */
+/* --- Задача дня (Daily Puzzle 2.0): интеграция с игрой, логика — в Puzzles --- */
 let _puzzle = null;
-
-const PUZZLE_LINES = [
-  { line: ['e2e4','e7e5','d1h5','b8c6','f1c4','g8f6'], answer: 'h5f7', title: 'Мат в 1 ход', hint: 'Ферзь вторгается на f7', reward: 5 },
-  { line: ['f2f3','e7e5','g2g4'], answer: 'd8h4', title: 'Мат в 1 ход', hint: 'Ферзь занимает h4', reward: 5 },
-  { line: ['e2e4','e7e5','g1f3','d7d6','d2d4','c8g4','d4e5','g4f3','d1f3','d6e5','f1c4','b8c6'], answer: 'f3f7', title: 'Мат в 1 ход', hint: 'Ферзь забирает f7', reward: 5 }
-];
+let _memeWas = null; // сохранённое MemeConfig.enabled на время задачи/турнира
 
 function _puzzleDayKey() {
   const d = new Date();
@@ -1468,56 +1491,97 @@ function _puzzleDayKey() {
 function _uciPiece(eng, uci) {
   const fr = 8 - parseInt(uci[1]), fc = uci.charCodeAt(0) - 97;
   const tr = 8 - parseInt(uci[3]), tc = uci.charCodeAt(2) - 97;
-  return eng.getLegalMoves(fr, fc).find(x => x.tr === tr && x.tc === tc) || null;
+  const promo = uci[4];
+  const list = eng.getLegalMoves(fr, fc).filter(x => x.tr === tr && x.tc === tc);
+  if(!list.length) return null;
+  if(promo) return list.find(m => m.promo === promo) || null;
+  return list[0];
 }
 
-function _replayLine(line) {
-  const eng = new ChessEngine('classic');
-  eng.newGame();
-  for(const uci of line) {
-    const m = _uciPiece(eng, uci);
-    if(!m || eng.plyCount >= 300) return null;
-    eng.makeMove(m);
+function _memeSaveOff() {
+  if(_memeWas === null && typeof MemeConfig !== 'undefined') {
+    try { _memeWas = MemeConfig.get('enabled'); } catch(e) { _memeWas = true; }
+    try { MemeConfig.set('enabled', false); } catch(e) {}
   }
-  return eng;
 }
 
-function _validatePuzzle(pz) {
-  try {
-    const eng = _replayLine(pz.line);
-    if(!eng) return false;
-    const m = _uciPiece(eng, pz.answer);
-    if(!m) return false;
-    const saved = eng.saveState();
-    eng.applyMove(m);
-    const isMate = eng.isCheckmate(eng.turn);
-    eng.restoreState(saved);
-    return isMate;
-  } catch(e) { return false; }
+function _memeRestore() {
+  if(_memeWas !== null && typeof MemeConfig !== 'undefined') {
+    try { MemeConfig.set('enabled', _memeWas); } catch(e) {}
+    _memeWas = null;
+  }
 }
 
 function buildDailyPuzzle() {
-  const day = _puzzleDayKey();
-  const off = day % PUZZLE_LINES.length;
-  for(let i = 0; i < PUZZLE_LINES.length; i++) {
-    const idx = (off + i) % PUZZLE_LINES.length;
-    const pz = PUZZLE_LINES[idx];
-    if(_validatePuzzle(pz)) {
-      const eng = _replayLine(pz.line);
-      if(eng) return Object.assign({}, pz, { fen: eng.toFen(), turn: eng.turn });
-    }
-  }
-  return null;
+  if(typeof Puzzles === 'undefined') return null;
+  return Puzzles.buildToday();
 }
 
-function startPuzzle() {
+function _puzzleStatus() {
+  const sl = document.getElementById('statusLine');
+  if(sl && _puzzle) sl.textContent = '🧩 ' + (_puzzle.title || '') + (_puzzle.hint ? ' · ' + _puzzle.hint : '');
+}
+
+function _puzzleOpenOverlay(o) {
+  const old = document.getElementById('ovPuzzle');
+  if(old) old.remove();
+  const ov = document.createElement('div');
+  ov.className = 'overlay show';
+  ov.id = 'ovPuzzle';
+  ov.innerHTML = '<div class="modal"><h2>' + o.heading + '</h2>' +
+    (o.sub ? '<div class="pzSub">' + o.sub + '</div>' : '') +
+    '<div class="pzBody">' + (o.body || '') + '</div>' +
+    '<div class="modalBtns">' +
+    '<button class="btn primary" id="pzAgain">🧩 Практика</button>' +
+    '<button class="btn" id="pzMenu">В меню</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#pzAgain').addEventListener('click', () => { ov.remove(); startPuzzle({ practice: true }); });
+  ov.querySelector('#pzMenu').addEventListener('click', () => { ov.remove(); _puzzleExitToMenu(); });
+  return ov;
+}
+
+function _puzzleExitToMenu() {
+  if(typeof Puzzles !== 'undefined') Puzzles.abort();
+  _memeRestore();
+  exitFullscreenMobile();
+  showScreen('scrMenu');
+}
+
+function _puzzleShowCompleted(pz) {
+  const rec = (typeof Puzzles !== 'undefined') ? Puzzles.record() : null;
+  const streak = (typeof Puzzles !== 'undefined') ? Puzzles.streak() : 0;
+  const lines = [];
+  if(rec && rec.xp) lines.push('Награда: <b>+' + rec.xp + ' XP</b> и <b>+' + rec.coins + ' 🪙</b>');
+  else lines.push('Награда уже получена сегодня');
+  if(streak > 1) lines.push('DAILY STREAK ×' + streak);
+  if(pz && pz.why) lines.push('<b>ПОЧЕМУ ЭТО РАБОТАЕТ</b><br>' + pz.why);
+  if(pz && pz.players) lines.push('<b>ИСТОРИЧЕСКИЙ ФАКТ</b><br>' + pz.players + ' · ' + pz.place + ', ' + pz.year);
+  else if(pz && pz.fact) lines.push('<b>ФАКТ</b><br>' + pz.fact);
+  _puzzle = pz;
+  _puzzleOpenOverlay({
+    heading: '✓ ЗАДАЧА РЕШЕНА',
+    sub: (pz ? pz.title + ' · ' + pz.diffLabel : ''),
+    body: '<div style="text-align:center;color:var(--mut);line-height:1.7">' + lines.join('<br>') + '</div>'
+  });
+}
+
+function startPuzzle(opts) {
+  opts = opts || {};
   const pz = buildDailyPuzzle();
   if(!pz) { toast('Задачка дня пока недоступна'); return; }
+  if(!opts.practice && typeof Puzzles !== 'undefined' && Puzzles.isCompletedToday()) {
+    _puzzleShowCompleted(pz);
+    return;
+  }
   _puzzle = pz;
+  Puzzles.begin(pz);
+  if(!opts.practice) Puzzles.markStarted(pz);
+  ChessEngine.clearStorage(); // без чекпоинта: перезаход — всегда сначала
+  hideResumeBtn();
   cfg.gameMode = 'puzzle';
   cfg.human = pz.turn;
   cfg.bot = 'off';
-  MemeConfig.set('enabled', false);
+  _memeSaveOff(); // мемы временно off — вернём после задачи (не персистентно)
   S = new ChessEngine('classic');
   S.loadFen(pz.fen);
   S.humanColor = pz.turn;
@@ -1555,29 +1619,42 @@ function startPuzzle() {
 
   const movesEl = document.getElementById('moves');
   if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
-  const sl = document.getElementById('statusLine');
-  if(sl) sl.textContent = '🧩 ' + pz.title + ' · ' + (pz.hint || '');
-  toast('🧩 Задачка дня! Награда ' + pz.reward + ' 🪙');
+  _puzzleStatus();
+  toast('🧩 ' + pz.diffLabel + ' · +' + pz.xp + ' XP и +' + pz.reward + ' 🪙');
 }
 
-function _handlePuzzleMove() {
-  if(!_puzzle) return;
-  const isMate = S.isCheckmate(S.turn);
-  if(isMate) {
-    _puzzleSolveDone();
-  } else {
-    _puzzleReload();
+function _handlePuzzleMove(move) {
+  if(!_puzzle || typeof Puzzles === 'undefined') return;
+  const r = Puzzles.step(move);
+  if(r.status === 'wrong') { _puzzleReload(); return; }
+  if(r.status === 'solved') { _puzzleSolveDone(); return; }
+  if(r.status === 'needOpponent' && r.uci) {
+    const rm = _uciPiece(S, r.uci);
+    if(!rm) { _puzzleReload(); return; }
+    executeMove(rm); // рекурсии в puzzle-hook нет: isHumanMove = false
+    const a = Puzzles.afterOpponent();
+    if(a.status === 'solved') { _puzzleSolveDone(); return; }
+    if(a.status === 'wrong') { _puzzleReload(); return; }
   }
+  _puzzleStatus(); // executeMove затирает строку статуса
+}
+
+function _puzzleNextAnswerUci() {
+  if(typeof Puzzles === 'undefined') return null;
+  return Puzzles.currentAnswerUci();
 }
 
 function _puzzleReload() {
-  const fen = buildDailyPuzzle();
-  if(!fen) return;
-  if(S) S.loadFen(fen.fen);
+  if(!_puzzle) return;
+  Puzzles.begin(_puzzle); // начинаем с начала — чекпоинтов нет
+  if(S) S.loadFen(_puzzle.fen);
   gameMoves = [];
-  lastMove = null; selected = null; legalCache = []; hintMove = null;
+  lastMove = null; selected = null; legalCache = []; hintMove = null; pendingPromo = null;
+  takenByW = []; takenByB = [];
   const movesEl = document.getElementById('moves');
   if(movesEl) movesEl.innerHTML = '<div id="noMoves">Ходов пока нет</div>';
+  if(typeof refreshBars === 'function') refreshBars();
+  if(typeof updateCounters === 'function') updateCounters();
   fullRender();
   const sl = document.getElementById('statusLine');
   if(sl) sl.textContent = '🧩 Не тот ход — попробуй ещё';
@@ -1587,38 +1664,33 @@ function _puzzleReload() {
 function _puzzleSolveDone() {
   snd.win();
   _haptic(40);
-  const reward = _puzzle.reward || 5;
-  const key = 'chesher_puzzle_' + _puzzleDayKey();
-  const claimed = localStorage.getItem(key);
-  let gained = 0;
-  const cu = ProfilesManager.getCurrent();
-  if(!claimed) {
-    gained = reward;
-    if(cu) {
-      if(typeof cu.addCoins === 'function') cu.addCoins(reward);
-      else cu.coins = (cu.coins || 0) + reward;
-    }
-    saveProfiles();
+  let res = { first: false, xp: 0, coins: 0, streak: 0, milestone: null };
+  if(typeof Puzzles !== 'undefined') res = Puzzles.complete();
+  if(res.first) {
     renderCoins();
-    localStorage.setItem(key, String(reward));
-    if(typeof ChesAuth !== 'undefined' && ChesAuth.user) ChesAuth.awardCoins('puzzle', reward);
+    renderProfBar();
+    if(typeof renderStats === 'function') renderStats();
   }
-  if(typeof Quests !== 'undefined') Quests.onEvent('puzzle');
-
-  const old = document.getElementById('ovPuzzle');
-  if(old) old.remove();
-  const ov = document.createElement('div');
-  ov.className = 'overlay show';
-  ov.id = 'ovPuzzle';
-  ov.innerHTML = '<div class="modal"><h2>🧩 Решено!</h2>' +
-    '<div style="text-align:center;color:var(--mut);line-height:1.6;margin:10px 0">' +
-    (gained > 0 ? 'Награда дня: <b>+' + gained + ' 🪙</b>' : 'Награда уже получена сегодня') +
-    '</div><div class="modalBtns"><button class="btn primary" id="pzAgain">Ещё раз</button><button class="btn" id="pzMenu">В меню</button></div></div>';
-  document.body.appendChild(ov);
-  S.gameOver = true;
+  _memeRestore();
+  if(S) S.gameOver = true;
   stopClock();
-  ov.querySelector('#pzAgain').addEventListener('click', () => { ov.remove(); startPuzzle(); });
-  ov.querySelector('#pzMenu').addEventListener('click', () => { ov.remove(); exitFullscreenMobile(); showScreen('scrMenu'); });
+  if(typeof _puzzleMemeReact === 'function') _puzzleMemeReact(res);
+
+  const pz = _puzzle || {};
+  const lines = [];
+  if(res.first) lines.push('Награда: <b>+' + res.xp + ' XP</b> и <b>+' + res.coins + ' 🪙</b>');
+  else lines.push('Награда уже получена сегодня');
+  if(res.streak > 1) lines.push('DAILY STREAK ×' + res.streak);
+  if(res.milestone) lines.push('🔥 ВЕХА: ×' + res.milestone + ' дней!');
+  if(pz.why) lines.push('<b>ПОЧЕМУ ЭТО РАБОТАЕТ</b><br>' + pz.why);
+  if(pz.players) lines.push('<b>ИСТОРИЧЕСКИЙ ФАКТ</b><br>' + pz.players + ' · ' + pz.place + ', ' + pz.year);
+  else if(pz.fact) lines.push('<b>ФАКТ</b><br>' + pz.fact);
+
+  _puzzleOpenOverlay({
+    heading: '🧩 Решено!',
+    sub: (pz.title || '') + (pz.diffLabel ? ' · ' + pz.diffLabel : ''),
+    body: '<div style="text-align:center;color:var(--mut);line-height:1.7">' + lines.join('<br>') + '</div>'
+  });
 }
 
 /* --- Турнир на выбывание против ботов --- */
@@ -2167,8 +2239,8 @@ function executeMove(move) {
 
   fullRender();
 
-  // Save game state
-  if(S && !S.gameOver) S.saveToStorage();
+  // Save game state (для задач — не сохраняем: reopen всегда с начала)
+  if(S && !S.gameOver && cfg.gameMode !== 'puzzle') S.saveToStorage();
 
   // Local 2-player: flip board and show "pass device" between turns
   if(cfg.gameMode === 'local' && !S.gameOver) {
@@ -3048,9 +3120,7 @@ function resumeGame() {
     if(savedGame.moveHistory) {
       S.moveHistory = savedGame.moveHistory;
     }
-    if(savedGame.positionHistory) {
-      S.positionHistory = savedGame.positionHistory;
-    }
+    S.rebuildPositionHistory();
   } catch(e) {
     console.error('Ошибка восстановления сохранённой игры:', e);
     try { ChessEngine.clearStorage(); } catch(e2) {}
@@ -3149,7 +3219,7 @@ async function resumeMultiplayer(savedGame) {
   S.humanColor = mp.myColor;
 
   if(savedGame.moveHistory) S.moveHistory = savedGame.moveHistory;
-  if(savedGame.positionHistory) S.positionHistory = savedGame.positionHistory;
+  S.rebuildPositionHistory();
 
   lastMove = null;
   selected = null;

@@ -372,6 +372,7 @@
       <button class="backBtn" data-back>← Назад</button>
       <span class="scrTitle">Режимы игры</span>
     </div>
+    <div id="puzzleDayCard"></div>
     <div id="modesList"></div>
     <div id="modesCfg" style="display:none">
       <div id="modesCfgTitle" style="text-align:center;margin-bottom:10px;font-size:15px;font-weight:700;color:var(--txt)"></div>
@@ -694,12 +695,15 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-functions-compat.js"></script>
 
   <!-- Подключение JS файлов в правильном порядке (defer = параллельная загрузка, порядок выполнения сохранён) -->
-  <script defer src="js/chess-logic.js?v=0.38.21"></script>
+  <script defer src="js/chess-logic.js?v=0.38.22"></script>
   <script defer src="js/bot.js?v=0.38.21"></script>
   <script defer src="js/elo.js?v=0.38.21"></script>
   <script defer src="js/profile.js?v=0.38.21"></script>
+  <script defer src="js/progress.js?v=0.38.21"></script>
+  <script defer src="js/puzzle-data.js?v=0.38.21"></script>
+  <script defer src="js/puzzles.js?v=0.38.21"></script>
   <script defer src="js/ui.js?v=0.38.21"></script>
-  <script defer src="js/chat.js?v=0.38.21"></script>
+  <script defer src="js/chat.js?v=0.38.22"></script>
   <script defer src="js/store.js?v=0.38.21"></script>
   <script defer src="js/quests.js?v=0.38.21"></script>
   <script defer src="js/analysis.js?v=0.38.21"></script>
@@ -819,7 +823,7 @@
     </div>
   </div>
   
-  <script defer src="js/main.js?v=0.38.21"></script>
+  <script defer src="js/main.js?v=0.38.22"></script>
   
   <!-- Фолбэк-стили на случай, если CSS переменные не сработают -->
   <style>

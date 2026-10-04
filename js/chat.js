@@ -131,7 +131,7 @@ function appendChat(sender, text) {
       author = 'Соперник';
     }
   }
-  div.innerHTML = '<div class="author">' + author + '</div>' +
+  div.innerHTML = '<div class="author">' + escapeHtml(author) + '</div>' +
     '<div class="text">' + filtered.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
     '<div class="time">' + time + '</div>';
   
@@ -155,7 +155,8 @@ function sendChat() {
     return;
   }
   if(cfg.bot !== 'off') {
-    setTimeout(() => botReply(txt), 600 + Math.random() * 1000);
+    const game = S;
+    setTimeout(() => { if(S === game && !S.gameOver) botReply(txt); }, 600 + Math.random() * 1000);
   }
 }
 

@@ -76,7 +76,7 @@ function canAttackStatic(board, fr, fc, tr, tc) {
 
   if(type === 'p') {
     const dir = color === 'w' ? -1 : 1;
-    return dr === dir && adc === 1 && (board[tr][tc] === null || pieceColorStatic(board[tr][tc]) === opp);
+    return dr === dir && adc === 1;
   }
   if(type === 'n') {
     return (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
@@ -150,6 +150,7 @@ class ChessEngine {
     this.positionHistory = [];
     this.gameOver = false;
     this.castleRights = {wK:true, wQ:true, bK:true, bQ:true};
+    this.fischerBackRow = null;
   }
 
   newGame() {
@@ -188,14 +189,19 @@ class ChessEngine {
           const n = parseInt(ch);
           for(let i = 0; i < n; i++) row.push(null);
           c += n;
-        } else {
+        } else if(/^[prnbqkPRNBQK]$/.test(ch)) {
           row.push(ch);
           c++;
-        }
+        } else return false;
       }
       if(row.length !== 8 || c !== 8) return false;
       board[ri] = row;
     }
+    if(parts[1] && !/^[wb]$/.test(parts[1])) return false;
+    if(parts[2] && !/^(-|[KQkqA-Ha-h]+)$/.test(parts[2])) return false;
+    if(parts[3] && !/^(-|[a-h][36])$/.test(parts[3])) return false;
+    if(board.flat().filter(p => p === 'K').length !== 1 ||
+       board.flat().filter(p => p === 'k').length !== 1) return false;
     this.board = board;
     this.variant = 'classic';
     this.fischerBackRow = null;
@@ -207,6 +213,20 @@ class ChessEngine {
       if(cast.indexOf('Q') !== -1) cr.wQ = true;
       if(cast.indexOf('k') !== -1) cr.bK = true;
       if(cast.indexOf('q') !== -1) cr.bQ = true;
+      if(/[A-Ha-h]/.test(cast)) {
+        this.variant = 'fischer960';
+        this.fischerBackRow = new Array(8).fill(null);
+        for(const letter of cast) {
+          const color = letter === letter.toUpperCase() ? 'w' : 'b';
+          const row = colorRow(color);
+          const king = this.board[row].indexOf(color === 'w' ? 'K' : 'k');
+          const rook = FILES.indexOf(letter.toLowerCase());
+          if(king < 0 || rook < 0) continue;
+          this.fischerBackRow[king] = 'k';
+          this.fischerBackRow[rook] = 'r';
+          cr[color + (rook > king ? 'K' : 'Q')] = true;
+        }
+      }
     }
     this.castleRights = cr;
     const ep = parts[3] && parts[3] !== '-' ? parts[3] : null;
@@ -219,7 +239,7 @@ class ChessEngine {
     this.fullmove = parts[5] ? parseInt(parts[5]) || 1 : 1;
     this.plyCount = 0;
     this.moveHistory = [];
-    this.positionHistory = [];
+    this.positionHistory = [this.positionKey()];
     this.gameOver = false;
     this.opponentPlayerId = null;
     return true;
@@ -253,58 +273,18 @@ class ChessEngine {
 
   setupFischer960(randFn) {
     const rand = randFn || Math.random;
-    const backRow = ['r','n','b','q','k','b','n','r'];
-    
-    // Shuffle using Fisher-Yates
-    for(let i = backRow.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [backRow[i], backRow[j]] = [backRow[j], backRow[i]];
-    }
-
-    // Ensure king is between the two rooks (до правки слонов — иначе размен может сломать цвета слонов)
-    const rookIndices = [];
-    for(let i = 0; i < 8; i++) {
-      if(backRow[i] === 'r') rookIndices.push(i);
-    }
-    if(rookIndices.length === 2) {
-      const r0 = rookIndices[0], r1 = rookIndices[1];
-      let kIdx = backRow.indexOf('k');
-      if(kIdx <= r0 || kIdx >= r1) {
-        // Свободные клетки строго между ладьями
-        let between = [];
-        for(let i = r0 + 1; i < r1; i++) between.push(i);
-        if(between.length === 0) {
-          // Ладьи соседние — расширяем коридор, не трогая слонов и короля
-          if(r1 < 7) {
-            [backRow[r1], backRow[r1 + 1]] = [backRow[r1 + 1], backRow[r1]];
-            between = [r1];
-          } else {
-            [backRow[r0], backRow[r0 - 1]] = [backRow[r0 - 1], backRow[r0]];
-            between = [r0];
-          }
-          kIdx = backRow.indexOf('k');
-        }
-        const target = between[0];
-        if(kIdx !== target) {
-          [backRow[kIdx], backRow[target]] = [backRow[target], backRow[kIdx]];
-        }
-      }
-    }
-
-    // Ensure bishops are on opposite colors (после правки короля; меняем с фигурами, не влияющими на рокировку)
-    const bishops = [];
-    for(let i = 0; i < 8; i++) {
-      if(backRow[i] === 'b') bishops.push(i);
-    }
-    if(bishops.length === 2 && (bishops[0] + bishops[1]) % 2 === 0) {
-      for(let i = 0; i < 8; i++) {
-        const p = backRow[i];
-        if(p !== 'b' && p !== 'k' && p !== 'r' && (i + bishops[0]) % 2 === 1) {
-          [backRow[i], backRow[bishops[1]]] = [backRow[bishops[1]], backRow[i]];
-          break;
-        }
-      }
-    }
+    const backRow = new Array(8).fill(null);
+    backRow[2 * Math.floor(rand() * 4)] = 'b';
+    backRow[2 * Math.floor(rand() * 4) + 1] = 'b';
+    const place = type => {
+      const free = backRow.map((p, c) => p ? -1 : c).filter(c => c !== -1);
+      backRow[free[Math.floor(rand() * free.length)]] = type;
+    };
+    place('q');
+    place('n');
+    place('n');
+    const remaining = backRow.map((p, c) => p ? -1 : c).filter(c => c !== -1);
+    ['r', 'k', 'r'].forEach((p, i) => { backRow[remaining[i]] = p; });
     
     this.board[0] = backRow;
     this.board[1] = ['p','p','p','p','p','p','p','p'];
@@ -328,7 +308,7 @@ class ChessEngine {
 
     const addMove = (tr, tc, extra) => {
       const target = this.board[tr][tc];
-      if(target && this.pieceColor(target) === color) return;
+      if(target && (this.pieceColor(target) === color || this.pieceType(target) === 'k')) return;
       moves.push({fr, fc, tr, tc, type, capture: target ? pieceTypeStatic(target) : null, ...extra});
     };
 
@@ -353,15 +333,16 @@ class ChessEngine {
         const tr = fr + dir, tc = fc + dc;
         if(!inside(tr, tc)) continue;
         const target = this.board[tr][tc];
-        if(target && this.pieceColor(target) === opp) {
+        if(target && this.pieceColor(target) === opp && this.pieceType(target) !== 'k') {
           if(tr === lastR) {
             ['q','r','b','n'].forEach(pt => moves.push({fr, fc, tr, tc, type:'p', capture: pieceTypeStatic(target), promo: pt}));
           } else {
             moves.push({fr, fc, tr, tc, type:'p', capture: pieceTypeStatic(target)});
           }
         }
-        if(this.ep && this.ep.r === tr && this.ep.c === tc) {
-          moves.push({fr, fc, tr, tc, type:'p', ep:true});
+        if(this.ep && this.ep.r === tr && this.ep.c === tc && !target &&
+           this.board[fr][tc] === (color === 'w' ? 'p' : 'P')) {
+          moves.push({fr, fc, tr, tc, type:'p', ep:true, capture:'p'});
         }
       }
     }
@@ -416,48 +397,15 @@ class ChessEngine {
       // Castling
       const row = color === 'w' ? 7 : 0;
       
+      if(fr !== row) return moves;
       if(this.variant === 'fischer960') {
-        // Fischer 960 castling - king moves to rook's square
-        const rooks = [];
-        for(let c = 0; c < 8; c++) {
-          if(this.board[row][c] && pieceTypeStatic(this.board[row][c]) === 'r' &&
-             pieceColorStatic(this.board[row][c]) === color) {
-            rooks.push(c);
-          }
-        }
-        
-        for(const rookCol of rooks) {
-          // Check if all squares between king and rook are empty
-          const minCol = Math.min(fc, rookCol);
-          const maxCol = Math.max(fc, rookCol);
-          let clear = true;
-          for(let c = minCol + 1; c < maxCol; c++) {
-            if(this.board[row][c]) { clear = false; break; }
-          }
-          
-          if(clear) {
-            // King must not be in check
-            if(!this.inCheck(color)) {
-              // King must not pass through attacked squares
-              const opp = color === 'w' ? 'b' : 'w';
-              const step = Math.sign(rookCol - fc);
-              let safe = true;
-              for(let c = fc; c !== rookCol + step; c += step) {
-                if(c !== fc && isAttackedStatic(this.board, row, c, opp)) {
-                  safe = false;
-                  break;
-                }
-              }
-              
-              if(safe) {
-                // Determine if king-side or queen-side
-                const castleType = rookCol > fc ? 'k' : 'q';
-                const cr = this.castleRights || {};
-                const side = color === 'w' ? 'w' : 'b';
-                if(cr[side + (castleType === 'k' ? 'K' : 'Q')]) {
-                  moves.push({fr, fc, tr: row, tc: rookCol, type: 'k', castle: castleType});
-                }
-              }
+        // Select the original rook; final squares are always g/f or c/d.
+        const original = this.fischerBackRow || [];
+        if(fc === original.indexOf('k') && !this.inCheck(color)) {
+          for(const castle of ['k', 'q']) {
+            const rookCol = castle === 'k' ? original.lastIndexOf('r') : original.indexOf('r');
+            if(this.canCastle960(color, fc, rookCol, castle)) {
+              moves.push({fr, fc, tr: row, tc: rookCol, type: 'k', castle});
             }
           }
         }
@@ -512,10 +460,38 @@ class ChessEngine {
   isLegal(m) {
     // Simulate move on copy
     const saved = this.saveState();
-    this.applyMove(m);
-    const inCheck = this.inCheck(saved.turn);
-    this.restoreState(saved);
-    return !inCheck;
+    const color = this.pieceColor(this.board[m.fr][m.fc]);
+    if(!color) return false;
+    try {
+      this.applyMove(m);
+      return !this.inCheck(color);
+    } finally {
+      this.restoreState(saved);
+    }
+  }
+
+  canCastle960(color, kingCol, rookCol, castle) {
+    const row = colorRow(color);
+    const key = color + (castle === 'k' ? 'K' : 'Q');
+    if(!this.castleRights[key] || rookCol < 0 ||
+       this.board[row][rookCol] !== (color === 'w' ? 'R' : 'r')) return false;
+    const kingTo = castle === 'k' ? 6 : 2;
+    const rookTo = castle === 'k' ? 5 : 3;
+    for(const [from, to] of [[kingCol, kingTo], [rookCol, rookTo]]) {
+      for(let c = Math.min(from, to); c <= Math.max(from, to); c++) {
+        if(c !== kingCol && c !== rookCol && this.board[row][c]) return false;
+      }
+    }
+    const transit = this.board.map(r => [...r]);
+    transit[row][kingCol] = null;
+    const opp = color === 'w' ? 'b' : 'w';
+    const step = Math.sign(kingTo - kingCol);
+    for(let c = kingCol; c !== kingTo; c += step) {
+      if(isAttackedStatic(transit, row, c, opp)) return false;
+    }
+    transit[row][rookCol] = null;
+    transit[row][rookTo] = color === 'w' ? 'R' : 'r';
+    return !isAttackedStatic(transit, row, kingTo, opp);
   }
 
   applyMove(m) {
@@ -530,10 +506,8 @@ class ChessEngine {
         cr[side + 'Q'] = false;
       } else if(m.type === 'r') {
         if(this.variant === 'fischer960' && this.fischerBackRow) {
-          const kIdx = this.fischerBackRow.indexOf('k');
-          if(kIdx !== -1 && m.fc !== kIdx) {
-            cr[side + (m.fc > kIdx ? 'K' : 'Q')] = false;
-          }
+          if(m.fr === colorRow(color) && m.fc === this.fischerBackRow.lastIndexOf('r')) cr[side + 'K'] = false;
+          if(m.fr === colorRow(color) && m.fc === this.fischerBackRow.indexOf('r')) cr[side + 'Q'] = false;
         } else if(m.fr === colorRow(color) && (m.fc === 0 || m.fc === 7)) {
           cr[side + (m.fc === 7 ? 'K' : 'Q')] = false;
         }
@@ -542,10 +516,8 @@ class ChessEngine {
         const tSide = m.tr === 0 ? 'b' : (m.tr === 7 ? 'w' : null);
         if(tSide) {
           if(this.variant === 'fischer960' && this.fischerBackRow) {
-            const kIdx = this.fischerBackRow.indexOf('k');
-            if(kIdx !== -1 && m.tc !== kIdx) {
-              cr[tSide + (m.tc > kIdx ? 'K' : 'Q')] = false;
-            }
+            if(m.tc === this.fischerBackRow.lastIndexOf('r')) cr[tSide + 'K'] = false;
+            if(m.tc === this.fischerBackRow.indexOf('r')) cr[tSide + 'Q'] = false;
           } else if(m.tc === 0 || m.tc === 7) {
             cr[tSide + (m.tc === 7 ? 'K' : 'Q')] = false;
           }
@@ -556,37 +528,23 @@ class ChessEngine {
     if(m.ep) {
       this.board[m.fr][m.tc] = null;
     }
-    this.board[m.tr][m.tc] = m.promo ? (color === 'w' ? m.promo.toUpperCase() : m.promo.toLowerCase()) : p;
-    this.board[m.fr][m.fc] = null;
-
-    if(m.dbl) {
-      this.ep = {r: (m.fr + m.tr) / 2, c: m.fc};
+    if(m.castle && this.variant === 'fischer960') {
+      // Sources may overlap destinations: clear both before placing either piece.
+      this.board[m.fr][m.fc] = null;
+      this.board[m.tr][m.tc] = null;
+      this.board[m.tr][m.castle === 'k' ? 6 : 2] = p;
+      this.board[m.tr][m.castle === 'k' ? 5 : 3] = color === 'w' ? 'R' : 'r';
     } else {
-      this.ep = null;
-    }
-
-    if(m.type === 'k') {
-      // Castling
-      if(this.variant === 'fischer960') {
-        // Fischer 960 - rook moves to king's original square
-        if(m.castle) {
-          const rookFrom = m.tc; // Rook is at king's destination
-          const rookTo = m.fc;   // Rook moves to king's original square
-          this.board[m.tr][rookTo] = this.board[m.tr][rookFrom];
-          this.board[m.tr][rookFrom] = null;
-        }
-      } else {
-        // Standard castling
-        if(m.fc === 4 && m.tc === 6) { // King-side
-          this.board[m.tr][5] = this.board[m.tr][7];
-          this.board[m.tr][7] = null;
-        }
-        if(m.fc === 4 && m.tc === 2) { // Queen-side
-          this.board[m.tr][3] = this.board[m.tr][0];
-          this.board[m.tr][0] = null;
-        }
+      this.board[m.tr][m.tc] = m.promo ? (color === 'w' ? m.promo.toUpperCase() : m.promo.toLowerCase()) : p;
+      this.board[m.fr][m.fc] = null;
+      if(m.castle) {
+        const rookFrom = m.castle === 'k' ? 7 : 0;
+        const rookTo = m.castle === 'k' ? 5 : 3;
+        this.board[m.tr][rookTo] = this.board[m.tr][rookFrom];
+        this.board[m.tr][rookFrom] = null;
       }
     }
+    this.ep = m.dbl ? {r: (m.fr + m.tr) / 2, c: m.fc} : null;
 
     this.turn = color === 'w' ? 'b' : 'w';
     if(color === 'b') this.fullmove++;
@@ -598,18 +556,31 @@ class ChessEngine {
 
   makeMove(m) {
     // Save for undo
+    if(!this.positionHistory.length) this.positionHistory.push(this.positionKey());
     this.moveHistory.push(this.saveState());
     this.applyMove(m);
+    this.positionHistory.push(this.positionKey());
   }
 
   undoLastMove() {
     if(this.moveHistory.length === 0) return false;
     const state = this.moveHistory.pop();
     this.restoreState(state);
+    this.positionHistory.pop();
     return true;
   }
 
   /* --- FEN-представление текущей позиции --- */
+  rebuildPositionHistory() {
+    const current = this.saveState();
+    this.positionHistory = this.moveHistory.map(state => {
+      this.restoreState(state);
+      return this.positionKey();
+    });
+    this.restoreState(current);
+    this.positionHistory.push(this.positionKey());
+  }
+
   toFen() {
     const rows = [];
     for(let r = 0; r < 8; r++) {
@@ -624,47 +595,20 @@ class ChessEngine {
       if(gap) s += gap;
       rows.push(s);
     }
-    const castlingRights = (color, row) => {
-      if(this.variant === 'fischer960') {
-        let kingCol = -1;
-        let r = '';
-        for(let c = 0; c < 8; c++) {
-          const p = this.board[row][c];
-          if(p && pieceTypeStatic(p) === 'k' && pieceColorStatic(p) === color) kingCol = c;
+    const cr = this.castleRights || {};
+    let castle = '';
+    for(const color of ['w', 'b']) {
+      for(const side of ['K', 'Q']) {
+        if(!cr[color + side]) continue;
+        let letter = side;
+        if(this.variant === 'fischer960' && this.fischerBackRow) {
+          const col = side === 'K' ? this.fischerBackRow.lastIndexOf('r') : this.fischerBackRow.indexOf('r');
+          letter = FILES[col].toUpperCase();
         }
-        if(kingCol === -1) return '';
-        for(let c = kingCol + 1; c < 8; c++) {
-          const p = this.board[row][c];
-          if(p && pieceTypeStatic(p) === 'r' && pieceColorStatic(p) === color) {
-            r += color === 'w' ? 'K' : 'k';
-            break;
-          }
-        }
-        for(let c = kingCol - 1; c >= 0; c--) {
-          const p = this.board[row][c];
-          if(p && pieceTypeStatic(p) === 'r' && pieceColorStatic(p) === color) {
-            r += color === 'w' ? 'Q' : 'q';
-            break;
-          }
-        }
-        return r;
+        castle += color === 'w' ? letter : letter.toLowerCase();
       }
-      let rights = '';
-      if(this.board[row][4] === (color === 'w' ? 'K' : 'k')) {
-        if(this.board[row][7] === (color === 'w' ? 'R' : 'r')) rights += color === 'w' ? 'K' : 'k';
-        if(this.board[row][0] === (color === 'w' ? 'R' : 'r')) rights += color === 'w' ? 'Q' : 'q';
-      }
-      return rights;
-    };
-    let castle;
-    if(this.variant === 'fischer960') {
-      castle = castlingRights('w', 7) + castlingRights('b', 0);
-      if(!castle) castle = '-';
-    } else {
-      const cr = this.castleRights || {};
-      castle = (cr.wK ? 'K' : '') + (cr.wQ ? 'Q' : '') + (cr.bK ? 'k' : '') + (cr.bQ ? 'q' : '');
-      if(!castle) castle = '-';
     }
+    if(!castle) castle = '-';
     let ep = '-';
     if(this.ep && this.ep.r !== undefined) ep = FILES[this.ep.c] + (8 - this.ep.r);
     return `${rows.join('/')} ${this.turn} ${castle} ${ep} ${this.halfmove} ${this.fullmove}`;
@@ -687,14 +631,22 @@ class ChessEngine {
 
   /* --- Хеш позиции для тройного повторения --- */
   positionKey() {
-    return this.board.map(r => r.join('')).join('/') + ' ' + this.turn +
-      (this.ep ? ' ' + this.ep.r + ',' + this.ep.c : '');
+    const parts = this.toFen().split(' ');
+    // An en-passant target distinguishes positions only if a legal capture exists.
+    let ep = '-';
+    if(this.ep) {
+      const row = this.ep.r + (this.turn === 'w' ? 1 : -1);
+      for(const col of [this.ep.c - 1, this.ep.c + 1]) {
+        if(inside(row, col) && this.board[row][col] === (this.turn === 'w' ? 'P' : 'p') &&
+           this.getLegalMoves(row, col).some(m => m.ep)) { ep = parts[3]; break; }
+      }
+    }
+    return parts.slice(0, 3).join(' ') + ' ' + ep;
   }
 
   isThreefoldRepetition() {
     if(!this.positionHistory) this.positionHistory = [];
     const key = this.positionKey();
-    this.positionHistory.push(key);
     let count = 0;
     for(const k of this.positionHistory) {
       if(k === key) count++;
@@ -801,9 +753,9 @@ class ChessEngine {
     this.gameOver = state.gameOver;
     if(state.variant) this.variant = state.variant;
     if(state.clockOn !== undefined) this.clockOn = state.clockOn;
-    if(state.time) this.time = {...state.time};
+    if(state.time !== undefined) this.time = state.time ? {...state.time} : null;
     if(state.humanColor) this.humanColor = state.humanColor;
-    if(state.fischerBackRow) this.fischerBackRow = [...state.fischerBackRow];
+    if(state.fischerBackRow !== undefined) this.fischerBackRow = state.fischerBackRow ? [...state.fischerBackRow] : null;
     if(state.castleRights) this.castleRights = {...state.castleRights};
   }
 
@@ -812,17 +764,17 @@ class ChessEngine {
     try {
       const data = {
         state: this.saveState(),
-        moveHistory: this.moveHistory.map(s => ({
-          board: s.board.map(row => [...row]),
-          turn: s.turn,
-          ep: s.ep ? {...s.ep} : null,
-          halfmove: s.halfmove,
-          fullmove: s.fullmove,
-          plyCount: s.plyCount,
-          gameOver: s.gameOver,
-          castleRights: s.castleRights ? {...s.castleRights} : null
-        })),
+        moveHistory: this.moveHistory,
         positionHistory: this.positionHistory || [],
+        gameMoves: typeof gameMoves !== 'undefined' ? gameMoves : [],
+        gameStartFen: typeof gameStartFen !== 'undefined' ? gameStartFen : this.toFen(),
+        takenByW: typeof takenByW !== 'undefined' ? takenByW : [],
+        takenByB: typeof takenByB !== 'undefined' ? takenByB : [],
+        hintsLeft: typeof hintsLeft !== 'undefined' ? hintsLeft : 2,
+        undosLeft: typeof undosLeft !== 'undefined' ? undosLeft : 3,
+        lastMove: typeof lastMove !== 'undefined' ? lastMove : null,
+        botId: typeof ProfilesManager !== 'undefined' && ProfilesManager.getCurrent() ? ProfilesManager.getCurrent().botId : null,
+        activeBotOverride: typeof _activeBotOverride !== 'undefined' ? _activeBotOverride : null,
         cfg: {
           variant: this.variant,
           human: this.humanColor,
