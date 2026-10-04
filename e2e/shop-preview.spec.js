@@ -51,13 +51,42 @@ test.describe('Магазин 2.0 — превью и фоны', () => {
     expect(pv.pieces).toBe(32);
     expect(pv.name).toBe('Классика');
 
-    // Клик по карточке «Неон» → превью переключается
-    await page.click('#shopGrid .shopItem[data-pv-type="skin"][data-pv-id="neon"]');
+    // Плашка табов: без горизонтального скролла и обрезки вкладок (скроллбар не перекрывает выбор)
+    const tb = await page.evaluate(() => {
+      const el = document.getElementById('shopTabs');
+      const btns = [...el.querySelectorAll('.shopTab')];
+      const r = el.getBoundingClientRect();
+      const last = btns[btns.length - 1].getBoundingClientRect();
+      return { sw: el.scrollWidth, cw: el.clientWidth, stripB: r.bottom, lastB: last.bottom };
+    });
+    expect(tb.sw).toBeLessThanOrEqual(tb.cw);
+    expect(tb.lastB).toBeLessThanOrEqual(tb.stripB);
+
+    // Превью-поле строго квадратное, клетки равные (пропорциональность)
+    const sq = await page.evaluate(() => {
+      const el = document.querySelector('#shopPreview .spBoard');
+      const r = el.getBoundingClientRect();
+      const rs = [...el.querySelectorAll('.spSq')].map(c => { const b = c.getBoundingClientRect(); return { w: b.width, h: b.height }; });
+      return {
+        bw: r.width, bh: r.height,
+        wSpread: Math.max(...rs.map(x => x.w)) - Math.min(...rs.map(x => x.w)),
+        hSpread: Math.max(...rs.map(x => x.h)) - Math.min(...rs.map(x => x.h))
+      };
+    });
+    expect(sq.bw).toBeCloseTo(sq.bh, 0);
+    expect(sq.wSpread).toBeLessThanOrEqual(1);
+    expect(sq.hSpread).toBeLessThanOrEqual(1);
+
+    // Каталог: ровно 10 скинов
+    expect(await page.locator('#shopGrid .shopItem[data-pv-type="skin"]').count()).toBe(10);
+
+    // Клик по карточке «Киберпанк» → превью переключается
+    await page.click('#shopGrid .shopItem[data-pv-type="skin"][data-pv-id="cyber"]');
     pv = await page.evaluate(() => {
       const el = document.getElementById('shopPreview');
-      return { name: el.querySelector('.spName').textContent, skin: !!el.querySelector('.skin-neon') };
+      return { name: el.querySelector('.spName').textContent, skin: !!el.querySelector('.skin-cyber') };
     });
-    expect(pv.name).toBe('Неон');
+    expect(pv.name).toBe('Киберпанк');
     expect(pv.skin).toBe(true);
     expect(errors).toEqual([]);
   });

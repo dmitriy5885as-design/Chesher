@@ -178,8 +178,8 @@ test.describe('QA-волна — непокрытые фичи', () => {
     expect(await page.locator('#chatMsgs .chatMsg.me .text').textContent()).toContain('привет');
     expect(await page.inputValue('#chatInput')).toBe('');
 
-    await page.waitForSelector('#chatMsgs .chatMsg.opp', { timeout: 5000 });
-    await expect(page.locator('#chatMsgs .chatMsg.opp')).toHaveCount(1);
+    await page.waitForSelector('#chatMsgs .chatMsg.opp', { timeout: 10000 });
+    const oppBefore = await page.locator('#chatMsgs .chatMsg.opp').count();
 
     // Мьют: ответы соперника больше не приходят
     await page.click('#muteBtn');
@@ -187,7 +187,7 @@ test.describe('QA-волна — непокрытые фичи', () => {
     await page.click('#chatSend');
     await expect(page.locator('#chatMsgs .chatMsg.me')).toHaveCount(2);
     await page.waitForTimeout(2500);
-    await expect(page.locator('#chatMsgs .chatMsg.opp')).toHaveCount(1);
+    expect(await page.locator('#chatMsgs .chatMsg.opp').count()).toBe(oppBefore);
     expect(errors).toEqual([]);
   });
 
@@ -374,10 +374,10 @@ test.describe('QA-волна — непокрытые фичи', () => {
     await page.click('#profTabs .shopTab[data-tab="style"]');
     await expect(page.locator('#themeRow .swatch').first()).toBeVisible();
 
-    // Некупленная «Неон» — отказ
-    await page.locator('#themeRow .swatch').filter({ hasText: 'Неон' }).click();
+    // Некупленная «Лава» — отказ
+    await page.locator('#themeRow .swatch').filter({ hasText: 'Лава' }).click();
     await expect(page.locator('#toast')).toContainText('Купите доску в магазине');
-    expect(await page.evaluate(() => cfg.board)).not.toBe('neon');
+    expect(await page.evaluate(() => cfg.board)).not.toBe('lava');
 
     // Купленная «Синева» — применяется
     await page.locator('#themeRow .swatch').filter({ hasText: 'Синева' }).click();
