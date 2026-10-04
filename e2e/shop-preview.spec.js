@@ -88,6 +88,22 @@ test.describe('Магазин 2.0 — превью и фоны', () => {
     });
     expect(pv.name).toBe('Киберпанк');
     expect(pv.skin).toBe(true);
+
+    // Пиксельный скин: превью-доска — текущая доска игрока, а не палитра Game Boy
+    await page.click('#shopGrid .shopItem[data-pv-type="skin"][data-pv-id="pixel"]');
+    const px = await page.evaluate(() => {
+      const el = document.getElementById('shopPreview');
+      const bd = BOARDS[cfg.board];
+      return {
+        l: getComputedStyle(el.querySelector('.spSq.l')).backgroundColor,
+        d: getComputedStyle(el.querySelector('.spSq.d')).backgroundColor,
+        bdL: bd.light, bdD: bd.dark
+      };
+    });
+    const hex2rgb = h => { const n = parseInt(h.slice(1), 16); return `rgb(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255})`; };
+    expect(px.l).toBe(hex2rgb(px.bdL));
+    expect(px.d).toBe(hex2rgb(px.bdD));
+    expect(px.l).not.toBe('rgb(155, 188, 15)');
     expect(errors).toEqual([]);
   });
 
@@ -130,6 +146,16 @@ test.describe('Магазин 2.0 — превью и фоны', () => {
     expect(st.bodyCustom).toBe(true);
     expect(st.varSet).toBeTruthy();
     expect(st.screenCustom).toBe(true);
+
+    // Фон интерфейса — на всех экранах, кроме стартового (вход)
+    const screens = await page.evaluate(() => {
+      const o = {};
+      document.querySelectorAll('.screen').forEach(s => { o[s.id] = s.classList.contains('bg-custom'); });
+      return o;
+    });
+    expect(screens.scrAuth).toBe(false);
+    Object.keys(screens).filter(id => id !== 'scrAuth')
+      .forEach(id => expect(screens[id], id + ' должен иметь bg-custom').toBe(true));
 
     // Превью переключилось на купленный фон
     const pv = await page.evaluate(() => {
