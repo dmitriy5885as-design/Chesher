@@ -183,6 +183,8 @@ function refreshBars() {
   const tB = (takenByB || []).map(t => getSkinGlyph('b', t)).join('');
 
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const authButton = document.getElementById('mAuth');
+  if(authButton) authButton.style.display = isGuest ? '' : 'none';
   let myName, myAva;
   if(cfg.gameMode === 'local' && S) {
     myName = humanCol === 'w' ? 'Игрок 1' : 'Игрок 2';
@@ -321,6 +323,8 @@ function renderProfBar() {
   const pbName = document.getElementById('pbName');
   const pbSub = document.getElementById('pbSub');
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const authButton = document.getElementById('mAuth');
+  if(authButton) authButton.style.display = isGuest ? '' : 'none';
   if(pbAva) {
     if(!isGuest && cu.customAva) {
       pbAva.innerHTML = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
@@ -333,7 +337,7 @@ function renderProfBar() {
     if(pbName) pbName.textContent = (cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
     if(pbSub) pbSub.innerHTML = '<span style="color:var(--accent);font-size:10px">#' + ChesAuth.guestPlayerId + '</span>';
   } else {
-    if(pbName) pbName.innerHTML = escapeHtml(cu.name || 'Игрок') + (cu.admin ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
+    if(pbName) pbName.innerHTML = escapeHtml(cu.name || 'Игрок') + ((ChesAuth.admin === true || (ChesAuth.profile && ChesAuth.profile.admin === true)) ? ' <span title="Администратор" style="color:var(--accent);font-size:11px">⭐</span>' : '');
     if(pbSub) pbSub.innerHTML = (cu.playerId ? '<span style="color:var(--accent);font-size:10px">#' + cu.playerId + '</span> · ' : '') + (cu.winrate || 0) + '% винрейт · ' + (cu.st.games || 0) + ' ' + pluralRu(cu.st.games || 0, ['партия', 'партии', 'партий']);
   }
 }
@@ -1180,6 +1184,8 @@ function renderProfSettings(cu) {
   if(!cu) return;
   const infoBox = document.getElementById('profSettingsInfo');
   const isGuest = !ChesAuth.user || ChesAuth.user.isAnonymous;
+  const authButton = document.getElementById('mAuth');
+  if(authButton) authButton.style.display = isGuest ? '' : 'none';
   const c = cu ? (cu.coins || 0) : 0;
   const g = cu ? (cu.gems || 0) : 0;
   if(infoBox) {

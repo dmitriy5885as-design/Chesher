@@ -127,9 +127,7 @@ const NetUI = {
       cu.playerId = ChesAuth._genPlayerId();
       ChesAuth.updateProfile({ playerId: cu.playerId });
     }
-    if(ChesAuth.profile.admin) {
-      cu.admin = true;
-    }
+    cu.admin = ChesAuth.admin === true || ChesAuth.profile.admin === true;
     if(ChesAuth.profile.wins) {
       cu.st.wins = ChesAuth.profile.wins;
     }
@@ -142,30 +140,7 @@ const NetUI = {
   },
 
   _updateProfileBar(user) {
-    const pbName = document.getElementById('pbName');
-    const pbSub = document.getElementById('pbSub');
-    const pbAva = document.getElementById('pbAva');
-    const mAuthBtn = document.getElementById('mAuth');
-    if(user && !user.isAnonymous) {
-      const cu = ProfilesManager.getCurrent();
-      if(pbName) pbName.textContent = cu ? cu.name : (user.displayName || user.email);
-      if(pbAva && cu) {
-        if(cu.customAva) {
-          pbAva.innerHTML = '<img src="' + escapeHtml(cu.customAva) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-        } else {
-          pbAva.textContent = cu.ava || '👽';
-        }
-      }
-      if(pbSub) pbSub.textContent = 'Онлайн';
-      if(mAuthBtn) mAuthBtn.style.display = 'none';
-    } else {
-      const cu = ProfilesManager.getCurrent();
-      const gName = (cu && cu.name && cu.name !== 'Гость') ? cu.name : 'Гость';
-      if(pbName) pbName.textContent = gName;
-      if(pbAva) pbAva.textContent = (cu && cu.ava) ? cu.ava : '👽';
-      if(pbSub) pbSub.textContent = '';
-      if(mAuthBtn) mAuthBtn.style.display = '';
-    }
+    renderProfBar();
   },
 
   /* ==================== ДРУЗЬЯ ==================== */

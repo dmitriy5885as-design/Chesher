@@ -7,6 +7,7 @@
 const ChesAuth = {
   user: null,
   profile: null,
+  admin: false,
   listeners: [],
   guestPlayerId: null,
 
@@ -47,14 +48,27 @@ const ChesAuth = {
   init() {
     if(!firebaseAuth) return;
     firebaseAuth.onAuthStateChanged(async user => {
+      const revision = this._authRevision = (this._authRevision || 0) + 1;
       this.user = user;
+      this.profile = null;
+      this.admin = false;
+      if(typeof renderProfBar === 'function') renderProfBar();
       if(user) {
-        await this._loadProfile(user.uid);
+        await this._loadProfile(user.uid, revision);
+        if(revision !== this._authRevision) return;
+        if(typeof user.getIdTokenResult === 'function') {
+          try {
+            const tokenInfo = await user.getIdTokenResult();
+            if(revision !== this._authRevision) return;
+            this.admin = tokenInfo.claims.admin === true;
+          } catch(e) { console.warn('Role load error:', e.message); }
+        }
+        if(revision !== this._authRevision) return;
+        this.listeners.forEach(fn => fn(user));
         this.flushPending();
       } else {
-        this.profile = null;
+        this.listeners.forEach(fn => fn(user));
       }
-      this.listeners.forEach(fn => fn(user));
     });
     if(typeof window !== 'undefined') {
       window.addEventListener('online', () => this.flushPending());
@@ -154,12 +168,12 @@ const ChesAuth = {
   },
 
   /* --- Загрузить профиль --- */
-  async _loadProfile(uid) {
+  async _loadProfile(uid, revision) {
     if(!firebaseDB) return;
     try {
       const ref = firebaseDB.collection('users').doc(uid);
       const snap = await ref.get();
-      if(snap.exists) {
+      if(snap.exists && this.user && this.user.uid === uid && (revision == null || revision === this._authRevision)) {
         this.profile = snap.data();
       }
     } catch(e) {
