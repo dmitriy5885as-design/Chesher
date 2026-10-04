@@ -14,240 +14,107 @@
 "use strict";
 
 /* --- Определение скинов фигур --- */
+const CLASSIC_GLYPH = {
+  w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
+  b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
+};
+const SOLID_GLYPH = {
+  w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
+  b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
+};
 const SKINS = {
   classic: {
     name: 'Классика',
     price: 0,
-    glyph: {
-      w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
+    glyph: CLASSIC_GLYPH
   },
-  mono: {
-    name: 'Монохром',
-    price: 100,
-    glyph: {
-      w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  rajasthani: {
-    name: 'Раджастхан',
-    price: 350,
-    css: 'skin-rajasthani',
-    glyph: {
-      w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  gothic: {
-    name: 'Готика',
-    price: 200,
-    css: 'skin-gothic',
-    glyph: {
-      w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  neon: {
-    name: 'Неон',
-    price: 300,
-    css: 'skin-neon',
-    glyph: {
-      w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
-      b: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'}
-    }
-  },
-  antique: {
-    name: 'Античность',
+  classic_plus: {
+    name: 'Классика+',
     price: 250,
-    glyph: {
-      w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
+    css: 'skin-classic-plus',
+    glyph: CLASSIC_GLYPH
   },
-  skeleton: {
-    name: 'Скелеты',
-    price: 350,
-    css: 'skin-skeleton',
-    glyph: {
-      w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
+  cartoon: {
+    name: 'Мультяшный',
+    price: 200,
+    css: 'skin-cartoon',
+    glyph: CLASSIC_GLYPH
   },
-  fire: {
-    name: 'Огненные',
-    price: 400,
-    css: 'skin-fire',
-    glyph: {
-      w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  ice: {
-    name: 'Ледяные',
-    price: 400,
-    css: 'skin-ice',
-    glyph: {
-      w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  shadow: {
-    name: 'Тени',
+  pixel: {
+    name: 'Пиксельный',
     price: 300,
-    css: 'skin-shadow',
-    glyph: {
-      w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
+    css: 'skin-pixel',
+    glyph: SOLID_GLYPH
   },
-  gold: {
-    name: 'Золотые',
-    price: 500,
-    css: 'skin-gold',
-    glyph: {
-      w: {k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  blood: {
-    name: 'Кровь',
-    price: 350,
-    css: 'skin-blood',
-    glyph: {
-      w: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},
-      b: {k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}
-    }
-  },
-  dragon: {
-    name: 'Драконий',
-    price: 450,
-    glyph: {
-      w: {k:'🐉',q:'🐲',r:'🏰',b:'🦄',n:'🦅',p:'🐾'},
-      b: {k:'🐉',q:'🐲',r:'🏰',b:'🦄',n:'🦅',p:'🐾'}
-    }
-  },
-  forest: {
-    name: 'Лесной',
+  street: {
+    name: 'Городской / Стрит',
     price: 300,
-    css: 'skin-forest',
-    glyph: {
-      w: {k:'🌲',q:'👑',r:'🪵',b:'🍄',n:'🦊',p:'🍃'},
-      b: {k:'🌲',q:'👑',r:'🪵',b:'🍄',n:'🦊',p:'🍃'}
-    }
+    css: 'skin-street',
+    glyph: CLASSIC_GLYPH
   },
-  robot: {
-    name: 'Робот',
-    price: 400,
-    css: 'skin-robot',
-    glyph: {
-      w: {k:'🤖',q:'🦾',r:'🏗',b:'⚙️',n:'🦿',p:'🔩'},
-      b: {k:'🤖',q:'🦾',r:'🏗',b:'⚙️',n:'🦿',p:'🔩'}
-    }
-  },
-  ghost: {
-    name: 'Призраки',
+  nature: {
+    name: 'Природа / Фэнтези',
     price: 350,
-    css: 'skin-ghost',
+    css: 'skin-nature',
     glyph: {
-      w: {k:'👻',q:'💀',r:'🫥',b:'👽',n:'🫠',p:'🫧'},
-      b: {k:'👻',q:'💀',r:'🫥',b:'👽',n:'🫠',p:'🫧'}
+      w: {k:'🧙',q:'🧝',r:'🏰',b:'🍄',n:'🦄',p:'🌱'},
+      b: {k:'🧙',q:'🧝',r:'🏰',b:'🍄',n:'🦄',p:'🌱'}
     }
   },
-  crystal: {
-    name: 'Кристалл',
-    price: 400,
-    css: 'skin-crystal',
-    glyph: {
-      w: {k:'💎',q:'🔷',r:'⬡',b:'◇',n:'△',p:'○'},
-      b: {k:'💎',q:'🔷',r:'⬡',b:'◇',n:'△',p:'○'}
-    }
-  },
-  theatre: {
-    name: 'Театр',
-    price: 300,
-    glyph: {
-      w: {k:'🎭',q:'👸',r:'🏰',b:'🧙',n:'🏇',p:'🎪'},
-      b: {k:'🎭',q:'👸',r:'🏰',b:'🧙',n:'🏇',p:'🎪'}
-    }
-  },
-  pirate: {
-    name: 'Пиратский',
-    price: 350,
-    css: 'skin-pirate',
-    glyph: {
-      w: {k:'☠️',q:'👸',r:'⛵',b:'🗡️',n:'🦜',p:'💀'},
-      b: {k:'☠️',q:'👸',r:'⛵',b:'🗡️',n:'🦜',p:'💀'}
-    }
-  },
-  cosmic: {
+  cosmos: {
     name: 'Космос',
-    price: 0,
-    gemPrice: 5,
+    price: 350,
     css: 'skin-cosmic',
-    gem: true,
     glyph: {
       w: {k:'🌟',q:'🪐',r:'🛸',b:'☄️',n:'🌙',p:'⭐'},
       b: {k:'🌟',q:'🪐',r:'🛸',b:'☄️',n:'🌙',p:'⭐'}
     }
   },
-  anime: {
-    name: 'Аниме',
-    price: 0,
-    gemPrice: 8,
-    gem: true,
-    glyph: {
-      w: {k:'⚔️',q:'👑',r:'🏯',b:'🌸',n:'🦊',p:'💢'},
-      b: {k:'⚔️',q:'👑',r:'🏯',b:'🌸',n:'🦊',p:'💢'}
-    }
-  },
   cyber: {
     name: 'Киберпанк',
-    price: 0,
-    gemPrice: 10,
+    price: 450,
     css: 'skin-cyber',
-    gem: true,
+    glyph: CLASSIC_GLYPH
+  },
+  horror: {
+    name: 'Хоррор',
+    price: 400,
+    css: 'skin-horror',
     glyph: {
-      w: {k:'🔌',q:'💾',r:'🖥️',b:'📀',n:'🦾',p:'🔋'},
-      b: {k:'🔌',q:'💾',r:'🖥️',b:'📀',n:'🦾',p:'🔋'}
+      w: {k:'💀',q:'🧟',r:'⚰️',b:'🦇',n:'🕷️',p:'🩸'},
+      b: {k:'💀',q:'🧟',r:'⚰️',b:'🦇',n:'🕷️',p:'🩸'}
     }
   },
-  royal: {
-    name: 'Королевский',
-    price: 0,
-    gemPrice: 12,
-    css: 'skin-royal',
-    gem: true,
+  trash: {
+    name: 'Трэш / Мем',
+    price: 150,
+    css: 'skin-trash',
     glyph: {
-      w: {k:'👑',q:'💎',r:'🏰',b:'🗡️',n:'🐎',p:'⚜️'},
-      b: {k:'👑',q:'💎',r:'🏰',b:'🗡️',n:'🐎',p:'⚜️'}
-    }
-  },
-  void: {
-    name: 'Бездна',
-    price: 0,
-    gemPrice: 15,
-    css: 'skin-void',
-    gem: true,
-    glyph: {
-      w: {k:'👁️',q:'🌑',r:'⬛',b:'🕳️',n:'🦑',p:'🖤'},
-      b: {k:'👁️',q:'🌑',r:'⬛',b:'🕳️',n:'🦑',p:'🖤'}
+      w: {k:'🤡',q:'💅',r:'🚜',b:'🎸',n:'🐸',p:'💩'},
+      b: {k:'🤡',q:'💅',r:'🚜',b:'🎸',n:'🐸',p:'💩'}
     }
   }
 };
 
 /* --- Доски --- */
 const BOARDS = {
+  /* Стандартные — символическая цена */
   classic: {name: 'Классика', price: 0, light: '#f0d9b5', dark: '#b58863'},
-  blue: {name: 'Синева', price: 120, light: '#dee3e6', dark: '#8ca2ad'},
-  green: {name: 'Трава', price: 120, light: '#ffffdd', dark: '#86a666'},
-  purple: {name: 'Аметист', price: 180, light: '#e8d5e8', dark: '#9b59b6'},
-  ocean: {name: 'Океан', price: 200, light: '#d4f1f9', dark: '#006bab'},
-  lava: {name: 'Лава', price: 250, light: '#ffecd2', dark: '#c0392b'},
-  wood: {name: 'Дерево', price: 300, light: '#f5deb3', dark: '#8b4513'},
-  rajasthani: {name: 'Раджастхан', price: 200, light: '#f5e6c8', dark: '#8b4513'},
-  neon: {name: 'Неон', price: 400, light: '#1a1a2e', dark: '#00ff88'}
+  blue: {name: 'Синева', price: 5, light: '#dee3e6', dark: '#8ca2ad'},
+  green: {name: 'Трава', price: 5, light: '#ffffdd', dark: '#86a666'},
+  purple: {name: 'Аметист', price: 5, light: '#e8d5e8', dark: '#9b59b6'},
+  ocean: {name: 'Океан', price: 5, light: '#d4f1f9', dark: '#006bab'},
+  lava: {name: 'Лава', price: 5, light: '#ffecd2', dark: '#c0392b'},
+  /* Под тематику скинов фигур */
+  classic_plus: {name: 'Классика+', price: 250, light: '#f1ede2', dark: '#6e6a60'},
+  cartoon: {name: 'Мультяшный', price: 250, light: '#fff9d6', dark: '#6cc4f5'},
+  pixel: {name: 'Пиксельный', price: 300, light: '#9bbc0f', dark: '#306230'},
+  street: {name: 'Городской / Стрит', price: 300, light: '#d6d4cc', dark: '#565a60'},
+  nature: {name: 'Природа / Фэнтези', price: 350, light: '#d6e7bd', dark: '#4f7a41'},
+  cosmos: {name: 'Космос', price: 350, light: '#cfc9f2', dark: '#463b8c'},
+  horror: {name: 'Хоррор', price: 400, light: '#b0a5a5', dark: '#5a1018'},
+  cyber: {name: 'Киберпанк', price: 450, light: '#141a35', dark: '#00c8ff'},
+  trash: {name: 'Трэш / Мем', price: 200, light: '#ffe9f7', dark: '#5de08f'}
 };
 
 /* --- Фоны интерфейса (экраны и главное меню) --- */
@@ -441,8 +308,8 @@ const Store = {
         card.className = 'shopItem' + (isActive ? ' active' : '');
         card.dataset.pvType = 'skin';
         card.dataset.pvId = id;
-        card.innerHTML = '<div class="shopItemPreview skinPrev">' +
-          '<i>' + skin.glyph.w.k + '</i><i>' + skin.glyph.w.q + '</i><i>' + skin.glyph.w.r + '</i><i>' + skin.glyph.w.n + '</i>' +
+        card.innerHTML = '<div class="shopItemPreview skinPrev' + (skin.css ? ' ' + skin.css : '') + '">' +
+          '<i class="piece w">' + skin.glyph.w.k + '</i><i class="piece w">' + skin.glyph.w.q + '</i><i class="piece w">' + skin.glyph.w.r + '</i><i class="piece w">' + skin.glyph.w.n + '</i>' +
           '</div>' +
           '<div class="shopItemName">' + skin.name + '</div>' +
           (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +

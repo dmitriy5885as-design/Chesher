@@ -1057,7 +1057,7 @@ function newGame() {
   const boardBox = document.getElementById('boardBox');
   if(boardBox) {
     boardBox.classList.toggle('flipped', humanColor === 'b');
-    boardBox.classList.remove('skin-rajasthani');
+    Array.from(boardBox.classList).filter(c=>c.indexOf('skin-')===0).forEach(c=>boardBox.classList.remove(c));
     const skin = SKINS[cfg.skin];
     if(skin && skin.css) boardBox.classList.add(skin.css);
   }
@@ -1617,7 +1617,7 @@ function startPuzzle(opts) {
   const boardBox = document.getElementById('boardBox');
   if(boardBox) {
     boardBox.classList.toggle('flipped', pz.turn === 'b');
-    boardBox.classList.remove('skin-rajasthani');
+    Array.from(boardBox.classList).filter(c=>c.indexOf('skin-')===0).forEach(c=>boardBox.classList.remove(c));
     const skin = SKINS[cfg.skin];
     if(skin && skin.css) boardBox.classList.add(skin.css);
   }
@@ -2984,7 +2984,7 @@ hideAllScreens();
   const boardBox = document.getElementById('boardBox');
   if(boardBox) {
     boardBox.classList.toggle('flipped', mpColor === 'b');
-    boardBox.classList.remove('skin-rajasthani');
+    Array.from(boardBox.classList).filter(c=>c.indexOf('skin-')===0).forEach(c=>boardBox.classList.remove(c));
     const skin = SKINS[cfg.skin];
     if(skin && skin.css) boardBox.classList.add(skin.css);
   }
@@ -3256,7 +3256,7 @@ async function resumeMultiplayer(savedGame) {
   const boardBox = document.getElementById('boardBox');
   if(boardBox) {
     boardBox.classList.toggle('flipped', mp.myColor === 'b');
-    boardBox.classList.remove('skin-rajasthani');
+    Array.from(boardBox.classList).filter(c=>c.indexOf('skin-')===0).forEach(c=>boardBox.classList.remove(c));
     const skin = SKINS[cfg.skin];
     if(skin && skin.css) boardBox.classList.add(skin.css);
   }
