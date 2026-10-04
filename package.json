@@ -5,7 +5,7 @@
   "scripts": {
     "start": "python -m http.server 8000",
     "changelog": "node scripts/changelog.js",
-    "test": "npx playwright test",
+    "test": "node scripts/test-engine.js && node scripts/validate-puzzles.js && npx playwright test",
     "test:headed": "npx playwright test --headed"
   },
   "devDependencies": {

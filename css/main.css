@@ -1759,3 +1759,91 @@ body.mobile-mode .qrBtn{display:none!important}
   body.mobile-mode.chat-open #btnChat{left:auto;right:12px}
   body.mobile-mode.chat-open #leftCol{position:fixed;inset:0;z-index:1290;display:flex!important;align-items:flex-end}
 }
+
+/* ===================== Прогресс: XP / уровни ===================== */
+.xpFloat{
+  position:fixed;left:50%;top:34%;transform:translateX(-50%);
+  z-index:4000;pointer-events:none;
+  font-size:clamp(16px,3vw,22px);font-weight:900;letter-spacing:1px;
+  color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.8);
+  animation:xpFloatUp 1.35s ease-out forwards;
+}
+@keyframes xpFloatUp{
+  0%{opacity:0;transform:translateX(-50%) translateY(8px) scale(.85)}
+  18%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.05)}
+  75%{opacity:1;transform:translateX(-50%) translateY(-18px) scale(1)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-34px) scale(.95)}
+}
+.xpLevelUp{
+  position:fixed;left:50%;top:42%;transform:translateX(-50%);
+  z-index:4001;pointer-events:none;text-align:center;
+  padding:14px 26px;border-radius:16px;
+  background:rgba(12,14,20,.92);border:2px solid var(--gold);
+  box-shadow:0 8px 40px rgba(0,0,0,.6);
+  animation:levelUpPop 2.1s ease-out forwards;
+}
+.xpLevelUp b{
+  display:block;font-size:clamp(20px,4vw,30px);font-weight:900;letter-spacing:3px;
+  color:var(--gold);text-shadow:0 0 18px rgba(247,197,49,.55);
+}
+.xpLevelUp span{
+  display:block;margin-top:2px;font-size:clamp(12px,2vw,15px);color:var(--mut);font-weight:700;
+}
+@keyframes levelUpPop{
+  0%{opacity:0;transform:translateX(-50%) scale(.7)}
+  12%{opacity:1;transform:translateX(-50%) scale(1.06)}
+  22%{transform:translateX(-50%) scale(1)}
+  82%{opacity:1}
+  100%{opacity:0;transform:translateX(-50%) translateY(-14px) scale(.96)}
+}
+.goStats .gsXp{color:#8fd0ff;border-color:#3a5a72}
+.goXpRow{flex:1 1 100%;display:flex;align-items:center;gap:8px;justify-content:center;margin-top:2px}
+.goXpBar{flex:0 1 180px;height:7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.goXpBar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#5aa9ff,#8fd0ff);transition:width .5s}
+.goXpLbl{font-size:11px;font-weight:800;color:var(--mut);white-space:nowrap}
+/* Титул рядом с именем */
+.titleChip{
+  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.5px;
+  padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;
+  background:rgba(247,197,49,.12);border:1px solid rgba(247,197,49,.4);color:var(--gold);
+}
+/* Уровень в панели профиля */
+.lvChip{font-size:11px;font-weight:900;color:#8fd0ff;letter-spacing:.5px}
+.xpBarMini{height:8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.xpBarMini i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#5aa9ff,#8fd0ff)}
+@media (prefers-reduced-motion: reduce){
+  .xpFloat{animation-duration:.4s}
+  .xpLevelUp{animation-duration:.5s}
+}
+
+/* === Задача дня (Daily Puzzle 2.0) === */
+#puzzleDayCard{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(90,169,255,.10),rgba(247,197,49,.07));border:1px solid var(--line)}
+.pdcHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.pdcName{font-size:12px;font-weight:900;letter-spacing:1px;color:var(--txt)}
+.pdcDiff{font-size:10px;font-weight:900;padding:2px 8px;border-radius:10px;letter-spacing:.5px}
+.pdcTitle{font-size:15px;font-weight:800;color:var(--txt);line-height:1.3;margin-bottom:6px}
+.pdcMeta{font-size:12px;color:var(--mut);margin-bottom:8px}
+.pdcStreak{color:var(--gold)}
+.pdcRow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pdcStatus{font-size:12px;font-weight:700}
+.pdcStatus.ok{color:#5ad07f}
+.pdcStatus.run{color:var(--gold)}
+.pdcStatus.new{color:#8fd0ff}
+.pdcBtn{font-size:12px;font-weight:700;padding:6px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);cursor:pointer}
+.pdcBtn:hover{border-color:#3a5a72}
+/* Бейджи сложностей задач */
+.d_easy{background:rgba(90,208,127,.12);color:#5ad07f;border:1px solid rgba(90,208,127,.4)}
+.d_medium{background:rgba(90,169,255,.12);color:#8fd0ff;border:1px solid rgba(90,169,255,.4)}
+.d_hard{background:rgba(247,197,49,.12);color:var(--gold);border:1px solid rgba(247,197,49,.4)}
+.d_expert{background:rgba(255,138,80,.12);color:#ff9a5c;border:1px solid rgba(255,138,80,.4)}
+.d_legendary{background:rgba(200,120,255,.14);color:#d0a0ff;border:1px solid rgba(200,120,255,.45)}
+/* Оверлей решения/просмотра задачи */
+.pzSub{font-size:13px;font-weight:700;color:var(--mut);text-align:center;margin-top:-4px}
+.pzBody{font-size:13px;margin:10px 0 4px}
+/* История задач */
+.phList{max-height:55vh;overflow:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.phRow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:12px}
+.phWhen{width:74px;font-weight:800;color:#8fd0ff}
+.phTitle{flex:1;color:var(--txt);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.phStreak{color:var(--gold);font-weight:800}
+.phEmpty{text-align:center;color:var(--mut);font-size:13px;padding:14px 4px}

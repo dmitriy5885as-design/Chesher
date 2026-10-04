@@ -23,8 +23,14 @@ const DEFAULT_AVATARS = [
 
 const DEFAULT_START_STATS = {
   games: 0, wins: 0, losses: 0, draws: 0,
-  streak: 0, lastResult: '—', lastOpponent: '—'
+  streak: 0, lastResult: '—', lastOpponent: '—',
+  // Прогресс-статистика (расширяемая)
+  bestElo: 0, checkmates: 0,
+  white: { games: 0, wins: 0, losses: 0, draws: 0 },
+  black: { games: 0, wins: 0, losses: 0, draws: 0 }
 };
+
+const DEFAULT_SIDE_STATS = { games: 0, wins: 0, losses: 0, draws: 0 };
 
 /* --- Класс Profile --- */
 class Profile {
@@ -33,6 +39,13 @@ class Profile {
     this.name = data.name || 'Игрок';
     this.ava = data.ava || DEFAULT_AVATARS[0];
     this.st = {...DEFAULT_START_STATS, ...data.st};
+    // Нормализация расширенной статистики (миграция старых профилей)
+    ['white', 'black'].forEach(side => {
+      if(!this.st[side] || typeof this.st[side] !== 'object') this.st[side] = {...DEFAULT_SIDE_STATS};
+      else this.st[side] = {...DEFAULT_SIDE_STATS, ...this.st[side]};
+    });
+    if(typeof this.st.bestElo !== 'number') this.st.bestElo = 0;
+    if(typeof this.st.checkmates !== 'number') this.st.checkmates = 0;
     this.coins = typeof data.coins === 'number' ? data.coins : 50;
     this.gems = typeof data.gems === 'number' ? data.gems : 0;
     this.owned = data.owned || ['classic', 'board_classic'];
@@ -53,6 +66,15 @@ class Profile {
     this.botStats = data.botStats || {};
     this.matchHistory = data.matchHistory || [];
     this.playerId = data.playerId || null;
+    /* --- Единый игровой прогресс --- */
+    this.xp = typeof data.xp === 'number' && isFinite(data.xp) ? data.xp : 0;
+    this.title = data.title || '';                     // id активного титула ('' = авто)
+    this.puzzles = data.puzzles || {};                 // dateKey -> {slug,type,difficulty,started,completed,streak,xp,coins,ts}
+    this.puzzleHistory = Array.isArray(data.puzzleHistory) ? data.puzzleHistory : []; // [{date,title,type,difficulty,streak,ts}]
+    this.puzzleStreak = typeof data.puzzleStreak === 'number' ? data.puzzleStreak : 0;
+    this.puzzleStreakLast = data.puzzleStreakLast || '';   // dateKey последнего решённого дня
+    this.puzzleMilestones = Array.isArray(data.puzzleMilestones) ? data.puzzleMilestones : []; // выданные вехи стрика
+    this.season = (data.season && typeof data.season === 'object') ? data.season : null; // {n, xp, claimed:[]}
     // Auto-generate playerId for profiles that don't have one
     if(!this.playerId && this.name && this.name !== 'Гость' && this.name !== 'Guest') {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -135,13 +157,14 @@ class Profile {
   }
 
   /* --- Результат игры --- */
-  recordResult(result, vsBot = false, mode, opponentElo = 0) {
+  recordResult(result, vsBot = false, mode, opponentElo = 0, opts = {}) {
     this.st.games++;
     if(result === 'win') {
       this.st.wins++;
       this.st.lastResult = 'победа';
       this.streak++;
       if(vsBot) this.winsBot++;
+      if(opts.checkmate) this.st.checkmates = (this.st.checkmates || 0) + 1;
       this.addCoins(10);
     } else if(result === 'loss') {
       this.st.losses++;
@@ -151,6 +174,16 @@ class Profile {
       this.st.draws++;
       this.st.lastResult = 'ничья';
       this.addCoins(3);
+    }
+    // Статистика по цвету (opts.color = 'w' | 'b')
+    if(opts.color === 'w' || opts.color === 'b') {
+      const side = this.st[opts.color === 'w' ? 'white' : 'black'];
+      if(side) {
+        side.games++;
+        if(result === 'win') side.wins++;
+        else if(result === 'loss') side.losses++;
+        else if(result === 'draw') side.draws++;
+      }
     }
     // Track per-bot stats
     if(vsBot && this.botId) {
@@ -172,6 +205,10 @@ class Profile {
     }
     // Legacy-поле cu.elo — единый источник для профиля/лиги (== ratings.classic, как в plCard)
     if(typeof this.ratings.classic === 'number') this.elo = this.ratings.classic;
+    // Личный рекорд рейтинга
+    if(this.ratings[modeId] !== undefined && this.ratings[modeId] > (this.st.bestElo || 0)) {
+      this.st.bestElo = this.ratings[modeId];
+    }
     saveProfiles();
   }
 
@@ -220,7 +257,15 @@ class Profile {
       botStats: this.botStats,
       ratings: this.ratings,
       matchHistory: this.matchHistory,
-      playerId: this.playerId
+      playerId: this.playerId,
+      xp: this.xp,
+      title: this.title,
+      puzzles: this.puzzles,
+      puzzleHistory: this.puzzleHistory,
+      puzzleStreak: this.puzzleStreak,
+      puzzleStreakLast: this.puzzleStreakLast,
+      puzzleMilestones: this.puzzleMilestones,
+      season: this.season
     };
   }
 
@@ -249,7 +294,15 @@ class Profile {
       botStats: data.botStats,
       ratings: data.ratings,
       matchHistory: data.matchHistory,
-      playerId: data.playerId
+      playerId: data.playerId,
+      xp: data.xp,
+      title: data.title,
+      puzzles: data.puzzles,
+      puzzleHistory: data.puzzleHistory,
+      puzzleStreak: data.puzzleStreak,
+      puzzleStreakLast: data.puzzleStreakLast,
+      puzzleMilestones: data.puzzleMilestones,
+      season: data.season
     });
   }
 }
