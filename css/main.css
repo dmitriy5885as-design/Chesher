@@ -203,13 +203,15 @@ header span{color:var(--mut);font-size:11px;letter-spacing:2px;text-transform:up
   overflow:hidden;text-overflow:ellipsis}
 
 /* --- Оверлей конца партии: награды --- */
-.goStats{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:2px 0 6px}
-.goStats span{font-size:13px;font-weight:800;padding:4px 10px;border-radius:20px;
-  border:1px solid var(--line);background:var(--panel2)}
-.goStats .gsPos{color:var(--green);border-color:#4c6636}
-.goStats .gsNeg{color:var(--red);border-color:#6e3a37}
-.goStats .gsStreak{color:var(--gold);border-color:#6b5a2a}
-.goStats .gsCoin{color:var(--gold)}
+.goStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 6px}
+.goTile{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;
+  border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.goTileL{font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--mut);font-weight:800}
+.goTileV{font-size:15px;font-weight:900;color:var(--txt);white-space:nowrap}
+.goTileV.gsPos{color:var(--green)}
+.goTileV.gsNeg{color:var(--red)}
+.goTileV.gsStreak,.goTileV.gsCoin{color:var(--gold)}
+.goTileV.gsXp{color:#8fd0ff}
 
 /* --- Оверлей конца партии: разбор --- */
 #goAnalysis{margin:4px 0 8px;padding:8px 10px;border:1px solid var(--line);
@@ -703,8 +705,26 @@ body[data-frame="frame_flame"] #pbAva{box-shadow:0 0 6px #e86a5a}
   transition:.13s;color:#fff;text-shadow:0 0 1px #000}
 .promoP.darkset{background:var(--sq-d);color:#1f1f1f;text-shadow:0 0 1px #bbb}
 .promoP:hover{border-color:var(--gold);transform:scale(1.06)}
-#goT{font-size:24px;text-align:center;font-weight:800;letter-spacing:1px;margin-bottom:6px}
-#goS{text-align:center;color:var(--mut);font-size:14.5px;line-height:1.5;margin-bottom:6px}
+#goT{font-size:23px;text-align:center;font-weight:900;letter-spacing:1px;margin-bottom:6px}
+#goS{text-align:center;color:var(--mut);font-size:13px;line-height:1.5;margin-bottom:6px;
+  display:inline-block;background:var(--panel2);border:1px solid var(--line);
+  border-radius:20px;padding:3px 13px;text-transform:uppercase;letter-spacing:.6px;font-weight:800}
+/* Плашка результата */
+.goBadge{width:66px;height:66px;margin:2px auto 10px;display:flex;align-items:center;
+  justify-content:center;font-size:34px;border-radius:50%;border:2px solid var(--line);
+  background:var(--panel2);box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.goBadge.win{border-color:rgba(247,197,49,.65);
+  background:radial-gradient(circle at 50% 30%,rgba(247,197,49,.30),var(--panel2));
+  box-shadow:0 0 18px rgba(247,197,49,.35)}
+.goBadge.loss{border-color:rgba(217,95,88,.6);
+  background:radial-gradient(circle at 50% 30%,rgba(217,95,88,.26),var(--panel2))}
+.goBadge.draw{border-color:rgba(96,165,250,.55);
+  background:radial-gradient(circle at 50% 30%,rgba(96,165,250,.24),var(--panel2))}
+.goModal{max-width:430px;text-align:center}
+.goModal.win #goT{background:linear-gradient(135deg,#ffe08a,var(--gold));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.goModal.loss #goT{color:#ff8b80}
+.goModal.draw #goT{color:#8fd0ff}
 .modalBtns{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
 .modalBtns .btn{flex:1 1 auto;width:auto;min-width:min(100%,132px);padding:12px}
 
@@ -1323,11 +1343,12 @@ body.mobile-mode #toast{bottom:auto;top:14px}
   border-radius: 12px;
   padding: 12px;
   text-align: center;
+  min-width: 0;
   transition: all 0.2s;
 }
 .shopItem:hover { border-color: var(--accent); }
 .shopItem.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,136,0,0.3); }
-.shopItemPreview { margin-bottom: 8px; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 2px; flex-wrap: nowrap; }
+.shopItemPreview { margin-bottom: 8px; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 2px; flex-wrap: nowrap; overflow: hidden; }
 .shopItemPreview i { font-style: normal; font-size: 22px; margin: 0 2px; display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; line-height: 1; border-radius: 4px; flex-shrink: 0; }
 .boardPrev { width: 56px; height: 56px; border-radius: 8px; margin: 0 auto 8px; }
 .boardMini { width: 100%; height: 100%; border-radius: 8px; border: 2px solid rgba(255,255,255,0.1); }
@@ -1421,8 +1442,10 @@ body.mobile-mode #toast{bottom:auto;top:14px}
   }
   .botEmoji { font-size: 24px; }
   .botCard { padding: 8px; }
-  .shopGrid { grid-template-columns: repeat(2, 1fr); }
-  .shopTabs { gap: 4px; }
+  .shopGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .shopItem { padding: 10px 8px; min-width: 0; }
+  .shopItemPreview i { width: 22px; height: 22px; font-size: 17px; margin: 0 1px; }
+  .shopTabs { gap: 4px; flex-wrap: wrap; }
   .shopTab { font-size: 11px; padding: 8px 4px; min-width: 80px; }
   .lbChampAva { font-size: 36px; }
   .lbChampName { font-size: 16px; }
@@ -1796,9 +1819,9 @@ body.mobile-mode .qrBtn{display:none!important}
   82%{opacity:1}
   100%{opacity:0;transform:translateX(-50%) translateY(-14px) scale(.96)}
 }
-.goStats .gsXp{color:#8fd0ff;border-color:#3a5a72}
-.goXpRow{flex:1 1 100%;display:flex;align-items:center;gap:8px;justify-content:center;margin-top:2px}
-.goXpBar{flex:0 1 180px;height:7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.goXpRow{grid-column:1/-1;display:flex;align-items:center;gap:8px;justify-content:center;
+  margin-top:2px;padding-top:9px;border-top:1px dashed var(--line)}
+.goXpBar{flex:1 1 auto;max-width:220px;height:8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
 .goXpBar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#5aa9ff,#8fd0ff);transition:width .5s}
 .goXpLbl{font-size:11px;font-weight:800;color:var(--mut);white-space:nowrap}
 /* Титул рядом с именем */
@@ -1847,3 +1870,54 @@ body.mobile-mode .qrBtn{display:none!important}
 .phTitle{flex:1;color:var(--txt);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .phStreak{color:var(--gold);font-weight:800}
 .phEmpty{text-align:center;color:var(--mut);font-size:13px;padding:14px 4px}
+
+/* ================= Магазин: макет с превью-панелью ================= */
+.shopBody{width:min(1000px,100%);flex:1;display:flex;gap:16px;align-items:flex-start;
+  justify-content:center;padding-bottom:24px}
+.shopMain{flex:1 1 600px;min-width:0;max-width:720px}
+.shopPreview{flex:0 0 300px;width:300px;position:sticky;top:8px;padding:14px;border-radius:16px;
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.spHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.spName{font-size:15px;font-weight:900;color:var(--txt)}
+.spSub{font-size:12px;color:var(--mut);margin:10px 0;text-align:center}
+.spAction{display:flex;justify-content:center;min-height:34px;align-items:center}
+.spStatus{font-size:13px;font-weight:800;color:var(--gold);text-align:center}
+/* Мини-доска в превью (8×8) */
+.spBoard{display:grid;grid-template-columns:repeat(8,1fr);width:100%;aspect-ratio:1;
+  border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,.12);
+  box-shadow:0 4px 14px rgba(0,0,0,.4);font-size:clamp(11px,3.4vw,20px)}
+.spSq{position:relative;display:flex;align-items:center;justify-content:center}
+.spSq.l{background:var(--spL)}
+.spSq.d{background:var(--spD)}
+.spBoard .piece{position:static;width:auto;height:auto;font-size:inherit;font-family:"Segoe UI",serif;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+/* Превью фона */
+.spBg{height:170px;border-radius:12px;border:1px solid rgba(255,255,255,.14);position:relative;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.spBgDefault{background:var(--bg)}
+.spBgMock{display:flex;flex-direction:column;gap:8px;align-items:center;width:72%;
+  padding:16px 10px;border-radius:10px;background:rgba(10,10,12,.55);
+  border:1px solid rgba(255,255,255,.15)}
+.spBgMock i{display:block;width:70%;height:7px;border-radius:4px;background:rgba(255,255,255,.25)}
+.spBgMock i:nth-child(2){width:90%;background:rgba(247,197,49,.5)}
+.spBgMock i:nth-child(3){width:55%}
+.spBgMock span{font-size:18px;letter-spacing:6px;opacity:.9;color:var(--gold)}
+/* Карточка фона в сетке */
+.bgPrev{height:74px;min-height:74px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  overflow:hidden;position:relative;
+  background:radial-gradient(circle at 50% -20%,#2a2721,#0f0e0c)}
+.bgPrevDef{font-size:26px;color:var(--gold);text-shadow:0 0 8px rgba(247,197,49,.6)}
+/* ================= Фоны интерфейса ================= */
+body.bg-custom{background:var(--bgx)!important}
+.screen.bg-custom{background:var(--bgx)!important}
+body.bg-custom .screen::before{display:none}
+@media (max-width: 760px){
+  .shopBody{flex-direction:column-reverse;align-items:stretch}
+  .shopMain{max-width:none}
+  .shopPreview{position:static;width:100%;flex:none}
+  .spBoard{font-size:clamp(12px,5.5vw,22px)}
+}
+@media (max-width: 760px){
+  .goStats{grid-template-columns:repeat(3,1fr)}
+}

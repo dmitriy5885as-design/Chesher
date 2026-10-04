@@ -342,11 +342,11 @@
   
   <!-- ================= ЭКРАН: МАГАЗИН ================= -->
   <div class="screen" id="scrShop">
-    <div class="scrHead" style="width:min(760px,100%)">
+    <div class="scrHead" style="width:min(1000px,100%)">
       <button class="backBtn" data-back>← Назад</button>
       <span class="scrTitle">Магазин</span>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;width:min(760px,100%);margin-bottom:12px">
+    <div style="display:flex;justify-content:flex-end;gap:8px;width:min(1000px,100%);margin-bottom:12px">
       <span class="coinChip" id="shopCoins" style="margin-left:0">🪙 0</span>
       <span class="coinChip gemChip" id="shopGems" style="margin-left:0">💎 0</span>
     </div>
@@ -354,15 +354,19 @@
       <button class="shopTab active" data-tab="skins">🎨 Скины фигур</button>
       <button class="shopTab" data-tab="premium">💎 Премиум</button>
       <button class="shopTab" data-tab="boards">♟ Доски</button>
+      <button class="shopTab" data-tab="backgrounds">🖼 Фоны</button>
       <button class="shopTab" data-tab="stickers">📦 Стикеры</button>
       <button class="shopTab" data-tab="avatars">👤 Аватарки</button>
       <button class="shopTab" data-tab="videos">🎬 Видео мемы</button>
     </div>
-    <div style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;align-items:center">
-      <p class="note" style="width:min(760px,100%);text-align:left;margin-bottom:12px;color:var(--mut);font-size:12px">
-        Скины меняют вид фигур на доске. Монеты 🪙 — игровая валюта: победы (+10), ничьи (+3),
-        серии и ежедневный вход (+25). Кристаллы 💎 — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере.</p>
-      <div class="shopGrid" id="shopGrid"></div>
+    <div class="shopBody">
+      <div class="shopMain">
+        <p class="note" style="text-align:left;margin-bottom:12px;color:var(--mut);font-size:12px">
+          Скины меняют вид фигур на доске. Монеты 🪙 — игровая валюта: победы (+10), ничьи (+3),
+          серии и ежедневный вход (+25). Кристаллы 💎 — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере.</p>
+        <div class="shopGrid" id="shopGrid"></div>
+      </div>
+      <aside class="shopPreview" id="shopPreview" style="display:none"></aside>
     </div>
   </div>
   
@@ -603,7 +607,8 @@
   </div></div>
   
   <!-- КОНЕЦ ПАРТИИ -->
-  <div class="overlay" id="ovOver" role="dialog" aria-modal="true" aria-labelledby="goT"><div class="modal">
+  <div class="overlay" id="ovOver" role="dialog" aria-modal="true" aria-labelledby="goT"><div class="modal goModal">
+    <div class="goBadge" id="goBadge">🏆</div>
     <div id="goT"></div>
     <div id="goS"></div>
     <div id="goStats" class="goStats"></div>

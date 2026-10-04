@@ -1269,21 +1269,32 @@ function endGame(reason, winnerColor, drawReason) {
     }
   }
   if(goS) goS.textContent = reasons[drawReason] || reasons[reason] || '';
+  // Плашка результата и цветовая тема модалки
+  const resCls = result === 'win' ? 'win' : result === 'loss' ? 'loss' : 'draw';
+  const goBadge = document.getElementById('goBadge');
+  if(goBadge) {
+    goBadge.className = 'goBadge ' + resCls;
+    goBadge.textContent = result === 'win' ? '🏆' : result === 'loss' ? '💔' : '🤝';
+  }
+  const goModal = document.querySelector('#ovOver .modal');
+  if(goModal) goModal.className = 'modal goModal ' + resCls;
   const goStats = document.getElementById('goStats');
   if(goStats) {
     const chips = [];
-    if(eloChange > 0) chips.push('<span class="gsPos">+' + eloChange + ' ELO</span>');
-    else if(eloChange < 0) chips.push('<span class="gsNeg">' + eloChange + ' ELO</span>');
-    if(result === 'win' && (cu.streak || 0) > 1) chips.push('<span class="gsStreak">🔥 серия ' + cu.streak + '</span>');
-    if(result === 'win') chips.push('<span class="gsCoin">🪙 +10</span>');
-    else if(result === 'draw') chips.push('<span class="gsCoin">🪙 +3</span>');
-    if(xpGain > 0) chips.push('<span class="gsXp">⭐ +' + xpGain + ' XP</span>');
+    const tile = (label, val, cls) => chips.push('<div class="goTile"><span class="goTileL">' + label + '</span><span class="goTileV' + (cls ? ' ' + cls : '') + '">' + val + '</span></div>');
+    if(eloChange > 0) tile('ELO', '+' + eloChange, 'gsPos');
+    else if(eloChange < 0) tile('ELO', String(eloChange), 'gsNeg');
+    if(result === 'win' && (cu.streak || 0) > 1) tile('Серия', '🔥 ×' + cu.streak, 'gsStreak');
+    if(result === 'win') tile('Награда', '🪙 +10', 'gsCoin');
+    else if(result === 'draw') tile('Награда', '🪙 +3', 'gsCoin');
+    if(xpGain > 0) tile('Опыт', '+' + xpGain + ' XP', 'gsXp');
     // Прогресс уровня (сводка после партии)
     if(typeof Progress !== 'undefined') {
       const sum = Progress.summary();
       chips.push('<div class="goXpRow">' +
+        '<span class="goXpLbl">Lv ' + sum.level + '</span>' +
         '<div class="goXpBar"><i style="width:' + sum.pct + '%"></i></div>' +
-        '<span class="goXpLbl">Lv ' + sum.level + ' · ' + sum.cur + '/' + sum.need + ' XP</span>' +
+        '<span class="goXpLbl">' + sum.cur + '/' + sum.need + ' XP</span>' +
         '</div>');
     }
     goStats.innerHTML = chips.join('');
