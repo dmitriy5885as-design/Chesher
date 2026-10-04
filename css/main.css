@@ -580,12 +580,13 @@ body[data-frame="frame_flame"] #pbAva{box-shadow:0 0 6px #e86a5a}
 .skin-cartoon .piece.w{color:#ffd93d;font-weight:700;text-shadow:-2px -2px 0 #16161b,2px -2px 0 #16161b,-2px 2px 0 #16161b,2px 2px 0 #16161b,0 4px 7px rgba(0,0,0,.5)}
 .skin-cartoon .piece.b{color:#4fc3f7;font-weight:700;text-shadow:-2px -2px 0 #16161b,2px -2px 0 #16161b,-2px 2px 0 #16161b,2px 2px 0 #16161b,0 4px 7px rgba(0,0,0,.5)}
 
-/* Пиксельный — ретро 8/16-bit: силуэты + палитра «Game Boy» на поле */
+/* Пиксельный — ретро 8/16-bit: силуэты; поле в игре в палитре Game Boy,
+   превью в магазине показывает текущую доску игрока (.spSq не трогаем) */
 .skin-pixel .piece{font-family:"Courier New",monospace}
 .skin-pixel .piece.w{color:#e0f8d0;text-shadow:2px 2px 0 #0f380f}
 .skin-pixel .piece.b{color:#0f380f;text-shadow:2px 2px 0 #9bbc0f}
-.skin-pixel .sq.l,.skin-pixel .spSq.l{background:#9bbc0f}
-.skin-pixel .sq.d,.skin-pixel .spSq.d{background:#306230}
+.skin-pixel .sq.l{background:#9bbc0f}
+.skin-pixel .sq.d{background:#306230}
 
 /* Городской / Стрит — граффити, бетон, уличная эстетика */
 .skin-street .piece{rotate:-5deg}
@@ -1881,7 +1882,7 @@ body.mobile-mode .qrBtn{display:none!important}
 /* ================= Фоны интерфейса ================= */
 body.bg-custom{background:var(--bgx)!important}
 .screen.bg-custom{background:var(--bgx)!important}
-body.bg-custom .screen::before{display:none}
+body.bg-custom .screen.bg-custom::before{display:none}
 @media (max-width: 760px){
   .shopBody{flex-direction:column-reverse;align-items:stretch}
   .shopMain{max-width:none}

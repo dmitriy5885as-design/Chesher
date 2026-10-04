@@ -874,7 +874,9 @@ function applyBackground() {
   const root = document.documentElement;
   if(custom) root.style.setProperty('--bgx', custom);
   document.body.classList.toggle('bg-custom', !!custom);
-  document.querySelectorAll('.screen').forEach(el => el.classList.toggle('bg-custom', !!custom));
+  // Стартовый экран (вход) — всегда дефолтный фон
+  document.querySelectorAll('.screen').forEach(el =>
+    el.classList.toggle('bg-custom', !!custom && el.id !== 'scrAuth'));
 }
 if(typeof window !== 'undefined') window.applyBackground = applyBackground;
 
