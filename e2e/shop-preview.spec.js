@@ -121,7 +121,16 @@ test.describe('Магазин 2.0 — превью и фоны', () => {
     expect(bd.dark).toBe(32);
 
     await page.click('#shopTabs .shopTab[data-tab="backgrounds"]');
-    expect(await page.locator('#shopGrid .shopItem[data-pv-type="background"]').count()).toBe(10);
+    expect(await page.locator('#shopGrid .shopItem[data-pv-type="background"]').count()).toBe(11);
+
+    // Фон «Классик+» — картинка, превью отдаёт изображение
+    await page.click('#shopGrid .shopItem[data-pv-type="background"][data-pv-id="classic_plus"]');
+    const cp = await page.evaluate(() => {
+      const el = document.getElementById('shopPreview');
+      return { name: el.querySelector('.spName').textContent, bg: getComputedStyle(el.querySelector('.spBg')).backgroundImage };
+    });
+    expect(cp.name).toBe('Классик+');
+    expect(cp.bg).toContain('classic_plus.webp');
     expect(errors).toEqual([]);
   });
 
@@ -147,14 +156,14 @@ test.describe('Магазин 2.0 — превью и фоны', () => {
     expect(st.varSet).toBeTruthy();
     expect(st.screenCustom).toBe(true);
 
-    // Фон интерфейса — на всех экранах, кроме стартового (вход)
+    // Фон интерфейса — на всех экранах, кроме стартового (главное меню)
     const screens = await page.evaluate(() => {
       const o = {};
       document.querySelectorAll('.screen').forEach(s => { o[s.id] = s.classList.contains('bg-custom'); });
       return o;
     });
-    expect(screens.scrAuth).toBe(false);
-    Object.keys(screens).filter(id => id !== 'scrAuth')
+    expect(screens.scrMenu).toBe(false);
+    Object.keys(screens).filter(id => id !== 'scrMenu')
       .forEach(id => expect(screens[id], id + ' должен иметь bg-custom').toBe(true));
 
     // Превью переключилось на купленный фон
