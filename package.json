@@ -1,6 +1,6 @@
 {
   "name": "chesher",
-  "version": "0.26.1",
+  "version": "0.26.2",
   "private": true,
   "scripts": {
     "start": "python -m http.server 8000",
