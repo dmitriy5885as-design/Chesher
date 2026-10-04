@@ -3,6 +3,8 @@ test.beforeEach(async ({page}) => {
   await page.route(/https:\/\/www\.gstatic\.com\/firebasejs\//, route => route.fulfill({contentType:'application/javascript',body:''}));
   await page.goto('/');
   await page.waitForFunction(() => typeof NetUI !== 'undefined' && typeof renderProfBar === 'function');
+  await page.evaluate(() => showScreen('scrMenu'));
+  await expect(page.locator('#scrMenu')).toBeVisible();
 });
 test('admin badge survives both profile renderers and login button is hidden', async ({page}) => {
   await page.evaluate(() => {
