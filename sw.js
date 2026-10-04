@@ -1,5 +1,5 @@
 /* CHESHER - offline application shell and release updates */
-const CACHE = 'chesher-v0.26.4';
+const CACHE = 'chesher-v0.26.5';
 const APP_SHELL = [
   './', './index.html', './css/main.css', './css/animations.css',
   './js/chess-logic.js', './js/bot.js', './js/elo.js', './js/profile.js',
