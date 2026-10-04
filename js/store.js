@@ -250,6 +250,20 @@ const BOARDS = {
   neon: {name: 'Неон', price: 400, light: '#1a1a2e', dark: '#00ff88'}
 };
 
+/* --- Фоны интерфейса (экраны и главное меню) --- */
+const BACKGROUNDS = {
+  classic: {name: 'Классика', price: 0, style: ''},
+  space: {name: 'Космос', price: 250, style: 'radial-gradient(circle at 70% -10%, #241a4d 0%, #100d26 45%, #07060f 100%)'},
+  ocean: {name: 'Океан', price: 200, style: 'radial-gradient(circle at 50% -20%, #12507a 0%, #0b2c47 45%, #061420 100%)'},
+  sunset: {name: 'Закат', price: 200, style: 'linear-gradient(180deg, #5a2a5f 0%, #a8473c 45%, #2a1526 100%)'},
+  forest: {name: 'Лес', price: 180, style: 'radial-gradient(circle at 30% 10%, #1d4a2a 0%, #12301d 50%, #08130c 100%)'},
+  lava: {name: 'Лава', price: 300, style: 'radial-gradient(circle at 50% 110%, #8a1f0e 0%, #3c1008 45%, #120603 100%)'},
+  neon: {name: 'Неон', price: 350, style: 'linear-gradient(135deg, #0d0221 0%, #2b0a4d 45%, #071018 100%)'},
+  royal: {name: 'Королевский', price: 300, style: 'radial-gradient(circle at 50% -20%, #3d2f10 0%, #1d1607 55%, #0c0a05 100%)'},
+  aurora: {name: 'Сияние', price: 0, gemPrice: 8, gem: true, style: 'linear-gradient(160deg, #041a1f 0%, #0a3d3f 40%, #0f1d3d 75%, #060a14 100%)'},
+  void: {name: 'Бездна', price: 0, gemPrice: 10, gem: true, style: 'radial-gradient(circle at 50% 40%, #17111f 0%, #0a0710 55%, #000 100%)'}
+};
+
 /* --- Стикеры --- */
 const STICKERS = {
   fire: {name: 'Огонь', price: 50, emoji: '🔥'},
@@ -381,6 +395,14 @@ const Store = {
     grid.innerHTML = '';
     const note = document.querySelector('#scrShop .note');
 
+    // Превью-панель справа: тип зависит от вкладки
+    const pvType = cfg.shopTab === 'skins' ? 'skin' : cfg.shopTab === 'boards' ? 'board' : cfg.shopTab === 'backgrounds' ? 'background' : null;
+    if(Store._pv.type !== pvType) Store._pv = { type: pvType, id: null };
+    if(pvType && !Store._pv.id) {
+      Store._pv.id = pvType === 'skin' ? cfg.skin : pvType === 'board' ? cfg.board : (cfg.bg || 'classic');
+    }
+    Store.renderPreview();
+
     if(cfg.shopTab === 'videos') {
       if(note) note.textContent = 'Все видео-мемы: не проигрываются автоматически. Нажми на видео, чтобы открыть его крупнее и со звуком. Клик за границами видео — вернуть как было.';
       if(typeof AVAILABLE_VIDEOS !== 'undefined') {
@@ -401,7 +423,13 @@ const Store = {
       return;
     }
 
-    if(note) note.textContent = 'Скины меняют вид фигур на доске. Монеты 🪙 — игровая валюта: победы (+10), ничьи (+3), серии и ежедневный вход (+25). Кристаллы 💎 — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере.';
+    if(note) note.textContent = cfg.shopTab === 'backgrounds'
+      ? 'Фоны меняют фон всех экранов и главного меню. Покупаются за монеты 🪙 или кристаллы 💎 и применяются сразу.'
+      : cfg.shopTab === 'boards'
+        ? 'Доски меняют расцветку клеток. Нажми на карточку — справа откроется крупное превью.'
+        : cfg.shopTab === 'skins'
+          ? 'Скины меняют вид фигур. Нажми на карточку — справа появится большое превью доски с этим скином.'
+          : 'Скины меняют вид фигур на доске. Монеты 🪙 — игровая валюта: победы (+10), ничьи (+3), серии и ежедневный вход (+25). Кристаллы 💎 — донатная валюта: выдаётся только за реальные деньги, баланс хранится на сервере.';
 
     if(cfg.shopTab === 'skins') {
       Object.keys(SKINS).forEach(id => {
@@ -411,6 +439,8 @@ const Store = {
         const isActive = cfg.skin === id;
         const card = document.createElement('div');
         card.className = 'shopItem' + (isActive ? ' active' : '');
+        card.dataset.pvType = 'skin';
+        card.dataset.pvId = id;
         card.innerHTML = '<div class="shopItemPreview skinPrev">' +
           '<i>' + skin.glyph.w.k + '</i><i>' + skin.glyph.w.q + '</i><i>' + skin.glyph.w.r + '</i><i>' + skin.glyph.w.n + '</i>' +
           '</div>' +
@@ -472,6 +502,8 @@ const Store = {
         const isActive = cfg.board === id;
         const card = document.createElement('div');
         card.className = 'shopItem' + (isActive ? ' active' : '');
+        card.dataset.pvType = 'board';
+        card.dataset.pvId = id;
         card.innerHTML = '<div class="shopItemPreview boardPrev">' +
           '<div class="boardMini" style="background:linear-gradient(135deg,' + b.light + ' 25%,' + b.dark + ' 25%,' + b.dark + ' 50%,' + b.light + ' 50%,' + b.light + ' 75%,' + b.dark + ' 75%);background-size:20px 20px"></div>' +
           '</div>' +
@@ -479,6 +511,25 @@ const Store = {
           (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
           '<button class="buyBtn" data-type="board" data-id="' + id + '">' +
           (isActive ? '✓' : (isOwned ? 'Выбрать' : '🪙 ' + b.price)) + '</button>';
+        grid.appendChild(card);
+      });
+    } else if(cfg.shopTab === 'backgrounds') {
+      Object.keys(BACKGROUNDS).forEach(id => {
+        const bg = BACKGROUNDS[id];
+        const isOwned = owned.includes('bg_' + id);
+        const isActive = (cfg.bg || 'classic') === id;
+        const card = document.createElement('div');
+        card.className = 'shopItem' + (isActive ? ' active' : '');
+        card.dataset.pvType = 'background';
+        card.dataset.pvId = id;
+        const priceLbl = bg.gem ? '💎 ' + bg.gemPrice : '🪙 ' + bg.price;
+        card.innerHTML = '<div class="shopItemPreview bgPrev"' +
+          (bg.style ? ' style="background:' + bg.style + '"' : '') + '>' +
+          (bg.style ? '' : '<span class="bgPrevDef">♔</span>') + '</div>' +
+          '<div class="shopItemName">' + bg.name + '</div>' +
+          (isActive ? '<div class="shopItemSt on">✓ Экипировано</div>' : (isOwned ? '<div class="shopItemSt">Куплено</div>' : '')) +
+          '<button class="buyBtn" data-type="background" data-id="' + id + '">' +
+          (isActive ? '✓' : (isOwned ? 'Выбрать' : priceLbl)) + '</button>';
         grid.appendChild(card);
       });
     } else if(cfg.shopTab === 'stickers') {
@@ -538,12 +589,27 @@ const Store = {
       }
 
       const btn = e.target.closest('.buyBtn');
-      if(!btn) return;
-      
-      const type = btn.dataset.type;
-      const id = btn.dataset.id;
+      if(!btn) {
+        const pvCard = e.target.closest('[data-pv-id]');
+        if(pvCard && pvCard.dataset.pvId && Store._pv && Store._pv.type) {
+          snd.ui();
+          Store._pv = { type: pvCard.dataset.pvType, id: pvCard.dataset.pvId };
+          Store.renderPreview();
+        }
+        return;
+      }
+
       snd.ui();
-      
+      Store.onAction(btn.dataset.type, btn.dataset.id);
+    };
+  },
+
+  /* --- Действие кнопки: купить / выбрать (карточка или превью) --- */
+  onAction(type, id) {
+      // Переключаем превью-панель на предмет действия (если он видим на этой вкладке)
+      const pvMap = { skin: 'skin', board: 'board', background: 'background' };
+      if(pvMap[type] && Store._pv && Store._pv.type === pvMap[type]) Store._pv.id = id;
+
       const profile = Store.getCurrentProfile();
       if(!profile) return;
 
@@ -610,6 +676,38 @@ const Store = {
         } else {
           lackCoins(board.price);
         }
+      } else if(type === 'background') {
+        const bg = BACKGROUNDS[id];
+        if(!bg) return;
+        const ownedKey = 'bg_' + id;
+        if(profile.owned.includes(ownedKey)) {
+          if((cfg.bg || 'classic') === id) return;
+          cfg.bg = id;
+          saveCfg();
+          applyBackground();
+          Store.renderShop();
+          toast('Фон "' + bg.name + '" выбран');
+          return;
+        }
+        if(bg.gem) {
+          if((profile.gems || 0) < bg.gemPrice) { lackGems(bg.gemPrice); return; }
+          profile.spendGems(bg.gemPrice);
+        } else {
+          if(!Store.spendCoins(bg.price)) { lackCoins(bg.price); return; }
+        }
+        profile.owned.push(ownedKey);
+        saveProfiles();
+        if(typeof ChesAuth !== 'undefined' && ChesAuth.user) {
+          Promise.resolve(ChesAuth.updateProfile({ gems: profile.gems, owned: profile.owned })).catch(() => {});
+        }
+        cfg.bg = id;
+        saveCfg();
+        applyBackground();
+        Store.renderShop();
+        renderCoins();
+        if(typeof Analytics !== 'undefined') Analytics.track(bg.gem ? 'purchase_gem_item' : 'purchase_coin_item', { id: id, price: bg.gem ? bg.gemPrice : bg.price });
+        toast('Куплен фон "' + bg.name + '"!');
+        snd.win();
       } else if(type === 'sticker') {
         const sticker = STICKERS[id];
         const ownedKey = 'sticker_' + id;
@@ -684,7 +782,97 @@ const Store = {
         toast('Куплено: ' + item.name + ' ✨');
         snd.win();
       }
-    };
+  },
+
+  /* --- Превью-панель справа в магазине --- */
+  _pv: { type: null, id: null },
+
+  /* --- Превью-панель справа (скин / доска / фон) --- */
+  renderPreview() {
+    const panel = document.getElementById('shopPreview');
+    if(!panel) return;
+    const pv = Store._pv;
+    if(!pv || !pv.type || !pv.id) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+    const profile = Store.getCurrentProfile();
+    const owned = profile ? profile.owned : ['classic'];
+
+    let visual = '', title = '', sub = '', action = '';
+    if(pv.type === 'skin') {
+      const skin = SKINS[pv.id];
+      if(!skin) { panel.style.display = 'none'; return; }
+      const isActive = cfg.skin === pv.id;
+      const isOwned = owned.includes(pv.id);
+      const bd = BOARDS[cfg.board] || BOARDS.classic;
+      visual = Store._spBoard({ skinCss: skin.css, skinId: pv.id, light: bd.light, dark: bd.dark, pieces: true });
+      title = skin.name;
+      sub = 'Скин фигур · ' + (isActive ? 'экипирован' : isOwned ? 'куплен' : (skin.gem ? '💎 ' + skin.gemPrice : '🪙 ' + skin.price));
+      action = isActive
+        ? '<div class="spStatus on">✓ Экипировано</div>'
+        : '<button class="buyBtn" data-type="skin" data-id="' + pv.id + '">' + (isOwned ? 'Выбрать' : (skin.gem ? '💎 ' + skin.gemPrice : '🪙 ' + skin.price)) + '</button>';
+    } else if(pv.type === 'board') {
+      const b = BOARDS[pv.id];
+      if(!b) { panel.style.display = 'none'; return; }
+      const isActive = cfg.board === pv.id;
+      const isOwned = owned.includes('board_' + pv.id);
+      visual = Store._spBoard({ light: b.light, dark: b.dark, pieces: false });
+      title = b.name;
+      sub = 'Доска · ' + (isActive ? 'экипирована' : isOwned ? 'куплена' : '🪙 ' + b.price);
+      action = isActive
+        ? '<div class="spStatus on">✓ Экипировано</div>'
+        : '<button class="buyBtn" data-type="board" data-id="' + pv.id + '">' + (isOwned ? 'Выбрать' : '🪙 ' + b.price) + '</button>';
+    } else if(pv.type === 'background') {
+      const bg = BACKGROUNDS[pv.id];
+      if(!bg) { panel.style.display = 'none'; return; }
+      const isActive = (cfg.bg || 'classic') === pv.id;
+      const isOwned = owned.includes('bg_' + pv.id);
+      const priceLbl = bg.gem ? '💎 ' + bg.gemPrice : '🪙 ' + bg.price;
+      visual = '<div class="spBg' + (bg.style ? '' : ' spBgDefault') + '"' +
+        (bg.style ? ' style="background:' + bg.style + '"' : '') + '>' +
+        '<div class="spBgMock"><i></i><i></i><i></i><span>♔ ♕ ♖</span></div></div>';
+      title = bg.name;
+      sub = 'Фон интерфейса · ' + (isActive ? 'экипирован' : isOwned ? 'куплен' : priceLbl);
+      action = isActive
+        ? '<div class="spStatus on">✓ Экипировано</div>'
+        : '<button class="buyBtn" data-type="background" data-id="' + pv.id + '">' + (isOwned ? 'Выбрать' : priceLbl) + '</button>';
+    }
+
+    panel.innerHTML = '<div class="spHead"><span class="spName">' + title + '</span></div>' +
+      visual +
+      '<div class="spSub">' + sub + '</div>' +
+      '<div class="spAction">' + action + '</div>';
+    panel.style.display = '';
+    const ab = panel.querySelector('.buyBtn');
+    if(ab) ab.onclick = () => { snd.ui(); Store.onAction(ab.dataset.type, ab.dataset.id); };
+  },
+
+  _glyph(skinId, color, type) {
+    const s = SKINS[skinId];
+    if(s && s.glyph && s.glyph[color] && s.glyph[color][type]) return s.glyph[color][type];
+    if(typeof GLYPH !== 'undefined' && GLYPH[color] && GLYPH[color][type]) return GLYPH[color][type];
+    return '?';
+  },
+
+  _spBoard(o) {
+    const light = o.light || '#f0d9b5', dark = o.dark || '#b58863';
+    const order = ['r','n','b','q','k','b','n','r'];
+    let cells = '';
+    for(let r = 0; r < 8; r++) {
+      for(let c = 0; c < 8; c++) {
+        let inner = '';
+        if(o.pieces) {
+          if(r === 0 || r === 7) {
+            const color = r === 0 ? 'b' : 'w';
+            inner = '<span class="piece ' + color + '">' + Store._glyph(o.skinId, color, order[c]) + '</span>';
+          } else if(r === 1 || r === 6) {
+            const color = r === 1 ? 'b' : 'w';
+            inner = '<span class="piece ' + color + '">' + Store._glyph(o.skinId, color, 'p') + '</span>';
+          }
+        }
+        cells += '<div class="spSq' + ((r + c) % 2 ? ' d' : ' l') + '">' + inner + '</div>';
+      }
+    }
+    return '<div class="spBoard' + (o.skinCss ? ' ' + o.skinCss : '') +
+      '" style="--spL:' + light + ';--spD:' + dark + '">' + cells + '</div>';
   },
 
   /* --- Превью видео-мема (открыть крупно со звуком) --- */
@@ -802,7 +990,26 @@ function normalizeSkin() {
   if (profile && !profile.owned.includes('board_' + cfg.board)) {
     cfg.board = 'classic';
   }
+  if (!cfg.bg || !BACKGROUNDS[cfg.bg]) {
+    cfg.bg = 'classic';
+  }
+  if (profile && !profile.owned.includes('bg_' + cfg.bg)) {
+    cfg.bg = 'classic';
+  }
 }
+
+/* --- Применение фона интерфейса --- */
+function applyBackground() {
+  if(typeof document === 'undefined' || !document.body) return;
+  const id = (typeof cfg !== 'undefined' && cfg.bg) ? cfg.bg : 'classic';
+  const bg = BACKGROUNDS[id];
+  const custom = bg && bg.style ? bg.style : '';
+  const root = document.documentElement;
+  if(custom) root.style.setProperty('--bgx', custom);
+  document.body.classList.toggle('bg-custom', !!custom);
+  document.querySelectorAll('.screen').forEach(el => el.classList.toggle('bg-custom', !!custom));
+}
+if(typeof window !== 'undefined') window.applyBackground = applyBackground;
 
 /* --- Обновление состояния кнопок в магазине --- */
 function renderShopStates() {
@@ -815,8 +1022,10 @@ function initStore() {
   if(profile) {
     if(!profile.owned.includes('classic')) profile.owned.push('classic');
     if(!profile.owned.includes('board_classic')) profile.owned.push('board_classic');
+    if(!profile.owned.includes('bg_classic')) profile.owned.push('bg_classic');
     saveProfiles();
   }
+  applyBackground();
   renderShopStates();
 }
 
@@ -832,6 +1041,7 @@ function applyCosmetics() {
   else root.style.removeProperty('--nick-cos');
   const fr = PROFILE_FRAMES.find(x => x.id === (cu && cu.profileFrame));
   document.body.dataset.frame = (fr && fr.id) || '';
+  applyBackground();
 }
 window.applyCosmetics = applyCosmetics;
 
@@ -865,6 +1075,7 @@ window.applyWinFx = applyWinFx;
 
 if(typeof window !== 'undefined') {
   window.SKINS = SKINS;
+  window.BACKGROUNDS = BACKGROUNDS;
   window.ACHS = ACHS;
   window.Store = Store;
   window.normalizeSkin = normalizeSkin;

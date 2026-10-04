@@ -63,7 +63,7 @@ test.describe('CHESHER — Критические пути', () => {
     const tabs = page.locator('#shopTabs .shopTab');
     await expect(tabs.first()).toBeVisible();
     const tabCount = await tabs.count();
-    expect(tabCount).toBe(6);
+    expect(tabCount).toBe(7);
 
     // Кликаем «Доски»
     await page.click('#shopTabs .shopTab[data-tab="boards"]');
