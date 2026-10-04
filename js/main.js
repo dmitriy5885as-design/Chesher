@@ -50,6 +50,8 @@ function showScreen(id, opts) {
 
   if(id !== 'scrPlay') document.body.classList.remove('chat-open');
   if(id === 'scrMenu') exitFullscreenMobile();
+  // Синк фонового класса тела: на стартовом меню кастомный фон не рисуется
+  if(typeof applyBackground === 'function') applyBackground();
 
   if(typeof Analytics !== 'undefined') Analytics.screen(id);
 

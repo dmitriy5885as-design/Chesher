@@ -120,6 +120,7 @@ const BOARDS = {
 /* --- Фоны интерфейса (экраны и главное меню) --- */
 const BACKGROUNDS = {
   classic: {name: 'Классика', price: 0, style: ''},
+  classic_plus: {name: 'Классик+', price: 250, style: '#171310 url(assets/fons/classic_plus.webp) center/cover no-repeat'},
   space: {name: 'Космос', price: 250, style: 'radial-gradient(circle at 70% -10%, #241a4d 0%, #100d26 45%, #07060f 100%)'},
   ocean: {name: 'Океан', price: 200, style: 'radial-gradient(circle at 50% -20%, #12507a 0%, #0b2c47 45%, #061420 100%)'},
   sunset: {name: 'Закат', price: 200, style: 'linear-gradient(180deg, #5a2a5f 0%, #a8473c 45%, #2a1526 100%)'},
@@ -870,13 +871,19 @@ function applyBackground() {
   if(typeof document === 'undefined' || !document.body) return;
   const id = (typeof cfg !== 'undefined' && cfg.bg) ? cfg.bg : 'classic';
   const bg = BACKGROUNDS[id];
-  const custom = bg && bg.style ? bg.style : '';
+  let custom = bg && bg.style ? bg.style : '';
+  // url() внутри var() браузер резолвит от стиля-использующего (css/), а не от
+  // документа — превращаем относительные пути в абсолютные от базы документа
+  custom = custom.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (m, q, u) =>
+    /^(https?:|data:|blob:|\/)/i.test(u) ? m : 'url(' + new URL(u, document.baseURI).href + ')');
   const root = document.documentElement;
   if(custom) root.style.setProperty('--bgx', custom);
-  document.body.classList.toggle('bg-custom', !!custom);
-  // Стартовый экран (вход) — всегда дефолтный фон
+  // Стартовый экран (главное меню) — всегда дефолтный фон
+  const cur = document.querySelector('.screen.show');
+  const onMenu = !cur || cur.id === 'scrMenu';
+  document.body.classList.toggle('bg-custom', !!custom && !onMenu);
   document.querySelectorAll('.screen').forEach(el =>
-    el.classList.toggle('bg-custom', !!custom && el.id !== 'scrAuth'));
+    el.classList.toggle('bg-custom', !!custom && el.id !== 'scrMenu'));
 }
 if(typeof window !== 'undefined') window.applyBackground = applyBackground;
 
